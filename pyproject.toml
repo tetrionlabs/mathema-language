@@ -1,0 +1,97 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mathema-language"
+dynamic = ["version"]
+description = "Language domains for mathema: the alphabets, predicate languages, hazard families and schema languages a claim quantifies text and structured values over with L[...]."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Tetrion Ltd" }]
+keywords = ["mathema", "language-domains", "property-based-testing",
+            "schema-validation", "unicode", "pydantic", "json-schema",
+            "claim-driven-development"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Software Development :: Quality Assurance",
+  "Typing :: Typed",
+]
+# 0.7.0 is the first mathema with the languages, families and sampling
+# seams; the pin moves to >=0.7 in the release that follows it
+dependencies = ["mathema>=0.6"]
+
+[project.optional-dependencies]
+pydantic = ["pydantic>=2.0"]
+jsonschema = ["jsonschema>=4.18"]
+sqlalchemy = ["sqlalchemy>=2.0"]
+django = ["django>=4.2"]
+all = ["mathema-language[pydantic,jsonschema,sqlalchemy,django]"]
+test = ["pytest>=8", "mathema-language[pydantic,jsonschema]"]
+
+[project.urls]
+Homepage = "https://github.com/tetrionlabs/mathema-language"
+Source = "https://github.com/tetrionlabs/mathema-language"
+Documentation = "https://mathema.tetrionlabs.com/language/"
+Issues = "https://github.com/tetrionlabs/mathema-language/issues"
+
+[project.entry-points."mathema.languages"]
+unicode = "mathema_language.text:UNICODE"
+ascii = "mathema_language.text:ASCII"
+"latin-1" = "mathema_language.text:LATIN1"
+printable = "mathema_language.text:PRINTABLE"
+digit = "mathema_language.text:DIGIT"
+alpha = "mathema_language.text:ALPHA"
+alnum = "mathema_language.text:ALNUM"
+identifier = "mathema_language.text:IDENTIFIER"
+json = "mathema_language.text:JSON"
+uuid = "mathema_language.text:UUID"
+iso_date = "mathema_language.text:ISO_DATE"
+iso_datetime = "mathema_language.text:ISO_DATETIME"
+ipv4 = "mathema_language.text:IPV4"
+ipv6 = "mathema_language.text:IPV6"
+base64 = "mathema_language.text:BASE64"
+hex = "mathema_language.text:HEX"
+slug = "mathema_language.text:SLUG"
+shell_safe = "mathema_language.text:SHELL_SAFE"
+c0 = "mathema_language.text:C0"
+format = "mathema_language.text:FORMAT"
+combining = "mathema_language.text:COMBINING"
+surrogate = "mathema_language.text:SURROGATE"
+nfkc_folding = "mathema_language.text:NFKC_FOLDING"
+non_bmp = "mathema_language.text:NON_BMP"
+
+[tool.hatch.version]
+path = "src/mathema_language/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mathema_language"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+# a deliberately scoped set: errors, pyflakes, import order, modern
+# syntax, bugbear and simplification; a finding is real, not noise
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+# the kit this package subclasses is re-exported through mathema's
+# extension surface, which mypy reads as Any under an editable install
+disallow_subclassing_any = false
