@@ -124,7 +124,7 @@ ALNUM = TextLanguage(
     categories=(*_LETTER_CATEGORIES, *_NUMBER_CATEGORIES), planes=(0, 0, 1),
     outside_pool=" -_.")
 
-# --- the hazard sub-alphabets ------------------------------------------
+# the hazard sub-alphabets
 
 #: the C0 control code points and the space, 0x00 to 0x20
 C0 = TextLanguage(

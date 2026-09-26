@@ -87,3 +87,39 @@ def test_upper_case_is_not_length_preserving_over_unicode(tmp_path):
 def test_an_unknown_name_is_still_refused():
     with pytest.raises(UnknownLanguage, match="L\\[nope\\]"):
         resolve(LanguageRef("nope"))
+
+
+def test_the_families_are_discovered_and_parse():
+    from mathema import families, routes
+    from mathema.claim_families import _ACCIDENTAL_CRASHES
+
+    from mathema_language.families import ACCIDENTAL_CRASHES
+
+    assert {"is_length_safe", "is_encoding_safe"} <= set(families.families())
+    assert {"is_length_safe", "is_encoding_safe"} <= routes.safety_predicates()
+    assert "output_in_language" in routes.output_predicates()
+    assert claim("is_length_safe(s)").relation == "is_length_safe"
+    assert claim("s is encoding safe").relation == "is_encoding_safe"
+    # the crash taxonomy is the same seven types mathema's own fuzz counts
+    assert set(ACCIDENTAL_CRASHES) == set(_ACCIDENTAL_CRASHES)
+
+
+def test_a_str_annotation_infers_the_unicode_language(tmp_path):
+    import importlib.util
+    import textwrap
+
+    p = tmp_path / "infer_fns.py"
+    p.write_text(textwrap.dedent('''
+        def same(s: str) -> str:
+            """The text, unchanged."""
+            return s
+    '''))
+    spec = importlib.util.spec_from_file_location("infer_fns", p)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    (r,) = check_conjectures(mod.same, [claim("f(s) == s", route="probe")])
+    assert r.verdict == "holds", (r.verdict, r.note)
+    assert "L[unicode]" in r.note and "adaptor" in r.note, r.note
+    # the stamp reads the stated domain: an inferred language enriches
+    # the record without promoting the claim to the dialect
+    assert r.grammar == "mathema"

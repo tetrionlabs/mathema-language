@@ -72,6 +72,14 @@ surrogate = "mathema_language.text:SURROGATE"
 nfkc_folding = "mathema_language.text:NFKC_FOLDING"
 non_bmp = "mathema_language.text:NON_BMP"
 
+[project.entry-points."mathema.claim_families"]
+is_length_safe = "mathema_language.families:LENGTH_SAFE"
+is_encoding_safe = "mathema_language.families:ENCODING_SAFE"
+output_in_language = "mathema_language.families:OUTPUT_IN_LANGUAGE"
+
+[project.entry-points."mathema.language_adaptors"]
+text = "mathema_language.text:adapt"
+
 [tool.hatch.version]
 path = "src/mathema_language/__init__.py"
 

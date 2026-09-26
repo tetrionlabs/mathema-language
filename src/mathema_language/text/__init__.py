@@ -42,8 +42,22 @@ LANGUAGES: dict[str, TextLanguage] = {
         BASE64, HEX, SLUG, SHELL_SAFE,
         C0, FORMAT, COMBINING, SURROGATE, NFKC_FOLDING, NON_BMP)}
 
-__all__ = ["ALNUM", "ALPHA", "ASCII", "BASE64", "C0", "COMBINING", "DIGIT",
+__all__ = ["adapt", "ALNUM", "ALPHA", "ASCII", "BASE64", "C0", "COMBINING", "DIGIT",
            "FORMAT", "HEX", "IDENTIFIER", "IPV4", "IPV6", "ISO_DATE",
            "ISO_DATETIME", "JSON", "LANGUAGES", "LATIN1", "NFKC_FOLDING",
            "NON_BMP", "PRINTABLE", "SHELL_SAFE", "SLUG", "SURROGATE",
            "TEXT_HAZARDS", "TextLanguage", "UNICODE", "UUID"]
+
+
+def adapt(hint: object) -> TextLanguage | None:
+    """The language a text annotation names: every `str` for `str` and
+    for `Annotated[str, ...]`, nothing for any other annotation.
+    Registered under `mathema.language_adaptors` as `text`, so a `str`
+    parameter with no stated domain infers `L[unicode]`."""
+    import typing
+
+    if hint is str:
+        return UNICODE
+    if typing.get_origin(hint) is typing.Annotated and typing.get_args(hint)[:1] == (str,):
+        return UNICODE
+    return None
