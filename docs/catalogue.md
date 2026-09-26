@@ -148,12 +148,57 @@ def word_count(text: str) -> int:
 | `word_count` | `for text in L[unicode] \ {""}, f(text) >= 1` | falsified | A whitespace-only string is non-empty and has no words. |
 | `word_count` | `for text in L[unicode], is_arbitrary_input_safe(text)` | holds | `str.split` copes with every hazard in the corpus. |
 
+## Loader
+
+A loader or a cleaner takes a table and returns one. Its language is a
+frame language, `frame_of` over a row schema read off a dataclass (or a
+TypedDict, a pydantic model, a JSON Schema, a SQLAlchemy table, a Django
+model), bound to a module-level name so the claim can write it as a
+dotted object. The claims are that the row count never grows, that the
+output is still a member of the frame language (the keys still unique,
+the count still in range, every row still valid), and, the one that
+fails, that cleaning is the identity.
+
+```python
+from dataclasses import dataclass
+from typing import Literal
+
+from mathema_language.schema import frame_of
+
+
+@dataclass
+class Order:
+    id: int
+    kind: Literal["web", "shop"]
+    qty: int
+
+
+ORDERS = frame_of(Order, primary_key="id", row_count=(0, 6))
+
+
+def one_per_kind(orders: list) -> list:
+    """The first order of each kind, in input order."""
+    seen = set()
+    kept = []
+    for order in orders:
+        if order.kind not in seen:
+            seen.add(order.kind)
+            kept.append(order)
+    return kept
+```
+
+| Function | Claim | Verdict | Why |
+|---|---|---|---|
+| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], len(f(orders)) <= len(orders)` | holds | A filter never adds rows. |
+| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], output_in_language(f(orders))` | holds | Closure: a sub-table of a member is a member, the keys still unique and the count still in range. |
+| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], f(orders) == orders` | falsified | Two orders of one kind is the witness; there are only two kinds, so it is found at once. |
+
 ## What is not here yet
 
-Loaders and joiners take rows and frames, and their claims (schema
-preservation, key uniqueness, null policy, row-count bounds) wait for the
-schema model, where `L[Order]` names a row language read off a
-dataclass, a pydantic model or a JSON Schema. The `in` relation, which
-spells closure into a different language (`f(text) in L[slug]`) and the
-absence of a token (`"<" not in f(text)`), is a change to mathema's
-grammar and lands there.
+Joins take two tables, and a claim over two frame languages at once is
+written as two bindings, which the sampler already supports; the
+catalogue will grow a joiner once the `in` relation lands, since the
+claim worth writing about a join is that its output is in the joined
+language. The `in` relation, which spells closure into a different
+language (`f(text) in L[slug]`) and the absence of a token (`"<" not in
+f(text)`), is a change to mathema's grammar and lands there.

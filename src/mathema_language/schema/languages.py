@@ -67,6 +67,9 @@ class RowLanguage:
         self.name = name or schema.name
         self.accepted = 0
         self.rejected = 0
+        #: the table-level facts an ORM adaptor read off its table
+        #: (keys, foreign keys), the defaults `frame_of` starts from
+        self.table_defaults: TableSchema | None = None
 
     def __repr__(self) -> str:
         return f"RowLanguage({self.name!r}, {self.ecosystem.name})"
@@ -476,11 +479,13 @@ def frame_of(obj: Any, *, primary_key: tuple[str, ...] | str = (),
         raise TypeError(f"no adaptor reads {obj!r} as a row schema")
     parent_languages = {k: (v if isinstance(v, RowLanguage) else adapt_row(v))
                         for k, v in (parents or {}).items()}
+    defaults = row.table_defaults
+    pk = (primary_key,) if isinstance(primary_key, str) else tuple(primary_key)
     table = TableSchema(row.schema,
-                        primary_key=(primary_key,) if isinstance(primary_key, str) else tuple(primary_key),
-                        unique=tuple(tuple(u) for u in unique),
-                        foreign_keys=tuple(foreign_keys), row_count=row_count,
-                        checks=tuple(checks), ordered=tuple(ordered))
+                        primary_key=pk or (defaults.primary_key if defaults else ()),
+                        unique=tuple(tuple(u) for u in unique) or (defaults.unique if defaults else ()),
+                        foreign_keys=tuple(foreign_keys) or (defaults.foreign_keys if defaults else ()),
+                        row_count=row_count, checks=tuple(checks), ordered=tuple(ordered))
     return FrameLanguage(table, row.ecosystem, name,
                          {k: v for k, v in parent_languages.items() if v is not None})
 

@@ -59,15 +59,26 @@ def _contains(languages: list[Any], value: object) -> bool:
     return any(language.contains(value) for language in languages)
 
 
-def _hazard_values(languages: list[Any], kinds: tuple[str, ...] | None = None) -> list[str]:
+def _key(value: object) -> object:
+    """A hashable stand-in for deduplication: the value itself, or
+    its repr when it does not hash (a record, a table)."""
+    try:
+        hash(value)
+        return value
+    except TypeError:
+        return repr(value)
+
+
+def _hazard_values(languages: list[Any], kinds: tuple[str, ...] | None = None) -> list[Any]:
     """The hazard members of `languages`, of `kinds` or of every kind,
     each once, in corpus order."""
-    out: list[str] = []
-    seen: set[str] = set()
+    out: list[Any] = []
+    seen: set[object] = set()
     for language in languages:
         for hazard in language.hazards():
-            if (kinds is None or hazard.kind in kinds) and hazard.value not in seen:
-                seen.add(hazard.value)
+            key = _key(hazard.value)
+            if (kinds is None or hazard.kind in kinds) and key not in seen:
+                seen.add(key)
                 out.append(hazard.value)
     return out
 
@@ -149,10 +160,10 @@ def _probe_over(kinds: tuple[str, ...], extra: Callable[..., list[str]],
         deliberate = _raised_by_the_body(facts.tree)
         counted = tuple(t for t in crashes if t.__name__ not in deliberate)
         corpus = _hazard_values(languages, kinds)
-        seen = set(corpus)
+        seen = {_key(v) for v in corpus}
         for value in extra(languages, facts):
-            if value not in seen and _contains(languages, value):
-                seen.add(value)
+            if _key(value) not in seen and _contains(languages, value):
+                seen.add(_key(value))
                 corpus.append(value)
         if not corpus:
             return ("skipped", 0, f"L[{names}] has no {what} hazard to try")

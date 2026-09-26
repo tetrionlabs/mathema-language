@@ -61,5 +61,5 @@ def test_every_catalogue_row_lands_on_its_printed_verdict(tmp_path, title, code,
 
 def test_the_catalogue_covers_every_nature():
     titles = {title for title, _, _ in _sections()}
-    assert {"Parser", "Renderer", "Normaliser", "Validator", "Escaper", "Consumer"} <= titles
+    assert {"Parser", "Renderer", "Normaliser", "Validator", "Escaper", "Consumer", "Loader"} <= titles
     assert len(CASES) >= 20

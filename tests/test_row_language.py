@@ -7,7 +7,6 @@ shrinking stays inside, `fields()` states the one-deep bounds, a
 finite schema enumerates, and a schema nothing satisfies says so
 with the counts."""
 import random
-import sys
 from dataclasses import dataclass, field
 from typing import Annotated, Literal, Optional, TypedDict
 
@@ -57,24 +56,19 @@ class OrderDict(TypedDict, total=True):
 
 def _shapes():
     out = [("dataclass", Order), ("typeddict", OrderDict)]
-    if "pydantic" in sys.modules or _importable("pydantic"):
-        from tests._pydantic_shapes import OrderModel
-        out.append(("pydantic", OrderModel))
-    if _importable("jsonschema"):
-        from tests._jsonschema_shapes import ORDER_SCHEMA
-        out.append(("jsonschema", ORDER_SCHEMA))
+    for name, module, attr in (("pydantic", "tests._pydantic_shapes", "OrderModel"),
+                               ("jsonschema", "tests._jsonschema_shapes", "ORDER_SCHEMA"),
+                               ("sqlalchemy", "tests._sqlalchemy_shapes", "ORDERS_TABLE"),
+                               ("django", "tests._django_shapes", "OrderModelDj")):
+        try:
+            shapes = __import__(module, fromlist=[attr])
+        except ImportError:
+            continue
+        out.append((name, getattr(shapes, attr)))
     return out
 
 
-def _importable(name):
-    import importlib.util
-    return importlib.util.find_spec(name) is not None
-
-
-try:
-    SHAPES = _shapes()
-except ImportError:
-    SHAPES = [("dataclass", Order), ("typeddict", OrderDict)]
+SHAPES = _shapes()
 
 
 @pytest.fixture(params=SHAPES, ids=[name for name, _ in SHAPES])
@@ -129,8 +123,8 @@ def test_shrinking_stays_inside(language):
 def test_fields_state_the_one_deep_bounds(language):
     bounds = language.fields()
     assert bounds["qty"] == (1.0, 10.0)
-    assert bounds["price"] == "R" or bounds["price"] == (0.0, 1e6) or isinstance(bounds["price"], tuple)
-    assert bounds["id"] == "Z"
+    assert bounds["price"] == "R"
+    assert bounds["id"] == "Z" or (isinstance(bounds["id"], tuple) and bounds["id"][0] < 0 < bounds["id"][1])
     assert str(bounds["sku"]) in ("L[unicode]", "LanguageRef(name='unicode')")
 
 

@@ -19,7 +19,7 @@ def adapt_row(obj: Any) -> RowLanguage | None:
         language = adapt(obj)
         if language is not None:
             return language
-    for name in ("pydantic", "jsonschema"):
+    for name in ("pydantic", "jsonschema", "sqlalchemy", "django"):
         try:
             module = __import__(f"{__name__}.{name}", fromlist=["adapt"])
         except ImportError:

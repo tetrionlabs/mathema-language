@@ -38,7 +38,7 @@ jsonschema = ["jsonschema>=4.18"]
 sqlalchemy = ["sqlalchemy>=2.0"]
 django = ["django>=4.2"]
 all = ["mathema-language[pydantic,jsonschema,sqlalchemy,django]"]
-test = ["pytest>=8", "mathema-language[pydantic,jsonschema]"]
+test = ["pytest>=8", "mathema-language[pydantic,jsonschema,sqlalchemy,django]"]
 
 [project.urls]
 Homepage = "https://github.com/tetrionlabs/mathema-language"
@@ -83,6 +83,8 @@ dataclass = "mathema_language.schema.adaptors.dataclass:adapt"
 typeddict = "mathema_language.schema.adaptors.typeddict:adapt"
 pydantic = "mathema_language.schema.adaptors.pydantic:adapt"
 jsonschema = "mathema_language.schema.adaptors.jsonschema:adapt"
+sqlalchemy = "mathema_language.schema.adaptors.sqlalchemy:adapt"
+django = "mathema_language.schema.adaptors.django:adapt"
 
 [tool.hatch.version]
 path = "src/mathema_language/__init__.py"

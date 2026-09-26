@@ -99,6 +99,38 @@ you have read the body, and [the catalogue](docs/catalogue.md) lists them
 by nature with a real function under each, every row run by the test
 suite and held to the verdict printed beside it.
 
+## Rows and frames
+
+A schema is a language too. `L[myapp.models.Order]` names the records of
+a dataclass, a TypedDict, a pydantic model, a JSON Schema, a SQLAlchemy
+table or a Django model, read into one neutral model by an adaptor and
+validated by the library's own validator where it has one (pydantic's,
+the JSON Schema validator, an in-memory SQLite database for SQLAlchemy,
+`full_clean` for Django). A parameter annotated with the class infers
+the language on its own. `frame_of` lifts a row schema to a table
+language, with the primary key, the unique sets, the foreign keys and
+the row-count range a row schema cannot carry, and a claim writes it as
+a dotted object:
+
+```python
+from mathema_language.schema import frame_of
+
+ORDERS = frame_of(Order, primary_key="id", row_count=(0, 1000))
+```
+
+```
+for orders in L[myapp.schemas.ORDERS], output_in_language(f(orders))
+for o in L[myapp.models.Order], f(o) >= 0
+```
+
+The probe visits the empty table, one row, the largest count, every
+nullable column all null, and one table per field hazard (the extremes,
+the text corpus in a string column, the datetime64[ns] bounds and a DST
+edge); a witness names the cell in one path grammar for every ecosystem,
+`[3].qty` for a cell, `key(id)` for a duplicated key, `rows` for the
+count. Over a dataclass the derive route lifts the numeric fields, so
+`for o in L[Order], f(o) >= 0` can be proven, not sampled.
+
 ## What a probe visits
 
 A language's hazards come first, then random members, and never a value
