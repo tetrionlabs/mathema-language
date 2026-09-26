@@ -191,7 +191,7 @@ def one_per_kind(orders: list) -> list:
 |---|---|---|---|
 | `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], len(f(orders)) <= len(orders)` | holds | A filter never adds rows. |
 | `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], output_in_language(f(orders))` | holds | Closure: a sub-table of a member is a member, the keys still unique and the count still in range. |
-| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], f(orders) == orders` | falsified | Two orders of one kind is the witness; there are only two kinds, so it is found at once. |
+| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], len(f(orders)) == len(orders)` | falsified | Two orders of one kind is the witness; there are only two kinds, so it is found at once. (Written over the lengths: two tables of different length compare as unanswerable under `==`, mathema's rule for mismatched shapes.) |
 
 ## What is not here yet
 
