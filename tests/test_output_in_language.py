@@ -49,6 +49,7 @@ def test_an_output_that_leaves_the_language_falsifies_naming_the_target(tmp_path
     assert p.verdict == "falsified", (p.verdict, p.note)
     assert "not in L[ascii]" in p.counterexample
     assert "the language s is declared over" in p.counterexample
+    assert "LATIN SMALL LETTER E WITH ACUTE" in p.counterexample, p.counterexample
 
 
 def test_a_non_string_output_is_not_a_member(tmp_path):

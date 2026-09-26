@@ -91,6 +91,14 @@ surrogate code points Python admits and no codec encodes),
 fullwidth forms among them) and `non_bmp` (everything past the basic
 multilingual plane).
 
+## What to claim
+
+The nature of a function over text (parser, renderer, normaliser,
+validator, escaper, consumer) says which claims are worth writing before
+you have read the body, and [the catalogue](docs/catalogue.md) lists them
+by nature with a real function under each, every row run by the test
+suite and held to the verdict printed beside it.
+
 ## What a probe visits
 
 A language's hazards come first, then random members, and never a value
