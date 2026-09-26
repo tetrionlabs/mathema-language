@@ -79,6 +79,10 @@ output_in_language = "mathema_language.families:OUTPUT_IN_LANGUAGE"
 
 [project.entry-points."mathema.language_adaptors"]
 text = "mathema_language.text:adapt"
+dataclass = "mathema_language.schema.adaptors.dataclass:adapt"
+typeddict = "mathema_language.schema.adaptors.typeddict:adapt"
+pydantic = "mathema_language.schema.adaptors.pydantic:adapt"
+jsonschema = "mathema_language.schema.adaptors.jsonschema:adapt"
 
 [tool.hatch.version]
 path = "src/mathema_language/__init__.py"

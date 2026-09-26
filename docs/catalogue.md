@@ -94,12 +94,10 @@ usual way a validator fails the second of those.
 ```python
 import re
 
-_SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
-
 
 def is_slug(text: str) -> bool:
     """Whether `text` is a slug: lower-case words joined by single hyphens."""
-    return _SLUG.fullmatch(text) is not None
+    return re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", text) is not None
 ```
 
 | Function | Claim | Verdict | Why |

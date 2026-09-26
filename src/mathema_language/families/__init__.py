@@ -260,14 +260,21 @@ def _target_language(fn: Any, facts: Any, domain: dict[str, Any]) -> tuple[str, 
 
 def _explained(languages: list[Any], value: object) -> str:
     """The first language's account of why `value` is not a member,
-    parenthesised, or nothing."""
+    parenthesised, or nothing: each problem as its path, the piece
+    at fault and the predicate it failed."""
     for language in languages:
         try:
-            why = language.explain(value)
+            problems = language.explain(value)
         except Exception:
             continue
-        if why:
-            return f" ({why})"
+        if problems:
+            parts = []
+            for problem in problems:
+                where = f"at {problem.path} " if problem.path else ""
+                parts.append(f"{where}{_describe(problem.value)} fails {problem.predicate}"
+                             if isinstance(problem.value, str)
+                             else f"{where}{problem.value!r} fails {problem.predicate}")
+            return " (" + "; ".join(parts) + ")"
     return ""
 
 

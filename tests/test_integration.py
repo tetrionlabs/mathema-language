@@ -123,3 +123,79 @@ def test_a_str_annotation_infers_the_unicode_language(tmp_path):
     # the stamp reads the stated domain: an inferred language enriches
     # the record without promoting the claim to the dialect
     assert r.grammar == "mathema"
+
+
+ORDER_MODULE = '''
+    from dataclasses import dataclass
+    from typing import Annotated
+
+
+    class Ge:
+        def __init__(self, ge):
+            self.ge = ge
+
+
+    class Le:
+        def __init__(self, le):
+            self.le = le
+
+
+    @dataclass
+    class Order:
+        qty: Annotated[int, Ge(1), Le(10)]
+        price: Annotated[float, Ge(0.0), Le(1000.0)]
+
+
+    def total(o: Order) -> float:
+        """Quantity times price."""
+        return o.qty * o.price
+'''
+
+
+def _module(tmp_path, name, body):
+    import importlib.util
+    import sys
+    import textwrap
+
+    p = tmp_path / f"{name}.py"
+    p.write_text(textwrap.dedent(body))
+    spec = importlib.util.spec_from_file_location(name, p)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_a_dataclass_resolves_through_the_dataclass_entry_point(tmp_path):
+    mod = _module(tmp_path, "schema_orders_ep", ORDER_MODULE)
+    (p,) = check_conjectures(mod.total, [claim(
+        "for o in L[schema_orders_ep.Order], f(o) >= 0", route="probe")])
+    assert p.verdict == "holds", (p.verdict, p.note, p.counterexample)
+    described = p.meta["mathema.language"]["o"][0]
+    assert described["source"] == "adaptor dataclass" and described["kind"] == "row"
+    assert described["schema"]["properties"]["qty"] == {"type": "integer", "minimum": 1, "maximum": 10}
+
+
+def test_a_dataclass_annotation_infers_its_row_language(tmp_path):
+    mod = _module(tmp_path, "schema_orders_infer", ORDER_MODULE)
+    (p,) = check_conjectures(mod.total, [claim("f(o) >= 0", route="probe")])
+    assert p.verdict == "holds", (p.verdict, p.note, p.counterexample)
+    assert "inferred o in L[schema_orders_infer.Order]" in p.note, p.note
+    assert "adaptor dataclass" in p.note
+
+
+def test_the_field_lift_proves_a_sign_fact_over_a_row_language(tmp_path):
+    mod = _module(tmp_path, "schema_orders_lift", ORDER_MODULE)
+    (p,) = check_conjectures(mod.total, [claim(
+        "for o in L[schema_orders_lift.Order], f(o) >= 0", route="derive")])
+    assert p.verdict in ("proven", "holds", "unknown"), (p.verdict, p.note)
+    if p.verdict != "proven":
+        assert p.meta.get("mathema.timeout"), (p.verdict, p.note, p.meta)
+
+
+def test_an_executed_instance_is_the_disproof(tmp_path):
+    mod = _module(tmp_path, "schema_orders_dis", ORDER_MODULE)
+    (p,) = check_conjectures(mod.total, [claim(
+        "for o in L[schema_orders_dis.Order], f(o) <= 50")])
+    assert p.verdict == "falsified", (p.verdict, p.note)
+    assert "Order(" in str(p.counterexample)
