@@ -5,7 +5,7 @@ claims are worth writing before you have read a line of the body. Every
 claim below runs as written: the test suite executes this page and holds
 each row to the verdict printed beside it, so a row that says `falsified`
 is a real finding about the function above it, not a hypothetical. The
-domain binding is always the input side (`for text in L[ascii]` says what
+domain binding is always the input side (`for s in L[ascii]` says what
 the function is fed), and anything said about `f(...)` is the output side.
 
 The rows use three kinds of claim. A hazard family (`is_length_safe`,
@@ -26,9 +26,9 @@ crashes it, and that it is a section of its renderer where that is
 intended.
 
 ```python
-def parse_count(text: str) -> int:
+def parse_count(s: str) -> int:
     """The count a decimal string spells."""
-    return int(text)
+    return int(s)
 
 
 def render_count(n: int) -> str:
@@ -38,11 +38,11 @@ def render_count(n: int) -> str:
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `parse_count` | `for text in L[digit], excluded_outside_domain(text)` | falsified | `int` accepts more than the ten ASCII digits: surrounding whitespace, underscores, and every Unicode decimal digit, so an outside draw is parsed rather than refused. |
-| `parse_count` | `for text in L[digit], is_encoding_safe(text)` | unknown | The ten ASCII digits hold no control or encoding hazard, so the family has nothing to try and says so rather than reporting a hollow `holds`. Claim it over what the parser is really fed. |
-| `parse_count` | `for text in L[unicode], is_encoding_safe(text)` | holds | Every non-digit is refused with a `ValueError`, a declared rejection, never a `UnicodeError`. |
-| `parse_count` | `for text in L[digit], is_length_safe(text)` | holds | A sixty-four kibibyte digit string is refused by the interpreter's own digit limit, a `ValueError` again. |
-| `parse_count` | `for text in L[digit] \ {""}, render_count(f(text)) == text` | falsified | Leading zeros do not survive the round trip: `"007"` parses to `7`, which renders as `"7"`. |
+| `parse_count` | `for s in L[digit], excluded_outside_domain(s)` | falsified | `int` accepts more than the ten ASCII digits: surrounding whitespace, underscores, and every Unicode decimal digit, so an outside draw is parsed rather than refused. |
+| `parse_count` | `for s in L[digit], is_encoding_safe(s)` | unknown | The ten ASCII digits hold no control or encoding hazard, so the family has nothing to try and says so rather than reporting a hollow `holds`. Claim it over what the parser is really fed. |
+| `parse_count` | `for s in L[unicode], is_encoding_safe(s)` | holds | Every non-digit is refused with a `ValueError`, a declared rejection, never a `UnicodeError`. |
+| `parse_count` | `for s in L[digit], is_length_safe(s)` | holds | A sixty-four kibibyte digit string is refused by the interpreter's own digit limit, a `ValueError` again. |
+| `parse_count` | `for s in L[digit] \ {""}, render_count(f(s)) == s` | falsified | Leading zeros do not survive the round trip: `"007"` parses to `7`, which renders as `"7"`. |
 
 ## Renderer
 
@@ -64,25 +64,25 @@ Unicode normalisation when it claims to work on characters rather than
 code points. Case mapping is the classic place the last of those fails.
 
 ```python
-def collapse_spaces(text: str) -> str:
+def collapse_spaces(s: str) -> str:
     """Whitespace runs collapsed to one space, the ends stripped."""
-    return " ".join(text.split())
+    return " ".join(s.split())
 
 
-def shout(text: str) -> str:
+def shout(s: str) -> str:
     """Upper case."""
-    return text.upper()
+    return s.upper()
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `collapse_spaces` | `for text in L[unicode], f(f(text)) == f(text)` | holds | Idempotent: a second pass finds nothing to collapse. |
-| `collapse_spaces` | `for text in L[unicode], len(f(text)) <= len(text)` | holds | A contraction, since it only ever removes characters. |
-| `collapse_spaces` | `for text in L[ascii], output_in_language(f(text))` | holds | Closure: ASCII in, ASCII out. |
-| `collapse_spaces` | `let n = mathema_language.vocabulary.text.nfc, for text in L[unicode], n(f(text)) == f(n(text))` | holds | Commutes with NFC, because composition never creates or removes whitespace. |
-| `collapse_spaces` | `for text in L[unicode], f(text) == text` | falsified | Not the identity; the first whitespace hazard is the witness. |
-| `shout` | `for text in L[ascii], len(f(text)) == len(text)` | holds | Over ASCII, upper-casing is one character to one character. |
-| `shout` | `for text in L[unicode], len(f(text)) == len(text)` | falsified | `'ΐ'` (U+0390) upper-cases to three code points, and `'ß'` to two; a length-preserving assumption about case mapping is the bug this row exists to catch. |
+| `collapse_spaces` | `for s in L[unicode], f(f(s)) == f(s)` | holds | Idempotent: a second pass finds nothing to collapse. |
+| `collapse_spaces` | `for s in L[unicode], len(f(s)) <= len(s)` | holds | A contraction, since it only ever removes characters. |
+| `collapse_spaces` | `for s in L[ascii], output_in_language(f(s))` | holds | Closure: ASCII in, ASCII out. |
+| `collapse_spaces` | `let n = mathema_language.vocabulary.text.nfc, for s in L[unicode], n(f(s)) == f(n(s))` | holds | Commutes with NFC, because composition never creates or removes whitespace. |
+| `collapse_spaces` | `for s in L[unicode], f(s) == s` | falsified | Not the identity; the first whitespace hazard is the witness. |
+| `shout` | `for s in L[ascii], len(f(s)) == len(s)` | holds | Over ASCII, upper-casing is one character to one character. |
+| `shout` | `for s in L[unicode], len(f(s)) == len(s)` | falsified | `'ΐ'` (U+0390) upper-cases to three code points, and `'ß'` to two; a length-preserving assumption about case mapping is the bug this row exists to catch. |
 
 ## Validator
 
@@ -95,16 +95,16 @@ usual way a validator fails the second of those.
 import re
 
 
-def is_slug(text: str) -> bool:
-    """Whether `text` is a slug: lower-case words joined by single hyphens."""
-    return re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", text) is not None
+def is_slug(s: str) -> bool:
+    """Whether `s` is a slug: lower-case words joined by single hyphens."""
+    return re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", s) is not None
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `is_slug` | `for text in L[slug], f(text) == True` | holds | Every member of `L[slug]` is accepted. |
-| `is_slug` | `for text in L[slug], is_length_safe(text)` | holds | The pattern is linear in the input, so the long and pathological members return promptly. |
-| `is_slug` | `for text in L[unicode], is_arbitrary_input_safe(text)` | holds | A `fullmatch` never raises on a `str`, whatever it holds. |
+| `is_slug` | `for s in L[slug], f(s) == True` | holds | Every member of `L[slug]` is accepted. |
+| `is_slug` | `for s in L[slug], is_length_safe(s)` | holds | The pattern is linear in the input, so the long and pathological members return promptly. |
+| `is_slug` | `for s in L[unicode], is_arbitrary_input_safe(s)` | holds | A `fullmatch` never raises on a `str`, whatever it holds. |
 
 ## Escaper
 
@@ -117,18 +117,18 @@ not idempotent, which is exactly why double escaping is a bug.
 import html
 
 
-def escape_html(text: str) -> str:
-    """The text with `&`, `<`, `>` and both quotes as entities."""
-    return html.escape(text)
+def escape_html(s: str) -> str:
+    """The s with `&`, `<`, `>` and both quotes as entities."""
+    return html.escape(s)
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `escape_html` | `for text in L[unicode], len(f(text)) >= len(text)` | holds | Every replacement is longer than the character it replaces. |
-| `escape_html` | `let u = html.unescape, for text in L[unicode], u(f(text)) == text` | holds | The round trip through `html.unescape` is exact. |
-| `escape_html` | `for text in L[ascii], output_in_language(f(text))` | holds | Entities are ASCII, so ASCII in gives ASCII out. |
-| `escape_html` | `for text in L[unicode], is_encoding_safe(text)` | holds | No codec in the body, so no codec boundary to fall off. |
-| `escape_html` | `for text in L[unicode], f(f(text)) == f(text)` | falsified | `"&"` becomes `"&amp;"` and then `"&amp;amp;"`; an escaper is not a normaliser. |
+| `escape_html` | `for s in L[unicode], len(f(s)) >= len(s)` | holds | Every replacement is longer than the character it replaces. |
+| `escape_html` | `let u = html.unescape, for s in L[unicode], u(f(s)) == s` | holds | The round trip through `html.unescape` is exact. |
+| `escape_html` | `for s in L[ascii], output_in_language(f(s))` | holds | Entities are ASCII, so ASCII in gives ASCII out. |
+| `escape_html` | `for s in L[unicode], is_encoding_safe(s)` | holds | No codec in the body, so no codec boundary to fall off. |
+| `escape_html` | `for s in L[unicode], f(f(s)) == f(s)` | falsified | `"&"` becomes `"&amp;"` and then `"&amp;amp;"`; an escaper is not a normaliser. |
 
 ## Consumer
 
@@ -137,16 +137,16 @@ over a language, and the row that fails here is the one that assumes a
 non-empty string has content.
 
 ```python
-def word_count(text: str) -> int:
-    """How many whitespace-separated words `text` holds."""
-    return len(text.split())
+def word_count(s: str) -> int:
+    """How many whitespace-separated words `s` holds."""
+    return len(s.split())
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `word_count` | `for text in L[unicode], f(text) >= 0` | holds | A length is never negative. |
-| `word_count` | `for text in L[unicode] \ {""}, f(text) >= 1` | falsified | A whitespace-only string is non-empty and has no words. |
-| `word_count` | `for text in L[unicode], is_arbitrary_input_safe(text)` | holds | `str.split` copes with every hazard in the corpus. |
+| `word_count` | `for s in L[unicode], f(s) >= 0` | holds | A length is never negative. |
+| `word_count` | `for s in L[unicode] \ {""}, f(s) >= 1` | falsified | A whitespace-only string is non-empty and has no words. |
+| `word_count` | `for s in L[unicode], is_arbitrary_input_safe(s)` | holds | `str.split` copes with every hazard in the corpus. |
 
 ## Loader
 
@@ -191,7 +191,7 @@ def one_per_kind(orders: list) -> list:
 |---|---|---|---|
 | `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], len(f(orders)) <= len(orders)` | holds | A filter never adds rows. |
 | `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], output_in_language(f(orders))` | holds | Closure: a sub-table of a member is a member, the keys still unique and the count still in range. |
-| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], len(f(orders)) == len(orders)` | falsified | Two orders of one kind is the witness; there are only two kinds, so it is found at once. (Written over the lengths: two tables of different length compare as unanswerable under `==`, mathema's rule for mismatched shapes.) |
+| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], f(orders) == orders` | falsified | Two orders of one kind is the witness; there are only two kinds, so it is found at once, and a dropped row makes the tables unequal outright. |
 
 ## What is not here yet
 

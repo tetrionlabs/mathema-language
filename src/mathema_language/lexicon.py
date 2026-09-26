@@ -11,39 +11,39 @@ LEXICON: dict[str, str] = {
     # a union with a finite set: the sentinel a field uses beside the
     # language proper
     "language_with_special_member":
-        'for text in L[alnum] | {"n/a"}, len(f(text)) <= len(text)',
+        'for s in L[alnum] | {"n/a"}, len(f(s)) <= len(s)',
     # a parser of decimal digits is a homomorphism from concatenation
     # to arithmetic
     "language_homomorphism":
         'for s in L[digit] \\ {""}, f(s + "0") == 10 * f(s)',
     # an encoding boundary: the function is falsified with the member
     # past the boundary as the witness
-    "language_encoding_boundary": "for text in L[latin-1], f(text) == text",
+    "language_encoding_boundary": "for s in L[latin-1], f(s) == s",
     # a section: the inverse, bound with let, undoes the function
     "language_section":
         "let u = mathema_language.lexicon.unescape_angle, "
-        "for text in L[unicode], u(f(text)) == text",
+        "for s in L[unicode], u(f(s)) == s",
     # a retraction on a predicate language: parse, render, parse again
     "language_retraction":
         "let dump = json.dumps, for s in L[json], f(dump(f(s))) == f(s)",
     # a normaliser is idempotent over every string
-    "language_idempotent": "for text in L[unicode], f(f(text)) == f(text)",
+    "language_idempotent": "for s in L[unicode], f(f(s)) == f(s)",
 }
 
 
-def collapse_spaces(text: str) -> str:
+def collapse_spaces(s: str) -> str:
     """Runs of whitespace collapsed to one space, the ends stripped."""
-    return " ".join(text.split())
+    return " ".join(s.split())
 
 
-def escape_angle(text: str) -> str:
+def escape_angle(s: str) -> str:
     """Angle brackets and ampersands written as their entities."""
-    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def unescape_angle(text: str) -> str:
+def unescape_angle(s: str) -> str:
     """The inverse of `escape_angle` on its image."""
-    return text.replace("&gt;", ">").replace("&lt;", "<").replace("&amp;", "&")
+    return s.replace("&gt;", ">").replace("&lt;", "<").replace("&amp;", "&")
 
 
 def digits_to_int(s: str) -> int:
@@ -51,9 +51,9 @@ def digits_to_int(s: str) -> int:
     return int(s)
 
 
-def ascii_only(text: str) -> str:
-    """The text, if ascii; a UnicodeEncodeError otherwise."""
-    return text.encode("ascii").decode("ascii")
+def ascii_only(s: str) -> str:
+    """The s, if ascii; a UnicodeEncodeError otherwise."""
+    return s.encode("ascii").decode("ascii")
 
 
 def loads(s: str) -> object:
