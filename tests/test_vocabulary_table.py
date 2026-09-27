@@ -57,7 +57,7 @@ def test_a_let_bound_table_function_adjudicates_over_a_frame_language():
     pytest.importorskip("mathema")
     from mathema.conjecture import check_conjectures, claim
 
-    from mathema_language.schema import frame_of
+    from mathema_language.schema._tables import frame_of
 
     module = types.ModuleType("vocab_frames")
     module.ORDERS = frame_of(Row, primary_key="id", row_count=(0, 5))

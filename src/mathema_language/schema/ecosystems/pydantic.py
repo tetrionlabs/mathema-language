@@ -40,7 +40,7 @@ class PydanticEcosystem:
     def build_row(self, schema: RowSchema, values: dict[str, Any]) -> Any:
         return self.model.model_construct(**values)  # type: ignore[attr-defined]
 
-    def build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[Any]:
+    def _build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[Any]:
         names = list(columns)
         n = len(columns[names[0]]) if names else 0
         return [self.build_row(table.row, {name: columns[name][i] for name in names})
@@ -64,22 +64,22 @@ class PydanticEcosystem:
                     for err in e.errors()]
         return []
 
-    def validate_frame(self, table: TableSchema, frame: Any,
+    def _validate_frame(self, table: TableSchema, frame: Any,
                        parents: dict[str, Any] | None = None) -> list[Problem]:
         if not isinstance(frame, (list, tuple)):
             return [Problem("", "a list of records", frame)]
-        return frame_problems(table, list(frame), self.column_names(frame),
+        return frame_problems(table, list(frame), self._column_names(frame),
                               lambda row: self.validate_row(table.row, row),
                               lambda row, col: getattr(row, col, None),
                               {k: list(v) for k, v in (parents or {}).items()})
 
-    def row_count(self, frame: Any) -> int:
+    def _row_count(self, frame: Any) -> int:
         return len(frame)
 
-    def column_names(self, frame: Any) -> tuple[str, ...] | None:
+    def _column_names(self, frame: Any) -> tuple[str, ...] | None:
         return tuple(self.model.model_fields)  # type: ignore[attr-defined]
 
-    def cell(self, frame: Any, i: int, column: str) -> Any:
+    def _cell(self, frame: Any, i: int, column: str) -> Any:
         return getattr(frame[i], column, None)
 
 

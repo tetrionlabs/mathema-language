@@ -92,7 +92,7 @@ def _type_of(col_type: Any) -> tuple[NeutralType, dict[str, Any]]:
     return NeutralType("any"), {}
 
 
-def table_schema_of(obj: Any) -> TableSchema:
+def _table_schema_of(obj: Any) -> TableSchema:
     """The table schema of a `Table` or a declarative class."""
     found = _table_of(obj)
     if found is None:
@@ -127,10 +127,10 @@ def adapt(obj: Any) -> RowLanguage | None:
     if found is None:
         return None
     table, cls = found
-    schema = table_schema_of(obj)
+    schema = _table_schema_of(obj)
     language = RowLanguage(schema.row, SqlAlchemyEcosystem(table, cls))
-    language.table_defaults = schema
+    language._table_defaults = schema
     return language
 
 
-__all__ = ["adapt", "table_schema_of"]
+__all__ = ["adapt"]

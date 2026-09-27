@@ -9,7 +9,7 @@ import random
 
 import pytest
 
-from mathema_language.schema import frame_of
+from mathema_language.schema._tables import frame_of
 from mathema_language.schema.adaptors import adapt_row
 
 
@@ -32,14 +32,14 @@ def test_a_table_s_check_constraint_is_read_as_bounds_and_held_by_the_database(s
     assert lang.schema.field("price").constraints.min == 0
     assert lang.schema.field("sku").constraints.max_len == 8
     assert lang.schema.field("kind").type.levels == ("web", "shop")
-    assert lang.table_defaults.primary_key == ("id",)
+    assert lang._table_defaults.primary_key == ("id",)
     problems = lang.explain({"id": 1, "qty": 0, "price": 1.0, "sku": "A", "kind": "web", "note": None})
     assert [(p.path, p.predicate) for p in problems] == [(".qty", ">= 1")]
 
 
 def test_a_declarative_class_s_unique_set_and_foreign_key_are_the_database_s(sa_shapes):
     lines = adapt_row(sa_shapes.Line)
-    defaults = lines.table_defaults
+    defaults = lines._table_defaults
     assert defaults.unique == (("sku", "batch"),)
     assert defaults.foreign_keys[0].parent == "skus" and defaults.foreign_keys[0].columns == ("sku",)
     assert lines.schema.field("qty").constraints.exclusive_min == 0
@@ -52,8 +52,8 @@ def test_a_declarative_class_s_unique_set_and_foreign_key_are_the_database_s(sa_
     dup = frame.explain([a, b])
     assert dup and dup[0].path == "key(sku, batch)"
     parents = {"skus": [sa_shapes.Sku(code=1, name="x")]}
-    assert frame.ecosystem.validate_frame(frame.table, [a], parents) == []
-    orphan = frame.ecosystem.validate_frame(frame.table, [sa_shapes.Line(id=3, sku=9, batch=2, qty=1)], parents)
+    assert frame.ecosystem._validate_frame(frame.table, [a], parents) == []
+    orphan = frame.ecosystem._validate_frame(frame.table, [sa_shapes.Line(id=3, sku=9, batch=2, qty=1)], parents)
     assert orphan and orphan[0].path.startswith("fk(sku)")
 
 
@@ -75,7 +75,7 @@ def test_a_django_model_s_options_are_full_clean_s_verdicts(dj_shapes):
 def test_a_django_foreign_key_becomes_the_id_column_with_a_key_to_the_parent(dj_shapes):
     lines = adapt_row(dj_shapes.LineDj)
     assert "sku_id" in lines.schema.names
-    fk = lines.table_defaults.foreign_keys[0]
+    fk = lines._table_defaults.foreign_keys[0]
     assert fk.columns == ("sku_id",) and fk.parent == "SkuDj" and fk.parent_columns == ("id",)
     assert lines.schema.field("qty").constraints.min == 0
     assert lines.schema.field("batch").constraints.regex is not None

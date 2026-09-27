@@ -37,7 +37,7 @@ class PlainEcosystem:
     def build_row(self, schema: RowSchema, values: dict[str, Any]) -> dict[str, Any]:
         return dict(values)
 
-    def build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[dict[str, Any]]:
+    def _build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[dict[str, Any]]:
         names = list(columns)
         n = len(columns[names[0]]) if names else 0
         return [{name: columns[name][i] for name in names} for i in range(n)]
@@ -47,22 +47,22 @@ class PlainEcosystem:
             return [Problem("", "a mapping record", row)]
         return row_problems(schema, row)
 
-    def validate_frame(self, table: TableSchema, frame: Any,
+    def _validate_frame(self, table: TableSchema, frame: Any,
                        parents: dict[str, Any] | None = None) -> list[Problem]:
         try:
             rows = _rows(frame)
         except TypeError:
             return [Problem("", "a list of records", frame)]
-        columns = self.column_names(frame)
+        columns = self._column_names(frame)
         return frame_problems(table, rows, columns,
                               lambda row: self.validate_row(table.row, row),
                               lambda row, col: row.get(col) if isinstance(row, dict) else None,
                               {k: _rows(v) for k, v in (parents or {}).items()})
 
-    def row_count(self, frame: Any) -> int:
+    def _row_count(self, frame: Any) -> int:
         return len(_rows(frame))
 
-    def column_names(self, frame: Any) -> tuple[str, ...] | None:
+    def _column_names(self, frame: Any) -> tuple[str, ...] | None:
         rows = _rows(frame)
         names: list[str] = []
         for row in rows:
@@ -72,7 +72,7 @@ class PlainEcosystem:
                         names.append(str(k))
         return tuple(names) if rows else None
 
-    def cell(self, frame: Any, i: int, column: str) -> Any:
+    def _cell(self, frame: Any, i: int, column: str) -> Any:
         row = _rows(frame)[i]
         return row.get(column) if isinstance(row, dict) else None
 
@@ -96,7 +96,7 @@ class AttributeEcosystem:
     def build_row(self, schema: RowSchema, values: dict[str, Any]) -> Any:
         return self.cls(**values)
 
-    def build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[Any]:
+    def _build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[Any]:
         names = list(columns)
         n = len(columns[names[0]]) if names else 0
         return [self.cls(**{name: columns[name][i] for name in names}) for i in range(n)]
@@ -106,26 +106,26 @@ class AttributeEcosystem:
             return [Problem("", f"an instance of {self.cls.__name__}", row)]
         return row_problems(schema, row)
 
-    def validate_frame(self, table: TableSchema, frame: Any,
+    def _validate_frame(self, table: TableSchema, frame: Any,
                        parents: dict[str, Any] | None = None) -> list[Problem]:
         try:
             rows = _rows(frame)
         except TypeError:
             return [Problem("", "a list of records", frame)]
-        return frame_problems(table, rows, self.column_names(frame),
+        return frame_problems(table, rows, self._column_names(frame),
                               lambda row: self.validate_row(table.row, row),
                               lambda row, col: getattr(row, col, None),
                               {k: _rows(v) for k, v in (parents or {}).items()})
 
-    def row_count(self, frame: Any) -> int:
+    def _row_count(self, frame: Any) -> int:
         return len(_rows(frame))
 
-    def column_names(self, frame: Any) -> tuple[str, ...] | None:
+    def _column_names(self, frame: Any) -> tuple[str, ...] | None:
         if dataclasses.is_dataclass(self.cls):
             return tuple(f.name for f in dataclasses.fields(self.cls))
         return None
 
-    def cell(self, frame: Any, i: int, column: str) -> Any:
+    def _cell(self, frame: Any, i: int, column: str) -> Any:
         return getattr(_rows(frame)[i], column, None)
 
 

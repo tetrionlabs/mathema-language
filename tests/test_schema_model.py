@@ -8,12 +8,11 @@ import pytest
 from mathema_language.schema import (
     Constraints,
     Field,
-    ForeignKey,
     NeutralType,
     RowSchema,
-    TableSchema,
 )
 from mathema_language.schema.checks import json_schema
+from mathema_language.schema.model import ForeignKey, TableSchema
 
 
 def test_types_render():

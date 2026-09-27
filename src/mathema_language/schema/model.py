@@ -224,5 +224,4 @@ class TableSchema:
         return ((self.primary_key,) if self.primary_key else ()) + self.unique
 
 
-__all__ = ["BASES", "NO_DEFAULT", "Constraints", "Field", "ForeignKey",
-           "NeutralType", "RowSchema", "TableSchema"]
+__all__ = ["BASES", "NO_DEFAULT", "Constraints", "Field", "NeutralType", "RowSchema"]

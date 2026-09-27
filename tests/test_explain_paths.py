@@ -9,12 +9,11 @@ import math
 from mathema_language.schema import (
     Constraints,
     Field,
-    ForeignKey,
     NeutralType,
     PlainEcosystem,
     RowSchema,
-    TableSchema,
 )
+from mathema_language.schema.model import ForeignKey, TableSchema
 
 ROW = RowSchema("Order", (
     Field("id", NeutralType("int")),
@@ -51,11 +50,11 @@ def test_row_paths():
 
 
 def test_table_paths():
-    assert _paths(ECO.validate_frame(TABLE, [])) == [("rows", ">= 1")]
-    assert _paths(ECO.validate_frame(TABLE, [_row(id=i) for i in range(4)])) == [("rows", "<= 3")]
-    assert _paths(ECO.validate_frame(TABLE, [_row(), _row(id=2, qty=0)])) == [("[1].qty", ">= 1")]
-    assert _paths(ECO.validate_frame(TABLE, [_row(id=1), _row(id=1)])) == [("key(id)", "unique")]
-    assert _paths(ECO.validate_frame(TABLE, [_row(id=2), _row(id=1)])) == [("order(id)", "sorted")]
+    assert _paths(ECO._validate_frame(TABLE, [])) == [("rows", ">= 1")]
+    assert _paths(ECO._validate_frame(TABLE, [_row(id=i) for i in range(4)])) == [("rows", "<= 3")]
+    assert _paths(ECO._validate_frame(TABLE, [_row(), _row(id=2, qty=0)])) == [("[1].qty", ">= 1")]
+    assert _paths(ECO._validate_frame(TABLE, [_row(id=1), _row(id=1)])) == [("key(id)", "unique")]
+    assert _paths(ECO._validate_frame(TABLE, [_row(id=2), _row(id=1)])) == [("order(id)", "sorted")]
     parents = {"stock": [{"level": 2}]}
-    assert _paths(ECO.validate_frame(TABLE, [_row(qty=5)], parents)) == [("fk(qty)->stock", "a key of the parent")]
-    assert ECO.validate_frame(TABLE, [_row(qty=2)], parents) == []
+    assert _paths(ECO._validate_frame(TABLE, [_row(qty=5)], parents)) == [("fk(qty)->stock", "a key of the parent")]
+    assert ECO._validate_frame(TABLE, [_row(qty=2)], parents) == []

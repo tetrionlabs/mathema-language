@@ -135,7 +135,7 @@ you have read the body, and [the catalogue](docs/catalogue.md) lists them
 by nature with a real function under each, every row run by the test
 suite and held to the verdict printed beside it.
 
-## Rows and frames
+## Rows
 
 A schema is a language too. `L[myapp.models.Order]` names the records of
 a dataclass, a TypedDict, a pydantic model, a JSON Schema, a SQLAlchemy
@@ -143,28 +143,17 @@ table or a Django model, read into one neutral model by an adaptor and
 validated by the library's own validator where it has one (pydantic's,
 the JSON Schema validator, an in-memory SQLite database for SQLAlchemy,
 `full_clean` for Django). A parameter annotated with the class infers
-the language on its own. `frame_of` lifts a row schema to a table
-language, with the primary key, the unique sets, the foreign keys and
-the row-count range a row schema cannot carry, and a claim writes it as
-a dotted object:
-
-```python
-from mathema_language.schema import frame_of
-
-ORDERS = frame_of(Order, primary_key="id", row_count=(0, 1000))
-```
+the language on its own:
 
 ```
-for orders in L[myapp.schemas.ORDERS], output_in_language(f(orders))
 for o in L[myapp.models.Order], f(o) >= 0
 ```
 
-The probe visits the empty table, one row, the largest count, every
-nullable column all null, and one table per field hazard (the extremes,
-the text corpus in a string column, the datetime64[ns] bounds and a DST
-edge); a witness names the cell in one path grammar for every ecosystem,
-`[3].qty` for a cell, `key(id)` for a duplicated key, `rows` for the
-count.
+The probe visits one record per field hazard first (the extremes, the
+text corpus in a string column, the longest string a column allows, the
+datetime64[ns] bounds and a DST edge), and a witness names the field in
+one path grammar for every ecosystem, `.qty` for a column and
+`.ship.city` for a nested one.
 
 A row can be proven, not only sampled. Where the body reads only numeric
 fields, and text fields only through `len`, the derive route lifts each
@@ -176,8 +165,7 @@ annotated `MaxLen(8)` as a whole number from nought to eight, so
 fields the body never reads (a note, a list of tags) do not stand in the
 way. Where the body reads a field the lift has no reading of, a
 `Literal` compared against a string, say, the lift declines, the note
-names the field, and the claim is sampled instead. A table is never
-lifted, since its row count varies from one member to the next.
+names the field, and the claim is sampled instead.
 
 ## What a probe visits
 
@@ -218,4 +206,4 @@ Apache-2.0. mathema itself is licensed separately.
 ## Version
 
 0.1.0. Text languages and the hazard corpus, the hazard families over
-text, and the schema languages of rows and frames.
+text, and the schema languages of rows.

@@ -65,13 +65,13 @@ class SqlAlchemyEcosystem:
         return obj is self.table or (self.cls is not None and obj is self.cls)
 
     def to_model(self, obj: Any) -> RowSchema | TableSchema:
-        from ..adaptors.sqlalchemy import table_schema_of
-        return table_schema_of(obj)
+        from ..adaptors.sqlalchemy import _table_schema_of
+        return _table_schema_of(obj)
 
     def build_row(self, schema: RowSchema, values: dict[str, Any]) -> Any:
         return self.cls(**values) if self.cls is not None else dict(values)
 
-    def build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[Any]:
+    def _build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[Any]:
         names = list(columns)
         n = len(columns[names[0]]) if names else 0
         return [self.build_row(table.row, {name: columns[name][i] for name in names})
@@ -149,12 +149,12 @@ class SqlAlchemyEcosystem:
             return neutral
         return self._insert([values], None)
 
-    def validate_frame(self, table: TableSchema, frame: Any,
+    def _validate_frame(self, table: TableSchema, frame: Any,
                        parents: dict[str, Any] | None = None) -> list[Problem]:
         if not isinstance(frame, (list, tuple)):
             return [Problem("", "a list of records", frame)]
         rows = list(frame)
-        neutral = frame_problems(table, rows, self.column_names(frame),
+        neutral = frame_problems(table, rows, self._column_names(frame),
                                  lambda row: self.validate_row(table.row, row),
                                  lambda row, col: (row.get(col) if isinstance(row, dict)
                                                    else getattr(row, col, None)),
@@ -163,10 +163,10 @@ class SqlAlchemyEcosystem:
             return neutral
         return self._insert([self.values(r) for r in rows], parents)
 
-    def row_count(self, frame: Any) -> int:
+    def _row_count(self, frame: Any) -> int:
         return len(frame)
 
-    def column_names(self, frame: Any) -> tuple[str, ...] | None:
+    def _column_names(self, frame: Any) -> tuple[str, ...] | None:
         if self.cls is not None:
             return tuple(c.name for c in self.table.columns)
         names: list[str] = []
@@ -177,7 +177,7 @@ class SqlAlchemyEcosystem:
                         names.append(str(k))
         return tuple(names) if frame else None
 
-    def cell(self, frame: Any, i: int, column: str) -> Any:
+    def _cell(self, frame: Any, i: int, column: str) -> Any:
         return self.values(frame[i]).get(column)
 
 

@@ -105,7 +105,7 @@ def _field_of(f: Any) -> Field:
                  unique=bool(f.unique) and not f.primary_key, constraints=Constraints(**constraints))
 
 
-def table_schema_of(model: type) -> TableSchema:
+def _table_schema_of(model: type) -> TableSchema:
     """The table schema of a Django model."""
     fields = [_field_of(f) for f in model._meta.fields]  # type: ignore[attr-defined]
     foreign: list[ForeignKey] = []
@@ -123,10 +123,10 @@ def adapt(obj: Any) -> RowLanguage | None:
     """The row language of a Django model, or None for anything else."""
     if not _is_model(obj):
         return None
-    schema = table_schema_of(obj)
+    schema = _table_schema_of(obj)
     language = RowLanguage(schema.row, DjangoEcosystem(obj), obj.__name__)
-    language.table_defaults = schema
+    language._table_defaults = schema
     return language
 
 
-__all__ = ["adapt", "table_schema_of"]
+__all__ = ["adapt"]

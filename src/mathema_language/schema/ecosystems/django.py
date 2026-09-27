@@ -27,8 +27,8 @@ class DjangoEcosystem:
         return obj is self.model
 
     def to_model(self, obj: Any) -> RowSchema | TableSchema:
-        from ..adaptors.django import table_schema_of
-        return table_schema_of(obj)
+        from ..adaptors.django import _table_schema_of
+        return _table_schema_of(obj)
 
     def _attnames(self) -> tuple[str, ...]:
         return tuple(f.attname for f in self.model._meta.fields)  # type: ignore[attr-defined]
@@ -39,7 +39,7 @@ class DjangoEcosystem:
     def build_row(self, schema: RowSchema, values: dict[str, Any]) -> Any:
         return self.model(**values)
 
-    def build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[Any]:
+    def _build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[Any]:
         names = list(columns)
         n = len(columns[names[0]]) if names else 0
         return [self.build_row(table.row, {name: columns[name][i] for name in names})
@@ -68,7 +68,7 @@ class DjangoEcosystem:
             return out
         return []
 
-    def validate_frame(self, table: TableSchema, frame: Any,
+    def _validate_frame(self, table: TableSchema, frame: Any,
                        parents: dict[str, Any] | None = None) -> list[Problem]:
         if not isinstance(frame, (list, tuple)):
             return [Problem("", "a list of records", frame)]
@@ -77,13 +77,13 @@ class DjangoEcosystem:
                               lambda row, col: getattr(row, col, None),
                               {k: list(v) for k, v in (parents or {}).items()})
 
-    def row_count(self, frame: Any) -> int:
+    def _row_count(self, frame: Any) -> int:
         return len(frame)
 
-    def column_names(self, frame: Any) -> tuple[str, ...] | None:
+    def _column_names(self, frame: Any) -> tuple[str, ...] | None:
         return self._attnames()
 
-    def cell(self, frame: Any, i: int, column: str) -> Any:
+    def _cell(self, frame: Any, i: int, column: str) -> Any:
         return getattr(frame[i], column, None)
 
 

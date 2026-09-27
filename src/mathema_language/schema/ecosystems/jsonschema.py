@@ -40,7 +40,7 @@ class JsonSchemaEcosystem:
     def build_row(self, schema: RowSchema, values: dict[str, Any]) -> dict[str, Any]:
         return dict(values)
 
-    def build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[dict[str, Any]]:
+    def _build_frame(self, table: TableSchema, columns: dict[str, list[Any]]) -> list[dict[str, Any]]:
         names = list(columns)
         n = len(columns[names[0]]) if names else 0
         return [{name: columns[name][i] for name in names} for i in range(n)]
@@ -57,7 +57,7 @@ class JsonSchemaEcosystem:
         return [Problem(_path(err.absolute_path), err.message, err.instance)
                 for err in self._validator_for().iter_errors(row)]
 
-    def validate_frame(self, table: TableSchema, frame: Any,
+    def _validate_frame(self, table: TableSchema, frame: Any,
                        parents: dict[str, Any] | None = None) -> list[Problem]:
         if not isinstance(frame, (list, tuple)):
             return [Problem("", "a list of records", frame)]
@@ -72,13 +72,13 @@ class JsonSchemaEcosystem:
                               lambda row, col: row.get(col) if isinstance(row, dict) else None,
                               {k: list(v) for k, v in (parents or {}).items()})
 
-    def row_count(self, frame: Any) -> int:
+    def _row_count(self, frame: Any) -> int:
         return len(frame)
 
-    def column_names(self, frame: Any) -> tuple[str, ...] | None:
+    def _column_names(self, frame: Any) -> tuple[str, ...] | None:
         return tuple(self.schema.get("properties", {}))
 
-    def cell(self, frame: Any, i: int, column: str) -> Any:
+    def _cell(self, frame: Any, i: int, column: str) -> Any:
         row = frame[i]
         return row.get(column) if isinstance(row, dict) else None
 

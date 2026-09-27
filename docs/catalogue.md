@@ -236,59 +236,10 @@ def line_width(line: Line) -> int:
 | `line_width` | `for line in L[catalogue_row.Line], f(line) <= 10` | proven | `len(line.sku)` lifts as a whole number no larger than the `MaxLen(8)` on the field. |
 | `line_width` | `for line in L[catalogue_row.Line], f(line) <= 9` | falsified | An eight-character sku is valid and needs ten columns. |
 
-## Loader
-
-A loader or a cleaner takes a table and returns one. Its language is a
-frame language, `frame_of` over a row schema read off a dataclass (or a
-TypedDict, a pydantic model, a JSON Schema, a SQLAlchemy table, a Django
-model), bound to a module-level name so the claim can write it as a
-dotted object. The claims are that the row count never grows, that the
-output is still a member of the frame language (the keys still unique,
-the count still in range, every row still valid), and, the one that
-fails, that cleaning is the identity.
-
-```python
-from dataclasses import dataclass
-from typing import Literal
-
-from mathema_language.schema import frame_of
-
-
-@dataclass
-class Order:
-    id: int
-    kind: Literal["web", "shop"]
-    qty: int
-
-
-ORDERS = frame_of(Order, primary_key="id", row_count=(0, 6))
-
-
-def one_per_kind(orders: list) -> list:
-    """The first order of each kind, in input order."""
-    seen = set()
-    kept = []
-    for order in orders:
-        if order.kind not in seen:
-            seen.add(order.kind)
-            kept.append(order)
-    return kept
-```
-
-| Function | Claim | Verdict | Why |
-|---|---|---|---|
-| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], len(f(orders)) <= len(orders)` | holds | A filter never adds rows. |
-| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], output_in_language(f(orders))` | holds | Closure: a sub-table of a member is a member, the keys still unique and the count still in range. |
-| `one_per_kind` | `for orders in L[catalogue_loader.ORDERS], f(orders) == orders` | falsified | Two orders of one kind is the witness; there are only two kinds, so it is found at once, and a dropped row makes the tables unequal outright. |
-
 ## What is not here yet
 
-Joins take two tables, and a claim over two frame languages at once is
-written as two bindings, which the sampler already supports, and the
-claim worth writing about a join is that its output is in the joined
-language, `f(orders, customers) in L[myapp.schemas.JOINED]`, which the
-`in` relation can now say; the catalogue grows a joiner when there is a
-joined frame language to name. A table is never lifted, since its row
-count varies from one member to the next, so a claim over a frame is
-always sampled, and the tables it samples are built from the row
-language's own hazards.
+Tables. A loader or a cleaner takes a table of rows and returns one, and
+the claims worth writing about it (the row count never grows, the keys
+stay unique, the output is still a table of valid rows) need a language
+whose members are tables, which is written in the claim itself and is
+not part of this release.

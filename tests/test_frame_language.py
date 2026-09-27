@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""A frame language: every generated table is a member by the
+"""Internal and held, not part of the 0.1 surface. A frame language: every generated table is a member by the
 ecosystem's own validator (keys distinct, count in range, every row a
 member), the hazards are members, `outside` is not and says where,
 shrinking stays inside, and `frame_of` bound to a module-level name
@@ -13,7 +13,7 @@ from typing import Annotated, Literal
 
 import pytest
 
-from mathema_language.schema import FrameLanguage, frame_of
+from mathema_language.schema._tables import FrameLanguage, frame_of
 
 pytest.importorskip("mathema")
 from mathema.conjecture import check_conjectures, claim  # noqa: E402
@@ -54,7 +54,7 @@ def test_every_generated_frame_is_a_member_by_the_ecosystem_s_own_validator():
     counts = set()
     for _ in range(100):
         frame = ORDERS.sample(rng)
-        assert ORDERS.ecosystem.validate_frame(ORDERS.table, frame) == [], frame
+        assert ORDERS.ecosystem._validate_frame(ORDERS.table, frame) == [], frame
         counts.add(len(frame))
         assert len({row.id for row in frame}) == len(frame)
     assert counts >= {1, 6}
@@ -119,7 +119,7 @@ def test_frame_of_bound_to_a_module_name_resolves_in_a_claim():
 
 
 def test_a_frame_with_a_parent_draws_its_foreign_keys_from_the_parent():
-    from mathema_language.schema import ForeignKey
+    from mathema_language.schema.model import ForeignKey
 
     @dataclass
     class Sku:
@@ -138,6 +138,6 @@ def test_a_frame_with_a_parent_draws_its_foreign_keys_from_the_parent():
     frame = lines.sample(random.Random(1))
     assert lines.contains(frame)
     parent_rows = [Sku(code=row.sku, name="x") for row in frame]
-    assert lines.ecosystem.validate_frame(lines.table, frame, {"Sku": parent_rows}) == []
-    orphan = lines.ecosystem.validate_frame(lines.table, frame, {"Sku": []})
+    assert lines.ecosystem._validate_frame(lines.table, frame, {"Sku": parent_rows}) == []
+    orphan = lines.ecosystem._validate_frame(lines.table, frame, {"Sku": []})
     assert orphan and orphan[0].path == "fk(sku)->Sku"
