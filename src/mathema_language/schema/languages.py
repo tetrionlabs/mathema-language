@@ -309,6 +309,19 @@ class RowLanguage:
     def fields(self) -> dict[str, Any] | None:
         return {f.name: _field_bound(f) for f in self.schema.fields}
 
+    def derive(self, *, param: str, lhs: str, relation: str, rhs: str,
+               functions: dict[str, Any], refinements: dict[str, Any] | None = None,
+               **_: Any) -> Any:
+        """The derive strategy a recursive schema supplies: structural
+        induction over its children (`mathema_language.induction`), or
+        None for a schema that does not refer to itself."""
+        if not self.schema.recursive:
+            return None
+        from ..induction import prove
+        depth = (refinements or {}).get("depth")
+        depth_bound = None if depth is None or depth[1] is None else int(depth[1])
+        return prove(self, param, lhs, relation, rhs, functions, depth_bound)
+
     def render(self, ascii_mode: bool = True) -> str:
         return f"L[{self.name}]"
 

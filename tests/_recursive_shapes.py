@@ -5,7 +5,12 @@ module level so their forward references resolve."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TypedDict
+from typing import Annotated, TypedDict
+
+
+class Ge:
+    def __init__(self, ge):
+        self.ge = ge
 
 
 @dataclass
@@ -34,6 +39,27 @@ def size(t: Node) -> int:
 def height(t: Node) -> int:
     """The longest path from the root, counted in nodes."""
     return 1 + max((height(c) for c in t.children), default=0)
+
+
+def double_size(t: Node) -> int:
+    """Twice the node count, counted recursively."""
+    return 2 + sum(double_size(c) for c in t.children)
+
+
+def leaves_plus(t: Node) -> int:
+    """The child count plus one per level, a fold that is 1 at a leaf."""
+    return 1 + len(t.children) + sum(leaves_plus(c) for c in t.children)
+
+
+@dataclass
+class Weighted:
+    weight: Annotated[int, Ge(0)]
+    kids: list[Weighted] = field(default_factory=list)
+
+
+def weight_total(t: Weighted) -> int:
+    """Every node's weight, summed."""
+    return t.weight + sum(weight_total(c) for c in t.kids)
 
 
 def mirror(t: Node) -> Node:

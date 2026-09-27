@@ -91,4 +91,4 @@ def test_a_recursive_function_crashes_on_the_deep_spine_and_the_record_says_why(
     assert "RecursionError" in p.counterexample, p.counterexample
     (q,) = check_conjectures(shapes.size, [claim(
         "for t in L[tests._recursive_shapes.Node, depth <= 20], f(t) >= 1")])
-    assert q.verdict == "holds", (q.verdict, q.note, q.counterexample)
+    assert (q.verdict, q.route) == ("proven", "derive:induction"), (q.verdict, q.note)
