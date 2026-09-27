@@ -42,10 +42,12 @@ _BUDGET: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
 
 @contextlib.contextmanager
 def drawing_within(definitions: Any, *, depth: int, nodes: int, children: int) -> Iterator[None]:
-    """Draw nested values under these bounds; `depth` counts container
-    levels the way `vocabulary.tree.depth` does."""
-    token = _BUDGET.set({"defs": definitions, "depth": depth, "nodes": nodes,
-                         "children": children, "level": 0})
+    """Draw nested values under these bounds, counted in records the
+    way `structure.record_measures` counts them: `depth` records along
+    any path (the record being drawn is the first), `nodes` records in
+    all, `children` records under any one."""
+    token = _BUDGET.set({"defs": definitions, "depth": depth, "nodes": nodes - 1,
+                         "children": children, "level": 1})
     try:
         yield
     finally:
@@ -58,7 +60,8 @@ def _definitions() -> Any:
 
 
 def _room() -> int:
-    """How many more container levels may open under the budget."""
+    """How many more records may open, one inside the next, under the
+    budget."""
     budget = _BUDGET.get()
     if budget is None:
         return 1 << 30
@@ -78,15 +81,24 @@ def _deeper() -> Iterator[None]:
 
 
 def _record(rng: random.Random, fields: Any, construct: Any) -> Any:
-    """A struct's value: each field drawn one level down, then built
+    """A struct's value: each field drawn one record down, then built
     through `construct` (the record's class) or left a dict."""
+    budget = _BUDGET.get()
+    if budget is not None:
+        budget["nodes"] -= 1
     with _deeper():
         values = {sub.name: draw(rng, sub) for sub in (fields or ())}
     return construct(**values) if construct is not None else values
 
 
-def _opens_a_container(t: NeutralType) -> bool:
-    return t.base in ("list", "struct", "map", "ref")
+def _reaches_a_record(t: NeutralType) -> bool:
+    """Whether a value of `t` is, or carries, a record."""
+    while t.base in ("list", "map"):
+        inner = t.item if t.base == "list" else t.value
+        if inner is None:
+            return False
+        t = inner
+    return t.base in ("struct", "ref")
 
 
 def _zone(t: NeutralType) -> _dt.tzinfo | None:
@@ -196,16 +208,22 @@ def draw_raw(rng: random.Random, f: Field) -> Any:
         item = t.item or NeutralType("any")
         budget = _BUDGET.get()
         if budget is not None:
-            hi = min(hi, budget["children"], max(budget["nodes"], 0))
-            if _opens_a_container(item) and _room() <= 2:
+            if _reaches_a_record(item):
+                hi = min(hi, budget["children"], max(budget["nodes"], 0))
+            if _reaches_a_record(item) and _room() <= 0:
                 hi = lo
-            elif budget.get("reach") and _opens_a_container(item) and hi >= 1:
+            elif budget.get("reach") and _reaches_a_record(item) and hi >= 1:
                 # the ladder asked for depth: a container that can hold
                 # a nested record holds at least one
                 lo = max(lo, 1)
         n = rng.randint(lo, max(lo, hi))
-        with _deeper():
-            return [draw(rng, Field("item", item)) for _ in range(n)]
+        out: list[Any] = []
+        while len(out) < n:
+            if len(out) >= lo and budget is not None and _reaches_a_record(item) \
+                    and budget["nodes"] <= 0:
+                break
+            out.append(draw(rng, Field("item", item)))
+        return out
     if base == "struct":
         return _record(rng, t.fields, t.construct)
     if base == "ref":
@@ -217,9 +235,8 @@ def draw_raw(rng: random.Random, f: Field) -> Any:
     if base == "map":
         key_t = t.key or NeutralType("string")
         value_t = t.value or NeutralType("any")
-        with _deeper():
-            return {draw(rng, Field("key", key_t)): draw(rng, Field("value", value_t))
-                    for _ in range(rng.randint(0, 4))}
+        return {draw(rng, Field("key", key_t)): draw(rng, Field("value", value_t))
+                for _ in range(rng.randint(0, 4))}
     return rng.choice((0, 1.5, "x", None, True))
 
 
@@ -228,11 +245,8 @@ def draw(rng: random.Random, f: Field) -> Any:
     (always, once a nested draw has no room left for a container),
     else a typed value the field's own checker accepts, found by
     rejection where the constraints are opaque."""
-    budget = _BUDGET.get()
-    if budget is not None:
-        budget["nodes"] -= 1
     if f.nullable and (rng.random() < 0.125
-                       or (_opens_a_container(f.type) and _room() <= 1)):
+                       or (_reaches_a_record(f.type) and _room() <= 0)):
         return None
     defs = _definitions()
     value = draw_raw(rng, f)
@@ -287,7 +301,7 @@ def simplest(f: Field) -> Any:
         candidates += [t.construct(**values) if t.construct is not None else values]
     elif base == "ref":
         defs = _definitions()
-        if defs is not None and t.ref is not None and _room() > 1:
+        if defs is not None and t.ref is not None and _room() > 0:
             schema = defs.definition(t.ref)
             with _deeper():
                 values = {sub.name: simplest(sub) for sub in schema.fields}

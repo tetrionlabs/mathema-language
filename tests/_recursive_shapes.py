@@ -96,3 +96,8 @@ TREE_SCHEMA = {
         }
     },
 }
+
+
+def widest(t: Node) -> int:
+    """The most children any node has."""
+    return max([len(t.children), *(widest(c) for c in t.children)])

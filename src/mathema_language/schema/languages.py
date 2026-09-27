@@ -151,12 +151,12 @@ class RowLanguage:
 
     def sample(self, rng: random.Random) -> Any:
         if self.schema.recursive:
-            # a recursive schema's draws climb a depth ladder instead of
-            # clustering shallow: each draw aims at the next rung
+            # a recursive schema's draws spread over a depth ladder
+            # instead of clustering shallow: each draw aims at a rung the
+            # draw's own random stream picks
             ladder = self.sampling["ladder"]
-            self._rung = (getattr(self, "_rung", -1) + 1) % len(ladder)
             self._draw_override: dict[str, Any] | None = {
-                **self.sampling, "depth": ladder[self._rung], "reach": True}
+                **self.sampling, "depth": ladder[rng.randrange(len(ladder))], "reach": True}
         try:
             return self._sample(rng)
         finally:
@@ -408,7 +408,11 @@ class RowLanguage:
         return self._build(values)
 
     def _structure_hazards(self) -> list[HazardValue]:
-        from ..vocabulary.tree import depth as tree_depth
+        from .structure import record_measures
+
+        def tree_depth(value: Any) -> int:
+            return record_measures(self.schema, value)[0]
+
         out: list[HazardValue] = []
         bound = self.sampling
         width_bound = bound["children"]
@@ -417,7 +421,7 @@ class RowLanguage:
             width_bound = min(width_bound, found[1].constraints.max_len)
         # the deepest member within the sampling depth
         records, deepest = 1, None
-        while records < 4 * bound["depth"]:
+        while records <= bound["depth"] + 1:
             candidate = self._spine(records)
             if candidate is None or tree_depth(candidate) > bound["depth"]:
                 break

@@ -18,8 +18,13 @@ pytest.importorskip("mathema")
 from mathema.conjecture import check_conjectures, claim  # noqa: E402
 
 from mathema_language.schema.adaptors import adapt_row  # noqa: E402
+from mathema_language.schema.structure import record_measures  # noqa: E402
 from mathema_language.vocabulary import tree  # noqa: E402
 from tests import _recursive_shapes as shapes  # noqa: E402
+
+
+def _depth(lang, value):
+    return record_measures(lang.schema, value)[0]
 
 
 def _notes(lang):
@@ -29,9 +34,9 @@ def _notes(lang):
 def test_the_deepest_and_widest_members_are_hazards():
     lang = adapt_row(shapes.Node)
     hazards = lang.hazards()
-    depths = [tree.depth(h.value) for h in hazards]
-    widths = [tree.children(h.value) for h in hazards]
-    assert lang.sampling["depth"] in depths or lang.sampling["depth"] - 1 in depths, depths
+    depths = [_depth(lang, h.value) for h in hazards]
+    widths = [record_measures(lang.schema, h.value)[2] for h in hazards]
+    assert lang.sampling["depth"] in depths, depths
     assert lang.sampling["children"] in widths, widths
     for h in hazards:
         assert lang.contains(h.value), h.note
@@ -39,7 +44,7 @@ def test_the_deepest_and_widest_members_are_hazards():
 
 def test_a_spine_past_the_recursion_limit_is_a_hazard():
     lang = adapt_row(shapes.Node)
-    deepest = max(tree.depth(h.value) for h in lang.hazards())
+    deepest = max(_depth(lang, h.value) for h in lang.hazards())
     assert deepest > sys.getrecursionlimit(), deepest
 
 
@@ -53,7 +58,7 @@ def test_the_ecosystem_s_own_depth_limit_is_found_and_stated():
     assert isinstance(limit, int) and 1 < limit < 5000
     for h in lang.hazards():
         assert lang.contains(h.value), h.note
-    assert max(tree.depth(h.value) for h in lang.hazards()) == limit
+    assert max(_depth(lang, h.value) for h in lang.hazards()) == limit
 
 
 def test_pydantic_states_no_limit_where_it_has_none():
@@ -61,7 +66,7 @@ def test_pydantic_states_no_limit_where_it_has_none():
     from tests._recursive_pydantic import PNode
     lang = adapt_row(PNode)
     assert "validator_depth_limit" not in lang.to_json()["x-mathema"]
-    assert max(tree.depth(h.value) for h in lang.hazards()) > sys.getrecursionlimit()
+    assert max(_depth(lang, h.value) for h in lang.hazards()) > sys.getrecursionlimit()
 
 
 def test_shrinking_hoists_a_subtree_and_drops_elements_inside_the_language():
@@ -80,7 +85,7 @@ def test_shrinking_hoists_a_subtree_and_drops_elements_inside_the_language():
 def test_draws_climb_a_depth_ladder():
     lang = adapt_row(shapes.Node)
     rng = random.Random(9)
-    depths = {tree.depth(lang.sample(rng)) for _ in range(64)}
+    depths = {_depth(lang, lang.sample(rng)) for _ in range(64)}
     assert min(depths) <= 2 and max(depths) >= lang.sampling["depth"] - 1, sorted(depths)
     assert lang.to_json()["x-mathema"]["sampling"]["ladder"][0] == 1
 

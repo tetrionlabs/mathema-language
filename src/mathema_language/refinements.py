@@ -8,12 +8,12 @@ built from mathema's `RefinedLanguage` kit.
   length `n` is one repeated simple character the language admits
   (`"a" * 80`), a built member a run of the language's own members cut
   to length.
-- `depth`, `nodes`, `children`: the structure of a nested member, as
-  `vocabulary.tree` measures it: nesting levels, every value counted
-  once, and the most children any one container has. They apply to a
-  language whose members are nested values (a row or schema language)
-  or text that denotes one (`L[json]`, measured off the text so any
-  depth is read); on a language of plain text they are refused. The
+- `depth`, `nodes`, `children`: the structure of a nested member. On a
+  row language they count records (`schema.structure`): records along
+  the deepest path, records in all, and the most records one record
+  holds directly. On `L[json]` they count as `vocabulary.tree` does,
+  every container a level and every value a node, measured off the text
+  so any depth is read. On a language of plain text they are refused. The
   plain member at a bound for `L[json]` is the simplest document with
   that measure (`[[[]]]` for depth 3), and built members are random
   documents of exactly that measure."""
@@ -97,7 +97,19 @@ def _structure_measure(language: Any, key: str) -> Any:
             f"{key} measures the structure of a nested value; L[{language.name}] "
             "is plain text. Refine a language of nested values: L[json], or a row "
             "or schema language")
+    base = _row_base(language)
+    if base is not None:
+        from .schema.structure import record_measures
+        return lambda value: record_measures(base.schema, value)[index]
     return lambda value: _walk(value)[index]
+
+
+def _row_base(language: Any) -> Any:
+    """The row language beneath any refinements, or None."""
+    base = language
+    while hasattr(base, "base"):
+        base = base.base
+    return base if getattr(base, "kind", None) == "row" and hasattr(base, "schema") else None
 
 
 def _json_plain(key: str, n: int) -> str | None:
@@ -148,6 +160,30 @@ def _json_build(key: str, rng: random.Random, n: int) -> str | None:
     return json.dumps(rows)
 
 
+def _row_member(language: Any, key: str, n: int) -> Any:
+    """A member of a recursive row language whose `key` measure is
+    exactly `n`, from its one-chain spines and its single wide node, or
+    None when neither shape has that measure."""
+    base = _row_base(language)
+    if n < 0 or base is None or not hasattr(base, "_spine"):
+        return None
+    measure = _structure_measure(language, key)
+    shapes = (base._wide,) if key == "children" else (base._spine, base._wide)
+    for shape in shapes:
+        size = 0 if shape == base._wide else 1
+        while size <= n + 2:
+            candidate = shape(size)
+            if candidate is None:
+                break
+            measured = measure(candidate)
+            if measured == n:
+                return candidate
+            if measured > n:
+                break
+            size += 1
+    return None
+
+
 def structure(key: str) -> Any:
     """The refinement for `key` in `depth`, `nodes`, `children`."""
 
@@ -156,7 +192,8 @@ def structure(key: str) -> Any:
         json_text = _denotes_json(language)
         return RefinedLanguage(
             language, key, interval, measure=measure,
-            plain=(lambda n: _json_plain(key, n)) if json_text else None,
+            plain=(lambda n: _json_plain(key, n)) if json_text else
+            (lambda n: _row_member(language, key, n)),
             build=(lambda rng, n: _json_build(key, rng, n)) if json_text else None,
             schema={"x-mathema": {key: [_range(interval)[0], _range(interval)[1]]}},
             hazard_kind="shape")

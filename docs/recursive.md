@@ -20,10 +20,13 @@ def size(t: Node) -> int:
 
 ## Depth, nodes and children
 
-Three refinements bound a tree inside the brackets: `depth` counts
-nesting levels, `nodes` counts every node, and `children` is the most
-children any one node has. Each reads `<=`, `<`, `>=`, `>` or an
-interval, and they combine:
+Three refinements bound a tree inside the brackets. On a record tree
+they count records: `depth` is the number of records along the deepest
+path (a node with no children has depth 1), `nodes` is the number of
+records, and `children` is the most records any one record holds
+directly. On `L[json]`, where every container is a value, they count
+containers and values instead (`[[[]]]` has depth 3). Each reads `<=`,
+`<`, `>=`, `>` or an interval, and they combine:
 
 ```
 for t in L[myapp.Node, depth <= 10], ...
@@ -35,16 +38,18 @@ A bound the schema states itself (`maxItems` on a children list, pydantic's
 `max_length`) is the language's own. Where nothing bounds a tree the
 language stays unbounded, and random members are drawn within stated
 sampling bounds (depth 8, 256 nodes, 16 children), which the record
-names as sampling choices rather than facts about the language. The same
-functions are available for claims about nesting, `depth(v)`,
-`nodes(v)`, `children(v)` and `leaves(v)` from
-`mathema_language.vocabulary.tree`, over any nested dict, list, tuple or
-record, bound with `let`.
+names as sampling choices rather than facts about the language. For
+claims about nesting, `depth(v)`, `nodes(v)`, `children(v)` and
+`leaves(v)` from `mathema_language.vocabulary.tree` take any nested
+dict, list, tuple or record, bound with `let`; having no schema to
+read, they count every container, so a leaf record with a children
+list has depth 2 there.
 
 ## What the probe visits
 
 The hazards sit on the structure axes: the empty tree, the deepest and
-the widest member the bounds allow, one long spine, and for an unbounded
+the widest member the bounds allow (a refinement's own bound among
+them, and one past it as the value outside the language), one long spine, and for an unbounded
 language a spine past the interpreter's recursion limit, since a
 recursive function over an unbounded language fails there however right
 its arithmetic is. Where a library's validator recurses in Python and
@@ -83,8 +88,10 @@ for t in L[myapp.Node, depth <= 20], double_size(t) == 2 * size(t)
   proven (derive:induction)
 ```
 
-The functions are recursive Python, so the proof stands only where the
-depth bound keeps the recursion under the interpreter's limit. Over an
+The functions are recursive Python, two stack frames per level (the
+call and the generator over the children), so the proof stands only
+where the depth bound keeps the recursion under the interpreter's
+limit, `depth <= 448` at Python's default limit of 1,000. Over an
 unbounded language the mathematics is settled and the implementation is
 not, the record says so, and the probe decides, which is how the
 unbounded `size` claim above is falsified by a real tree.

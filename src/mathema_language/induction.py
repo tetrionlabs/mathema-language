@@ -27,7 +27,7 @@ nonnegative amount. Anything outside the class returns a result naming
 why, never a disproof: an induction that does not go through says
 nothing against the claim.
 
-The functions are recursive Python, one or two stack frames per level,
+The functions are recursive Python, two stack frames per record level,
 so a proof stands only when the language's depth bound keeps that under
 the interpreter's recursion limit; over an unbounded language the
 mathematics is settled and the implementation is not, and the result
@@ -47,6 +47,14 @@ from ._surface import ProofResult
 
 _AGGREGATES = ("sum", "max", "min")
 _MARGIN = 100
+#: a fold recurses through a generator over the children, two frames
+#: per record level
+_FRAMES_PER_LEVEL = 2
+
+
+def _deepest_provable() -> int:
+    """The largest record depth whose recursion stays under the limit."""
+    return max(1, (sys.getrecursionlimit() - _MARGIN) // _FRAMES_PER_LEVEL - 2)
 
 
 class _NotAFold(Exception):
@@ -255,7 +263,7 @@ def prove(language: Any, param: str, lhs: str, relation: str, rhs: str,
         return ProofResult("unliftable", sketch=f"induction does not read this claim: {e}")
     if outcome is not None:
         return ProofResult("unliftable", sketch=f"induction does not go through: {outcome}")
-    frames = 2 * ((depth_bound or 0) // 2 + 1) + _MARGIN
+    frames = _FRAMES_PER_LEVEL * ((depth_bound or 0) + 1) + _MARGIN
     if depth_bound is None or frames >= sys.getrecursionlimit():
         return ProofResult(
             "undecided",
@@ -264,7 +272,7 @@ def prove(language: Any, param: str, lhs: str, relation: str, rhs: str,
                     + ("the language bounds no depth" if depth_bound is None else
                        f"depth {depth_bound} reaches the recursion limit")
                     + ", so a deep enough member raises; bound the depth "
-                      f"(L[..., depth <= {max(2, sys.getrecursionlimit() - 2 * _MARGIN)}]) for a proof"),
+                      f"(L[..., depth <= {_deepest_provable()}]) for a proof"),
             meta={"mathema.derive_route": "induction"})
     return ProofResult(
         "proven",

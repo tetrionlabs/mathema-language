@@ -18,6 +18,7 @@ from mathema.conjecture import check_conjectures, claim  # noqa: E402
 
 from mathema_language.schema import RowLanguage  # noqa: E402
 from mathema_language.schema.adaptors import adapt_row  # noqa: E402
+from mathema_language.schema.structure import record_measures  # noqa: E402
 from mathema_language.vocabulary import tree  # noqa: E402
 from tests import _recursive_shapes as shapes  # noqa: E402
 
@@ -56,9 +57,9 @@ def test_samples_are_members_and_stay_within_the_sampling_bounds(language):
     for _ in range(80):
         v = language.sample(rng)
         assert language.ecosystem.validate_row(language.schema, v) == [], v
-        assert tree.depth(v) <= 2 * 8 + 1
-        assert tree.nodes(v) <= 2 * 256
-        depths.add(tree.depth(v))
+        depth, nodes, _ = record_measures(language.schema, v)
+        assert depth <= 8 and nodes <= 256, (depth, nodes)
+        depths.add(depth)
     assert max(depths) >= 3, depths
 
 
@@ -137,4 +138,5 @@ def test_a_depth_refinement_bounds_a_recursive_language():
     lang = resolve_language(parse_binding("t in L[tests._recursive_shapes.Node, depth <= 3]")[1].pieces[0])
     rng = random.Random(7)
     for _ in range(40):
-        assert tree.depth(lang.sample(rng)) <= 3
+        assert record_measures(lang.schema if hasattr(lang, "schema") else lang.base.schema,
+                               lang.sample(rng))[0] <= 3
