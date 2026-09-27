@@ -79,6 +79,56 @@
   "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≤ 9",
   "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) <= 9"
  },
+ "structure_induction_constant": {
+  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 20], f(t) >= 1",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 20]|missing, f(t) ≥ 1",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, depth <= 20]|missing, f(t) >= 1"
+ },
+ "structure_induction_equation": {
+  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 20], f(t) == 2 * tree_size(t)",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 20]|missing, f(t) = 2*tree_size(t)",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, depth <= 20]|missing, f(t) = 2*tree_size(t)"
+ },
+ "structure_induction_unbounded": {
+  "input": "for t in L[mathema_language.lexicon.Branch], f(t) >= 1",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch]|missing, f(t) ≥ 1",
+  "ascii": "for t in L[mathema_language.lexicon.Branch]|missing, f(t) >= 1"
+ },
+ "structure_induction_base_case": {
+  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 20], f(t) >= 2",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 20]|missing, f(t) ≥ 2",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, depth <= 20]|missing, f(t) >= 2"
+ },
+ "structure_depth_bound": {
+  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 6], f(t) <= 6",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 6]|missing, f(t) ≤ 6",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, depth <= 6]|missing, f(t) <= 6"
+ },
+ "structure_depth_bound_tight": {
+  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 6], f(t) <= 5",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 6]|missing, f(t) ≤ 5",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, depth <= 6]|missing, f(t) <= 5"
+ },
+ "structure_children_bound": {
+  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 5, children <= 3], f(t) <= 3",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, children <= 3, depth <= 5]|missing, f(t) ≤ 3",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, children <= 3, depth <= 5]|missing, f(t) <= 3"
+ },
+ "structure_children_one_past": {
+  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 5, children <= 4], f(t) <= 3",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, children <= 4, depth <= 5]|missing, f(t) ≤ 3",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, children <= 4, depth <= 5]|missing, f(t) <= 3"
+ },
+ "structure_nodes_bound": {
+  "input": "for t in L[mathema_language.lexicon.Branch, nodes <= 50], f(t) <= 50",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, nodes <= 50]|missing, f(t) ≤ 50",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, nodes <= 50]|missing, f(t) <= 50"
+ },
+ "structure_json_depth": {
+  "input": "for s in L[json, depth <= 6], f(f(s)) == f(s)",
+  "unicode": "∀ s ∈ L[json, depth <= 6]|missing, f(f(s)) = f(s)",
+  "ascii": "for s in L[json, depth <= 6]|missing, f(f(s)) = f(s)"
+ },
  "family_length_safe": {
   "input": "for s in L[slug], is_length_safe(s)",
   "unicode": "∀ s ∈ L[slug]|missing, s is length safe",

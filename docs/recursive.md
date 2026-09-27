@@ -64,7 +64,7 @@ too deep to print is summarised by its type and depth.
 ```
 for t in L[myapp.Node], size(t) >= 1
   falsified (probe)
-  witness: (<Node nested 2100 levels deep>): raised RecursionError
+  witness: (<Node nested 2100 levels deep (1050 Node records)>): raised RecursionError
 ```
 
 ## Proof by structural induction

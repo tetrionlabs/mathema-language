@@ -88,10 +88,13 @@ class _Walker:
     """One depth-first pass over a value and its schema with an
     explicit stack, so a value nested past the interpreter's recursion
     limit is checked, problems come out in field order, and a container
-    met again on its own path is a cycle, reported where it closes."""
+    met again on its own path is a cycle, reported where it closes.
+    A shallow pass checks the value's own type and constraints and
+    stops at every nested record, taking it as already checked."""
 
-    def __init__(self, definitions: RowSchema | None) -> None:
+    def __init__(self, definitions: RowSchema | None, shallow: bool = False) -> None:
         self.definitions = definitions
+        self.shallow = shallow
         self.stack: list[tuple[Any, ...]] = []
         self.out: list[Problem] = []
         self.on_path: dict[int, str] = {}
@@ -162,6 +165,8 @@ class _Walker:
                     self.push_type(v, t.value, f"{path}[{k!r}]")
                 if t.key is not None:
                     self.push_type(k, t.key, f"{path}[{k!r}]")
+            return
+        if base in ("struct", "ref") and self.shallow and path:
             return
         if base == "struct":
             if t.fields is None:
@@ -252,10 +257,13 @@ def constraint_problems(value: Any, c: Constraints, path: str = "") -> list[Prob
 
 
 def field_problems(value: Any, f: Field, path: str = "",
-                   definitions: RowSchema | None = None) -> list[Problem]:
+                   definitions: RowSchema | None = None, *,
+                   shallow: bool = False) -> list[Problem]:
     """Every way `value` fails field `f`: null where none is allowed,
-    the type, then the constraints."""
-    walker = _Walker(definitions)
+    the type, then the constraints; `shallow` stops at the records
+    nested inside the value (a list's items, a map's values), taking
+    them as already checked."""
+    walker = _Walker(definitions, shallow)
     walker.push_field(value, f, path)
     return walker.run()
 

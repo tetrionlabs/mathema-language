@@ -54,6 +54,16 @@ EXPECTED = {
     "row_unbounded_field": ("falsified", "vs 100"),
     "row_length_field": "proven",
     "row_length_field_tight": ("falsified", "10 vs 9"),
+    "structure_induction_constant": "proven",
+    "structure_induction_equation": "proven",
+    "structure_induction_unbounded": ("falsified", "raised RecursionError"),
+    "structure_induction_base_case": ("falsified", "(Branch(label=0, children=[])): 1 vs 2"),
+    "structure_depth_bound": "holds",
+    "structure_depth_bound_tight": ("falsified", "6 vs 5"),
+    "structure_children_bound": "holds",
+    "structure_children_one_past": ("falsified", "4 vs 3"),
+    "structure_nodes_bound": "holds",
+    "structure_json_depth": "holds",
     "family_length_safe": "holds",
     "family_encoding_safe": ("falsified", "raised UnicodeEncodeError"),
     "family_arbitrary_input": ("falsified", "s = '' (inside L[unicode]) raised IndexError"),
@@ -83,10 +93,22 @@ def test_installed_the_rows_join_mathema_s_lexicon():
     assert "language_idempotent" not in core.LEXICON
 
 
+#: the route each proven row is proven on
+PROVEN_ROUTES = {
+    "row_lift_sign": "derive",
+    "row_length_field": "derive",
+    "structure_induction_constant": "derive:induction",
+    "structure_induction_equation": "derive:induction",
+}
+
+
 def test_a_proven_row_is_proven_by_derive():
     from mathema.conjecture import check_conjectures
+    proven = {key for key, want in EXPECTED.items() if want == "proven"}
+    assert proven == set(PROVEN_ROUTES)
     for fn, keys in lexicon.EXAMPLE_FUNCTIONS.values():
         for key in keys:
-            if EXPECTED[key] == "proven":
+            if key in proven:
                 (p,) = check_conjectures(fn, [claim(lexicon.LEXICON[key])])
-                assert (p.verdict, p.route) == ("proven", "derive"), (key, p.verdict, p.route)
+                assert (p.verdict, p.route) == ("proven", PROVEN_ROUTES[key]), \
+                    (key, p.verdict, p.route)

@@ -251,7 +251,8 @@ def draw(rng: random.Random, f: Field) -> Any:
     defs = _definitions()
     value = draw_raw(rng, f)
     for _ in range(_REJECTION_TRIES):
-        if not field_problems(value, f, definitions=defs):
+        # every record nested in the value was checked as it was drawn
+        if not field_problems(value, f, definitions=defs, shallow=True):
             return value
         value = draw_raw(rng, f)
     return value
