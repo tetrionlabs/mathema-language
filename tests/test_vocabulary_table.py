@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The table vocabulary over the plain reading: each function does
+"""Internal and held, not part of the 0.1 surface. The table vocabulary over the plain reading: each function does
 what its name says on mapping and attribute rows, `frame_eq`'s
 policies flip its answer, every function carries its id, and one
 binds into a claim over a frame language with `let`."""
@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from mathema_language.vocabulary import table as t
+from mathema_language.vocabulary import _table as t
 
 
 @dataclass
@@ -70,11 +70,11 @@ def test_a_let_bound_table_function_adjudicates_over_a_frame_language():
     sys.modules["vocab_frames"] = module
     try:
         (p,) = check_conjectures(keep_positive, [claim(
-            "let n = mathema_language.vocabulary.table.rows, "
+            "let n = mathema_language.vocabulary._table.rows, "
             "for orders in L[vocab_frames.ORDERS], n(f(orders)) <= n(orders)", route="probe")])
         assert p.verdict == "holds", (p.verdict, p.note, p.counterexample)
         (q,) = check_conjectures(keep_positive, [claim(
-            "let u = mathema_language.vocabulary.table.unique, "
+            "let u = mathema_language.vocabulary._table.unique, "
             "for orders in L[vocab_frames.ORDERS], u(f(orders), 'id') == True", route="probe")])
         assert q.verdict == "holds", (q.verdict, q.note, q.counterexample)
     finally:

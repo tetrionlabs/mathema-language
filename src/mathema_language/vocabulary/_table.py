@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""Table operations for claims over frame languages, bound with
+"""Internal and held with the table languages, not part of the 0.1
+surface. Table operations for claims over frame languages, bound with
 `let`, each over the plain reading of a table (a list of records,
 mapping or attribute rows) and carrying a neutral id in
 `__mathema_vocabulary__` (`table.rows@1`) that a dataframe runtime

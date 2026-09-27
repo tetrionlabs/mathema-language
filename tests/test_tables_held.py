@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
 """Tables are held out of 0.1: the schema package's public surface is
-rows, the table languages live in the internal `_tables` module, the
+rows, the table languages live in the internal `_tables` module and
+the table vocabulary in the internal `vocabulary._table`, the
 public `Ecosystem` protocol has no table methods, and the adaptors
 export no table reader."""
 import mathema_language.schema as schema
@@ -31,3 +32,11 @@ def test_the_held_table_code_is_still_importable_internally():
     from mathema_language.schema._tables import FrameLanguage, TableEcosystem, frame_of
     assert callable(frame_of) and FrameLanguage.kind == "frame"
     assert "_build_frame" in dir(TableEcosystem)
+
+
+def test_the_table_vocabulary_is_held_and_the_text_vocabulary_public():
+    import mathema_language.vocabulary as vocabulary
+    assert vocabulary.__all__ == ["text"]
+    assert not hasattr(vocabulary, "table")
+    from mathema_language.vocabulary import _table, text
+    assert callable(_table.frame_eq) and callable(text.nfc)

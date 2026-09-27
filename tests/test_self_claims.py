@@ -15,7 +15,7 @@ pytest.importorskip("mathema")
 from mathema.conjecture import check_conjectures, claim  # noqa: E402
 
 import mathema_language.text.predicates as predicates  # noqa: E402
-import mathema_language.vocabulary.table as table  # noqa: E402
+import mathema_language.vocabulary._table as table  # noqa: E402
 import mathema_language.vocabulary.text as text  # noqa: E402
 
 V = "mathema_language.vocabulary.text"
