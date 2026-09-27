@@ -28,5 +28,80 @@
   "input": "for s in L[unicode], f(f(s)) == f(s)",
   "unicode": "∀ s ∈ L[unicode]|missing, f(f(s)) = f(s)",
   "ascii": "for s in L[unicode]|missing, f(f(s)) = f(s)"
+ },
+ "language_length_bound_identity": {
+  "input": "for s in L[unicode, len <= 80], f(s) == s",
+  "unicode": "∀ s ∈ L[unicode, len <= 80]|missing, f(s) = s",
+  "ascii": "for s in L[unicode, len <= 80]|missing, f(s) = s"
+ },
+ "language_length_bound_one_past": {
+  "input": "for s in L[unicode, len <= 81], f(s) == s",
+  "unicode": "∀ s ∈ L[unicode, len <= 81]|missing, f(s) = s",
+  "ascii": "for s in L[unicode, len <= 81]|missing, f(s) = s"
+ },
+ "language_closure_into_another": {
+  "input": "for s in L[unicode], f(s) in L[slug]",
+  "unicode": "∀ s ∈ L[unicode]|missing, f(s) ∈ L[slug]",
+  "ascii": "for s in L[unicode]|missing, f(s) in L[slug]"
+ },
+ "language_closure_rendered": {
+  "input": "for n in N, f(n) in L[digit]",
+  "unicode": "∀ n ∈ ℕ ∪ {∅}, f(n) ∈ L[digit]",
+  "ascii": "for n in N|missing, f(n) in L[digit]"
+ },
+ "language_token_absent": {
+  "input": "for s in L[unicode], \"<\" not in f(s)",
+  "unicode": "∀ s ∈ L[unicode]|missing, '<' ∉ f(s)",
+  "ascii": "for s in L[unicode]|missing, '<' not in f(s)"
+ },
+ "language_token_present": {
+  "input": "for s in L[unicode], \"&\" not in f(s)",
+  "unicode": "∀ s ∈ L[unicode]|missing, '&' ∉ f(s)",
+  "ascii": "for s in L[unicode]|missing, '&' not in f(s)"
+ },
+ "row_lift_sign": {
+  "input": "for line in L[mathema_language.lexicon.Line], f(line) >= 0",
+  "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≥ 0",
+  "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) >= 0"
+ },
+ "row_unbounded_field": {
+  "input": "for line in L[mathema_language.lexicon.Line], f(line) <= 100",
+  "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≤ 100",
+  "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) <= 100"
+ },
+ "row_length_field": {
+  "input": "for line in L[mathema_language.lexicon.Line], f(line) <= 10",
+  "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≤ 10",
+  "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) <= 10"
+ },
+ "row_length_field_tight": {
+  "input": "for line in L[mathema_language.lexicon.Line], f(line) <= 9",
+  "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≤ 9",
+  "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) <= 9"
+ },
+ "family_length_safe": {
+  "input": "for s in L[slug], is_length_safe(s)",
+  "unicode": "∀ s ∈ L[slug]|missing, s is length safe",
+  "ascii": "for s in L[slug]|missing, is_length_safe(s)"
+ },
+ "family_encoding_safe": {
+  "input": "for s in L[unicode], is_encoding_safe(s)",
+  "unicode": "∀ s ∈ L[unicode]|missing, s is encoding safe",
+  "ascii": "for s in L[unicode]|missing, is_encoding_safe(s)"
+ },
+ "family_arbitrary_input": {
+  "input": "for s in L[unicode], is_arbitrary_input_safe(s)",
+  "unicode": "∀ s ∈ L[unicode]|missing, s is arbitrary input safe",
+  "ascii": "for s in L[unicode]|missing, is_arbitrary_input_safe(s)"
+ },
+ "family_output_in_language": {
+  "input": "for s in L[ascii], output_in_language(f(s))",
+  "unicode": "∀ s ∈ L[ascii]|missing, output_in_language(f(s))",
+  "ascii": "for s in L[ascii]|missing, output_in_language(f(s))"
+ },
+ "family_output_leaves_language": {
+  "input": "for s in L[ascii], output_in_language(f(s))",
+  "unicode": "∀ s ∈ L[ascii]|missing, output_in_language(f(s))",
+  "ascii": "for s in L[ascii]|missing, output_in_language(f(s))"
  }
 }

@@ -44,6 +44,21 @@ EXPECTED = {
     "language_section_inverse": "holds",
     "language_retraction": "holds",
     "language_idempotent": "holds",
+    "language_length_bound_identity": "holds",
+    "language_length_bound_one_past": ("falsified", " vs "),
+    "language_closure_into_another": ("falsified", "'' is not in L[slug]"),
+    "language_closure_rendered": "holds",
+    "language_token_absent": "holds",
+    "language_token_present": ("falsified", "'&' is in f(s)"),
+    "row_lift_sign": "proven",
+    "row_unbounded_field": ("falsified", "vs 100"),
+    "row_length_field": "proven",
+    "row_length_field_tight": ("falsified", "10 vs 9"),
+    "family_length_safe": "holds",
+    "family_encoding_safe": ("falsified", "raised UnicodeEncodeError"),
+    "family_arbitrary_input": ("falsified", "s = '' (inside L[unicode]) raised IndexError"),
+    "family_output_in_language": "holds",
+    "family_output_leaves_language": ("falsified", "output 'é' is not in L[ascii]"),
 }
 
 
@@ -66,3 +81,12 @@ def test_installed_the_rows_join_mathema_s_lexicon():
     assert core.origin("language_idempotent") == "language"
     assert "language_idempotent" in core.entries("language/laws")
     assert "language_idempotent" not in core.LEXICON
+
+
+def test_a_proven_row_is_proven_by_derive():
+    from mathema.conjecture import check_conjectures
+    for fn, keys in lexicon.EXAMPLE_FUNCTIONS.values():
+        for key in keys:
+            if EXPECTED[key] == "proven":
+                (p,) = check_conjectures(fn, [claim(lexicon.LEXICON[key])])
+                assert (p.verdict, p.route) == ("proven", "derive"), (key, p.verdict, p.route)

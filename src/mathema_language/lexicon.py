@@ -10,6 +10,28 @@ installed these rows join mathema's own in `mathema.lexicon.entries()`,
 `search()` and `find()`."""
 from __future__ import annotations
 
+import html
+import re
+from dataclasses import dataclass
+from typing import Annotated
+
+try:
+    from annotated_types import Ge, Le, MaxLen
+except ImportError:
+    # the adaptors read a marker by its attribute, so a class with the
+    # same attribute is the same marker
+    @dataclass(frozen=True)
+    class Ge:  # type: ignore[no-redef]
+        ge: float
+
+    @dataclass(frozen=True)
+    class Le:  # type: ignore[no-redef]
+        le: float
+
+    @dataclass(frozen=True)
+    class MaxLen:  # type: ignore[no-redef]
+        max_length: int
+
 LEXICON: dict[str, str] = {
     # a union with a finite set: the sentinel a field uses beside the
     # language proper
@@ -31,6 +53,32 @@ LEXICON: dict[str, str] = {
         "let dump = json.dumps, for s in L[json], f(dump(f(s))) == f(s)",
     # a normaliser is idempotent over every string
     "language_idempotent": "for s in L[unicode], f(f(s)) == f(s)",
+    # a length bound: inside it the cut changes nothing
+    "language_length_bound_identity": "for s in L[unicode, len <= 80], f(s) == s",
+    # one past the bound, the member at the bound loses a character
+    "language_length_bound_one_past": "for s in L[unicode, len <= 81], f(s) == s",
+    # closure into a language other than the input's own
+    "language_closure_into_another": "for s in L[unicode], f(s) in L[slug]",
+    # a renderer's output held to a language
+    "language_closure_rendered": "for n in N, f(n) in L[digit]",
+    # containment: a token that never survives
+    "language_token_absent": 'for s in L[unicode], "<" not in f(s)',
+    # containment that fails: the escape character itself
+    "language_token_present": 'for s in L[unicode], "&" not in f(s)',
+    # a row language: the lift reads the fields' bounds and proves
+    "row_lift_sign": "for line in L[mathema_language.lexicon.Line], f(line) >= 0",
+    # a field with no upper bound
+    "row_unbounded_field": "for line in L[mathema_language.lexicon.Line], f(line) <= 100",
+    # a text field read through len is a bounded whole number
+    "row_length_field": "for line in L[mathema_language.lexicon.Line], f(line) <= 10",
+    # one under that bound, a valid record is the witness
+    "row_length_field_tight": "for line in L[mathema_language.lexicon.Line], f(line) <= 9",
+    # the hazard families over a language
+    "family_length_safe": "for s in L[slug], is_length_safe(s)",
+    "family_encoding_safe": "for s in L[unicode], is_encoding_safe(s)",
+    "family_arbitrary_input": "for s in L[unicode], is_arbitrary_input_safe(s)",
+    "family_output_in_language": "for s in L[ascii], output_in_language(f(s))",
+    "family_output_leaves_language": "for s in L[ascii], output_in_language(f(s))",
 }
 
 
@@ -65,6 +113,60 @@ def loads(s: str) -> object:
     return json.loads(s)
 
 
+@dataclass
+class Line:
+    """An order line: a short sku, a quantity from one to ten, a price
+    of at least zero."""
+    sku: Annotated[str, MaxLen(8)]
+    qty: Annotated[int, Ge(1), Le(10)]
+    price: Annotated[float, Ge(0.0)]
+
+
+def headline(s: str) -> str:
+    """At most eighty characters of s."""
+    return s[:80]
+
+
+def slugify(s: str) -> str:
+    """The lower-case ASCII words of s, joined by hyphens."""
+    return "-".join(re.findall(r"[a-z0-9]+", s.lower()))
+
+
+def render_count(n: int) -> str:
+    """The decimal spelling of a count."""
+    return str(n)
+
+
+def escape_html(s: str) -> str:
+    """The s with its markup characters as entities."""
+    return html.escape(s)
+
+
+def line_total(line: Line) -> float:
+    """Quantity times price."""
+    return line.qty * line.price
+
+
+def line_width(line: Line) -> int:
+    """The columns the sku takes, with a space either side."""
+    return len(line.sku) + 2
+
+
+def is_slug(s: str) -> bool:
+    """Whether s is a slug."""
+    return re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", s) is not None
+
+
+def first(s: str) -> str:
+    """The first character."""
+    return s[0]
+
+
+def accent(s: str) -> str:
+    """An accent appended."""
+    return s + "\u00e9"
+
+
 #: the lexicon's table of contents, every key in exactly one section;
 #: installed, mathema reads these as `language/<section>`
 SECTIONS: dict[str, tuple[str, ...]] = {
@@ -72,6 +174,13 @@ SECTIONS: dict[str, tuple[str, ...]] = {
     "laws": ("language_homomorphism", "language_section_inverse", "language_retraction",
              "language_idempotent"),
     "boundaries": ("language_encoding_boundary",),
+    "length": ("language_length_bound_identity", "language_length_bound_one_past"),
+    "membership": ("language_closure_into_another", "language_closure_rendered",
+                   "language_token_absent", "language_token_present"),
+    "rows": ("row_lift_sign", "row_unbounded_field", "row_length_field",
+             "row_length_field_tight"),
+    "families": ("family_length_safe", "family_encoding_safe", "family_arbitrary_input",
+                 "family_output_in_language", "family_output_leaves_language"),
 }
 
 #: everyday words each row is found by through `mathema.lexicon.find`
@@ -82,17 +191,45 @@ TAGS: dict[str, tuple[str, ...]] = {
     "language_section_inverse": ("round trip", "inverse", "unescape"),
     "language_retraction": ("retraction", "parse render parse", "json round trip"),
     "language_idempotent": ("idempotent", "normaliser", "apply twice"),
+    "language_length_bound_identity": ("truncate", "length bound", "max length"),
+    "language_length_bound_one_past": ("one past the bound", "truncation bug"),
+    "language_closure_into_another": ("slugify", "closure", "output language"),
+    "language_closure_rendered": ("renderer output", "digits only"),
+    "language_token_absent": ("never emits", "token absent", "escape angle brackets"),
+    "language_token_present": ("escape character", "ampersand"),
+    "row_lift_sign": ("row", "record", "schema", "dataclass"),
+    "row_unbounded_field": ("unbounded field", "no upper bound"),
+    "row_length_field": ("field length", "maxlen"),
+    "row_length_field_tight": ("longest valid value", "column width"),
+    "family_length_safe": ("long input", "backtracking", "regex dos"),
+    "family_encoding_safe": ("encode", "unicodeencodeerror"),
+    "family_arbitrary_input": ("fuzz", "crash", "empty string"),
+    "family_output_in_language": ("output stays", "ascii in ascii out"),
+    "family_output_leaves_language": ("output leaves", "accent"),
 }
 
 #: which function each lexicon key is checked against
 EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "collapse_spaces": (collapse_spaces, ["language_with_special_member",
-                                          "language_idempotent"]),
+                                          "language_idempotent",
+                                          "family_output_in_language"]),
     "digits_to_int": (digits_to_int, ["language_homomorphism"]),
-    "ascii_only": (ascii_only, ["language_encoding_boundary"]),
+    "ascii_only": (ascii_only, ["language_encoding_boundary", "family_encoding_safe"]),
+    "headline": (headline, ["language_length_bound_identity",
+                            "language_length_bound_one_past"]),
+    "slugify": (slugify, ["language_closure_into_another"]),
+    "render_count": (render_count, ["language_closure_rendered"]),
+    "escape_html": (escape_html, ["language_token_absent", "language_token_present"]),
+    "line_total": (line_total, ["row_lift_sign", "row_unbounded_field"]),
+    "line_width": (line_width, ["row_length_field", "row_length_field_tight"]),
+    "is_slug": (is_slug, ["family_length_safe"]),
+    "first": (first, ["family_arbitrary_input"]),
+    "accent": (accent, ["family_output_leaves_language"]),
     "escape_angle": (escape_angle, ["language_section_inverse"]),
     "loads": (loads, ["language_retraction"]),
 }
 
-__all__ = ["EXAMPLE_FUNCTIONS", "LEXICON", "SECTIONS", "TAGS", "ascii_only", "collapse_spaces",
-           "digits_to_int", "escape_angle", "loads", "unescape_angle"]
+__all__ = ["EXAMPLE_FUNCTIONS", "LEXICON", "SECTIONS", "TAGS", "Line", "accent", "ascii_only",
+           "collapse_spaces", "digits_to_int", "escape_angle", "escape_html", "first",
+           "headline", "is_slug", "line_total", "line_width", "loads", "render_count",
+           "slugify", "unescape_angle"]
