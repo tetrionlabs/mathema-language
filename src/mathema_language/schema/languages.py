@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import functools
 import random
+import sys
 from collections.abc import Iterable
 from typing import Any
 
@@ -74,11 +75,23 @@ def _within_budget(method: Any) -> Any:
     and always end."""
     @functools.wraps(method)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
-        bounds = self.sampling
+        bounds = getattr(self, "_draw_override", None) or self.sampling
         with _gen.drawing_within(self.schema, depth=bounds["depth"], nodes=bounds["nodes"],
                                  children=bounds["children"]):
+            budget = _gen._BUDGET.get()
+            if budget is not None and bounds.get("reach"):
+                budget["reach"] = True
             return method(self, *args, **kwargs)
     return wrapper
+
+
+def _ladder(top: int) -> list[int]:
+    """Depths 1, 2, 4, ... up to and including `top`."""
+    out, d = [], 1
+    while d < top:
+        out.append(d)
+        d *= 2
+    return [*out, top]
 
 
 #: the budget for a schema that does not refer to itself: wide enough
@@ -102,6 +115,10 @@ class RowLanguage:
         self.name = name or schema.name
         self.accepted = 0
         self.rejected = 0
+        #: the deepest member the ecosystem's own validator accepts, when
+        #: it stops before the interpreter's recursion limit (found while
+        #: building the hazards, stated in the persisted form)
+        self.validator_depth_limit: int | None = None
         #: internal: the table-level facts an ORM adaptor read off its
         #: table (keys, foreign keys), kept for the held table languages
         self._table_defaults: TableSchema | None = None
@@ -133,6 +150,19 @@ class RowLanguage:
         return values
 
     def sample(self, rng: random.Random) -> Any:
+        if self.schema.recursive:
+            # a recursive schema's draws climb a depth ladder instead of
+            # clustering shallow: each draw aims at the next rung
+            ladder = self.sampling["ladder"]
+            self._rung = (getattr(self, "_rung", -1) + 1) % len(ladder)
+            self._draw_override: dict[str, Any] | None = {
+                **self.sampling, "depth": ladder[self._rung], "reach": True}
+        try:
+            return self._sample(rng)
+        finally:
+            self._draw_override = None
+
+    def _sample(self, rng: random.Random) -> Any:
         for _ in range(_REJECTION_TRIES):
             row = self._build(self.draw_values(rng))
             if self.contains(row):
@@ -171,8 +201,14 @@ class RowLanguage:
                 out.append(row)
         return tuple(out)
 
-    @_within_budget
     def hazards(self) -> tuple[HazardValue, ...]:
+        flat: tuple[HazardValue, ...] = tuple(self._field_hazards())
+        if not self.schema.recursive:
+            return flat
+        return (*self._structure_hazards(), *flat)
+
+    @_within_budget
+    def _field_hazards(self) -> tuple[HazardValue, ...]:
         """Per field, one record with that field at each of its
         hazards and every other field at its simplest member; only
         the members survive."""
@@ -229,6 +265,29 @@ class RowLanguage:
         if not self.contains(value):
             return ()
         out: list[Any] = []
+        present_values = {g.name: _read(value, g.name)[1] for g in self.schema.fields
+                          if _read(value, g.name)[0]}
+        found = self._edge() if self.schema.recursive else None
+        if found is not None and not found[2]:
+            # structure first: a subtree hoisted into the root's place
+            edge = found[1]
+            kids = present_values.get(edge.name)
+            for kid in (kids if isinstance(kids, list) else [kids] if kids is not None else [])[:8]:
+                if self.contains(kid):
+                    out.append(kid)
+        for f in self.schema.fields:
+            current = present_values.get(f.name)
+            if isinstance(current, list) and current:
+                # one element dropped
+                for i in range(min(len(current), 8)):
+                    values = dict(present_values)
+                    values[f.name] = current[:i] + current[i + 1:]
+                    try:
+                        row = self._build(values)
+                    except Exception:
+                        continue
+                    if self.contains(row):
+                        out.append(row)
         for f in self.schema.fields:
             present, current = _read(value, f.name)
             if not present:
@@ -254,18 +313,144 @@ class RowLanguage:
         return f"L[{self.name}]"
 
     @property
-    def sampling(self) -> dict[str, int]:
+    def sampling(self) -> dict[str, Any]:
         """The bounds random members are drawn within: for a schema that
         refers to itself and states no bound of its own, the published
-        sampling bounds, which are sampling choices and never bounds on
-        the language's members."""
-        return dict(SAMPLING_BOUNDS) if self.schema.recursive else dict(_FLAT_BUDGET)
+        sampling bounds and the depth ladder draws climb, which are
+        sampling choices and never bounds on the language's members."""
+        if not self.schema.recursive:
+            return dict(_FLAT_BUDGET)
+        return {**SAMPLING_BOUNDS, "ladder": _ladder(SAMPLING_BOUNDS["depth"])}
+
+    # ---- structure of a recursive schema
+
+    def _edge(self) -> tuple[RowSchema, Field, list[Field]] | None:
+        """`(record type, edge field, path)`: the record type that refers
+        to itself, the field through which it does (a list of it, or an
+        optional reference to it), and the root fields leading to it
+        (empty when the root itself is that record type)."""
+        def self_edge(schema: RowSchema) -> Field | None:
+            for f in schema.fields:
+                t = f.type
+                if t.base == "list" and t.item is not None and t.item.base == "ref" \
+                        and t.item.ref in (schema.name, _qual(schema)):
+                    return f
+                if t.base == "ref" and t.ref in (schema.name, _qual(schema)) and f.nullable:
+                    return f
+            return None
+
+        edge = self_edge(self.schema)
+        if edge is not None:
+            return self.schema, edge, []
+        for f in self.schema.fields:
+            t = f.type.item if f.type.base == "list" else f.type
+            if t is not None and t.base == "ref" and t.ref is not None:
+                target = self.schema.definition(t.ref)
+                inner = self_edge(target)
+                if inner is not None:
+                    return target, inner, [f]
+        return None
+
+    def _simplest_values(self, schema: RowSchema) -> dict[str, Any]:
+        return {f.name: _gen.simplest(f) for f in schema.fields}
+
+    def _record(self, schema: RowSchema, values: dict[str, Any]) -> Any:
+        return schema.construct(**values) if schema.construct is not None else values
+
+    @_within_budget
+    def _spine(self, records: int) -> Any:
+        """A member whose recursion is one chain `records` long, built
+        bottom up with no recursion."""
+        found = self._edge()
+        if found is None:
+            return None
+        schema, edge, path = found
+        node = self._record(schema, self._simplest_values(schema))
+        for _ in range(records - 1):
+            values = self._simplest_values(schema)
+            values[edge.name] = [node] if edge.type.base == "list" else node
+            node = self._record(schema, values)
+        return self._wrap(node, path)
+
+    @_within_budget
+    def _wide(self, width: int) -> Any:
+        """A member whose recursive node has `width` children."""
+        found = self._edge()
+        if found is None or found[1].type.base != "list":
+            return None
+        schema, edge, path = found
+        kids = [self._record(schema, self._simplest_values(schema)) for _ in range(width)]
+        values = self._simplest_values(schema)
+        values[edge.name] = kids
+        return self._wrap(self._record(schema, values), path)
+
+    def _wrap(self, node: Any, path: list[Field]) -> Any:
+        if not path:
+            if self.schema.construct is None and isinstance(node, dict):
+                return self._build(node)
+            return node
+        values = self._simplest_values(self.schema)
+        f = path[0]
+        values[f.name] = [node] if f.type.base == "list" else node
+        return self._build(values)
+
+    def _structure_hazards(self) -> list[HazardValue]:
+        from ..vocabulary.tree import depth as tree_depth
+        out: list[HazardValue] = []
+        bound = self.sampling
+        width_bound = bound["children"]
+        found = self._edge()
+        if found is not None and found[1].constraints.max_len is not None:
+            width_bound = min(width_bound, found[1].constraints.max_len)
+        # the deepest member within the sampling depth
+        records, deepest = 1, None
+        while records < 4 * bound["depth"]:
+            candidate = self._spine(records)
+            if candidate is None or tree_depth(candidate) > bound["depth"]:
+                break
+            deepest, records = candidate, records + 1
+        if deepest is not None and self.contains(deepest):
+            out.append(HazardValue("shape", deepest, "the deepest member within the sampling depth"))
+        wide = self._wide(width_bound)
+        if wide is not None and self.contains(wide):
+            out.append(HazardValue("shape", wide, f"a node with {width_bound} children, the widest drawn"))
+        # a spine past the interpreter's recursion limit, or at the
+        # ecosystem validator's own limit where that is lower
+        past = sys.getrecursionlimit() + 50
+        spine = self._spine(past)
+        if spine is not None:
+            if self.contains(spine):
+                out.append(HazardValue("length", spine,
+                                       f"a spine of {past} records, past the recursion limit"))
+            else:
+                lo, hi = 1, past
+                while hi - lo > 1:
+                    mid = (lo + hi) // 2
+                    if self.contains(self._spine(mid)):
+                        lo = mid
+                    else:
+                        hi = mid
+                at_limit = self._spine(lo)
+                self.validator_depth_limit = tree_depth(at_limit)
+                out.append(HazardValue("length", at_limit,
+                                       f"a spine of {lo} records, at the validator's own depth limit"))
+        return out
 
     def to_json(self) -> dict[str, Any]:
         out = json_schema(self.schema)
         if self.schema.recursive:
             out.setdefault("x-mathema", {})["sampling"] = self.sampling
+            if self.validator_depth_limit is None:
+                self.hazards()
+            if self.validator_depth_limit is not None:
+                out["x-mathema"]["validator_depth_limit"] = self.validator_depth_limit
         return out
+
+
+def _qual(schema: RowSchema) -> str:
+    construct = schema.construct
+    owner = getattr(construct, "__self__", construct)
+    return str(getattr(owner, "__qualname__", schema.name))
 
 
 def _read(row: Any, name: str) -> tuple[bool, Any]:

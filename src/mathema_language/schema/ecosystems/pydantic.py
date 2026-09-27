@@ -46,8 +46,17 @@ class PydanticEcosystem:
         return [self.build_row(table.row, {name: columns[name][i] for name in names})
                 for i in range(n)]
 
-    def _values(self, row: Any) -> dict[str, Any]:
-        values = dict(getattr(row, "__dict__", {}))
+    def _values(self, row: Any) -> dict[str, Any] | None:
+        """The row as the data a caller would hand the model, nested
+        models dumped too, so every level is validated; extras kept, so
+        a column the model forbids is still refused. None when the row
+        is too deep for pydantic to dump."""
+        try:
+            values: dict[str, Any] = dict(row.model_dump(mode="python", warnings=False))
+        except RecursionError:
+            return None
+        except Exception:
+            values = dict(getattr(row, "__dict__", {}))
         extra = getattr(row, "__pydantic_extra__", None)
         if extra:
             values.update(extra)
@@ -57,8 +66,13 @@ class PydanticEcosystem:
         from pydantic import ValidationError
         if not isinstance(row, self.model):
             return [Problem("", f"an instance of {self.model.__name__}", row)]
+        values = self._values(row)
+        if values is None:
+            return [Problem("", "within pydantic's own depth limit", type(row).__name__)]
         try:
-            self.model.model_validate(self._values(row))  # type: ignore[attr-defined]
+            self.model.model_validate(values)  # type: ignore[attr-defined]
+        except RecursionError:
+            return [Problem("", "within pydantic's own depth limit", type(row).__name__)]
         except ValidationError as e:
             return [Problem(_path(tuple(err["loc"])), err["msg"], err.get("input"))
                     for err in e.errors()]

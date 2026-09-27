@@ -54,8 +54,11 @@ class JsonSchemaEcosystem:
     def validate_row(self, schema: RowSchema, row: Any) -> list[Problem]:
         if not isinstance(row, dict):
             return [Problem("", "a mapping record", row)]
-        return [Problem(_path(err.absolute_path), err.message, err.instance)
-                for err in self._validator_for().iter_errors(row)]
+        try:
+            return [Problem(_path(err.absolute_path), err.message, err.instance)
+                    for err in self._validator_for().iter_errors(row)]
+        except RecursionError:
+            return [Problem("", "within jsonschema's own depth limit", "a nested document")]
 
     def _validate_frame(self, table: TableSchema, frame: Any,
                        parents: dict[str, Any] | None = None) -> list[Problem]:

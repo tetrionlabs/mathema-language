@@ -118,12 +118,15 @@ def test_optional_self_reference_adapts():
 
 
 def test_a_claim_over_a_recursive_language_adjudicates():
-    (p,) = check_conjectures(shapes.size, [claim("for t in L[tests._recursive_shapes.Node], f(t) >= 1")])
+    # bounded, so the recursive helpers stay inside the stack; the
+    # unbounded language's deep spine is the structure-hazard tests' case
+    bounded = "L[tests._recursive_shapes.Node, depth <= 20]"
+    (p,) = check_conjectures(shapes.size, [claim(f"for t in {bounded}, f(t) >= 1")])
     assert p.verdict in ("holds", "proven"), (p.verdict, p.note, p.counterexample)
     (q,) = check_conjectures(shapes.height, [claim(
-        "let size = tests._recursive_shapes.size, for t in L[tests._recursive_shapes.Node], f(t) <= size(t)")])
+        f"let size = tests._recursive_shapes.size, for t in {bounded}, f(t) <= size(t)")])
     assert q.verdict in ("holds", "proven"), (q.verdict, q.note, q.counterexample)
-    (r,) = check_conjectures(shapes.height, [claim("for t in L[tests._recursive_shapes.Node], f(t) <= 2")])
+    (r,) = check_conjectures(shapes.height, [claim(f"for t in {bounded}, f(t) <= 2")])
     assert r.verdict == "falsified", (r.verdict, r.note)
 
 

@@ -199,6 +199,10 @@ def draw_raw(rng: random.Random, f: Field) -> Any:
             hi = min(hi, budget["children"], max(budget["nodes"], 0))
             if _opens_a_container(item) and _room() <= 2:
                 hi = lo
+            elif budget.get("reach") and _opens_a_container(item) and hi >= 1:
+                # the ladder asked for depth: a container that can hold
+                # a nested record holds at least one
+                lo = max(lo, 1)
         n = rng.randint(lo, max(lo, hi))
         with _deeper():
             return [draw(rng, Field("item", item)) for _ in range(n)]
