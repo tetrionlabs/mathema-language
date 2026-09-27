@@ -8,15 +8,26 @@ is a real finding about the function above it, not a hypothetical. The
 domain binding is always the input side (`for s in L[ascii]` says what
 the function is fed), and anything said about `f(...)` is the output side.
 
-The rows use three kinds of claim. A hazard family (`is_length_safe`,
+The rows use four kinds of claim. A hazard family (`is_length_safe`,
 `is_encoding_safe`, `is_arbitrary_input_safe`, `excluded_outside_domain`)
 feeds the function the language's own hazards and reports an unguarded
-crash or a missing rejection. A law (`f(f(text)) == f(text)`,
-`len(f(text)) <= len(text)`) is adjudicated by derive where the body lifts
-and by sampling where it does not, sampling never proving. And
-`output_in_language(f(text))` holds every output to the language the input
-is declared over, which is what closure means for a normaliser or an
-escaper.
+crash or a missing rejection. A law (`f(f(s)) == f(s)`,
+`len(f(s)) <= len(s)`) is adjudicated by derive where the body lifts
+and by sampling where it does not, sampling never proving. Membership,
+`f(s) in L[slug]` or `"<" not in f(s)`, holds every output to a language
+of your choosing or keeps a token out of it, which is what closure and
+containment mean for a normaliser or an escaper, and is decided by
+execution, since the symbolic lift has no reading of a language. And
+`output_in_language(f(s))` is the short form of closure, holding every
+output to the language the input is declared over, with the record
+naming the target it chose and where it came from.
+
+A language can carry a length bound, `L[unicode, len <= 80]`, the
+members of the language no longer than eighty code points, and a
+parameter annotated `Annotated[str, MaxLen(80)]` infers exactly that
+language with no binding written. The members at the bound are among
+the first values the probe tries, so a function that is only right up
+to a length one short of the bound is caught at the bound, not by luck.
 
 ## Parser
 
@@ -54,7 +65,8 @@ the matching parser.
 |---|---|---|---|
 | `render_count` | `for n in N, len(f(n)) >= 1` | holds | Every count spells as at least one digit. |
 | `render_count` | `for n in N, parse_count(f(n)) == n` | holds | The parser inverts the renderer on the renderer's own output, which is the direction that does hold. |
-| `render_count` | `for n in N, output_in_language(f(n))` | holds | With no text parameter declared, the target language comes from the `str` return annotation, every string, so this row is the weak form; the sharp form, `f(n) in L[digit]`, arrives with the `in` relation. |
+| `render_count` | `for n in N, output_in_language(f(n))` | holds | With no text parameter declared, the target language comes from the `str` return annotation, every string, so this row is the weak form. |
+| `render_count` | `for n in N, f(n) in L[digit]` | holds | The sharp form: every count spells in the ten ASCII digits and nothing else. |
 
 ## Normaliser
 
@@ -64,6 +76,12 @@ Unicode normalisation when it claims to work on characters rather than
 code points. Case mapping is the classic place the last of those fails.
 
 ```python
+import re
+from typing import Annotated
+
+from annotated_types import MaxLen
+
+
 def collapse_spaces(s: str) -> str:
     """Whitespace runs collapsed to one space, the ends stripped."""
     return " ".join(s.split())
@@ -72,6 +90,21 @@ def collapse_spaces(s: str) -> str:
 def shout(s: str) -> str:
     """Upper case."""
     return s.upper()
+
+
+def slugify(s: str) -> str:
+    """The lower-case ASCII words of s, joined by hyphens."""
+    return "-".join(re.findall(r"[a-z0-9]+", s.lower()))
+
+
+def headline(s: str) -> str:
+    """At most eighty characters of s."""
+    return s[:80]
+
+
+def label(s: Annotated[str, MaxLen(80)]) -> str:
+    """The label, cut to the eighty characters it is declared to fit."""
+    return s[:80]
 ```
 
 | Function | Claim | Verdict | Why |
@@ -79,10 +112,18 @@ def shout(s: str) -> str:
 | `collapse_spaces` | `for s in L[unicode], f(f(s)) == f(s)` | holds | Idempotent: a second pass finds nothing to collapse. |
 | `collapse_spaces` | `for s in L[unicode], len(f(s)) <= len(s)` | holds | A contraction, since it only ever removes characters. |
 | `collapse_spaces` | `for s in L[ascii], output_in_language(f(s))` | holds | Closure: ASCII in, ASCII out. |
+| `collapse_spaces` | `for s in L[ascii], f(s) in L[ascii]` | holds | The same closure written as membership, which is the spelling to reach for when the target is not the input's own language. |
+| `collapse_spaces` | `for s in L[unicode], "  " not in f(s)` | holds | No two spaces survive in a row, which is the whole job of the function stated as a containment. |
 | `collapse_spaces` | `let n = mathema_language.vocabulary.text.nfc, for s in L[unicode], n(f(s)) == f(n(s))` | holds | Commutes with NFC, because composition never creates or removes whitespace. |
 | `collapse_spaces` | `for s in L[unicode], f(s) == s` | falsified | Not the identity; the first whitespace hazard is the witness. |
 | `shout` | `for s in L[ascii], len(f(s)) == len(s)` | holds | Over ASCII, upper-casing is one character to one character. |
 | `shout` | `for s in L[unicode], len(f(s)) == len(s)` | falsified | `'ΐ'` (U+0390) upper-cases to three code points, and `'ß'` to two; a length-preserving assumption about case mapping is the bug this row exists to catch. |
+| `slugify` | `for s in L[unicode], len(f(s)) <= len(s)` | holds | Only ever keeps characters it was given and puts one hyphen between words it kept. |
+| `slugify` | `for s in L[unicode], f(s) in L[slug]` | falsified | The empty string, and any string with no ASCII letter or digit in it, slugifies to the empty string, which is not a slug; a caller that stores the result as a key needs to know. |
+| `headline` | `for s in L[unicode], len(f(s)) <= 80` | holds | The cut is the bound. |
+| `headline` | `for s in L[unicode, len <= 80], f(s) == s` | holds | Inside the bound the cut changes nothing. |
+| `headline` | `for s in L[unicode, len <= 81], f(s) == s` | falsified | One past it, the member of length 81 at the bound loses its last character. |
+| `label` | `f(s) == s` | holds | No binding written: `MaxLen(80)` on the parameter infers `L[unicode, len <= 80]`, and the record says so. |
 
 ## Validator
 
@@ -127,6 +168,8 @@ def escape_html(s: str) -> str:
 | `escape_html` | `for s in L[unicode], len(f(s)) >= len(s)` | holds | Every replacement is longer than the character it replaces. |
 | `escape_html` | `let u = html.unescape, for s in L[unicode], u(f(s)) == s` | holds | The round trip through `html.unescape` is exact. |
 | `escape_html` | `for s in L[ascii], output_in_language(f(s))` | holds | Entities are ASCII, so ASCII in gives ASCII out. |
+| `escape_html` | `for s in L[unicode], "<" not in f(s)` | holds | No angle bracket survives, whatever the input holds, which is the claim a template relies on. |
+| `escape_html` | `for s in L[unicode], "&" not in f(s)` | falsified | The ampersand is the escape character itself, so every entity puts one back; containment is the wrong claim for it, and the round trip above is the right one. |
 | `escape_html` | `for s in L[unicode], is_encoding_safe(s)` | holds | No codec in the body, so no codec boundary to fall off. |
 | `escape_html` | `for s in L[unicode], f(f(s)) == f(s)` | falsified | `"&"` becomes `"&amp;"` and then `"&amp;amp;"`; an escaper is not a normaliser. |
 
@@ -147,6 +190,51 @@ def word_count(s: str) -> int:
 | `word_count` | `for s in L[unicode], f(s) >= 0` | holds | A length is never negative. |
 | `word_count` | `for s in L[unicode] \ {""}, f(s) >= 1` | falsified | A whitespace-only string is non-empty and has no words. |
 | `word_count` | `for s in L[unicode], is_arbitrary_input_safe(s)` | holds | `str.split` copes with every hazard in the corpus. |
+
+## Row
+
+A function over one record reads fields, and a row schema says what
+each field can hold, so a claim over the row's language quantifies over
+every valid record. Where the body reads only numeric fields, and text
+fields only through `len`, the derive route lifts each field it reads to
+a symbol bounded by the schema (a quantity between one and ten, a price
+at least zero, a code of at most eight characters as a whole number from
+nought to eight), and the claim is proven rather than sampled; the fields
+the body never reads do not stand in the way. Where the lift declines,
+the note names the field it could not read, and the probe draws valid
+records, hazards first.
+
+```python
+from dataclasses import dataclass
+from typing import Annotated
+
+from annotated_types import Ge, Le, MaxLen
+
+
+@dataclass
+class Line:
+    sku: Annotated[str, MaxLen(8)]
+    qty: Annotated[int, Ge(1), Le(10)]
+    price: Annotated[float, Ge(0.0)]
+    note: str = ""
+
+
+def line_total(line: Line) -> float:
+    """Quantity times price."""
+    return line.qty * line.price
+
+
+def line_width(line: Line) -> int:
+    """The columns the sku takes, with a space either side."""
+    return len(line.sku) + 2
+```
+
+| Function | Claim | Verdict | Why |
+|---|---|---|---|
+| `line_total` | `for line in L[catalogue_row.Line], f(line) >= 0` | proven | The quantity is at least one and the price at least zero, so the product is at least zero; the lift reads both bounds off the annotations. |
+| `line_total` | `for line in L[catalogue_row.Line], f(line) <= 50` | falsified | The price has no upper bound, and an executed record with a large price is the witness. |
+| `line_width` | `for line in L[catalogue_row.Line], f(line) <= 10` | proven | `len(line.sku)` lifts as a whole number no larger than the `MaxLen(8)` on the field. |
+| `line_width` | `for line in L[catalogue_row.Line], f(line) <= 9` | falsified | An eight-character sku is valid and needs ten columns. |
 
 ## Loader
 
@@ -196,9 +284,11 @@ def one_per_kind(orders: list) -> list:
 ## What is not here yet
 
 Joins take two tables, and a claim over two frame languages at once is
-written as two bindings, which the sampler already supports; the
-catalogue will grow a joiner once the `in` relation lands, since the
+written as two bindings, which the sampler already supports, and the
 claim worth writing about a join is that its output is in the joined
-language. The `in` relation, which spells closure into a different
-language (`f(text) in L[slug]`) and the absence of a token (`"<" not in
-f(text)`), is a change to mathema's grammar and lands there.
+language, `f(orders, customers) in L[myapp.schemas.JOINED]`, which the
+`in` relation can now say; the catalogue grows a joiner when there is a
+joined frame language to name. A table is never lifted, since its row
+count varies from one member to the next, so a claim over a frame is
+always sampled, and the tables it samples are built from the row
+language's own hazards.

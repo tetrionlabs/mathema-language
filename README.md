@@ -36,7 +36,7 @@ with:     falsified  ('\u0390'): 3 vs 1
 
 claim: for s in L[latin-1], f(s) == s                   f = ascii_only
 
-with:     falsified  ('\u00df'): raised UnicodeEncodeError
+with:     falsified  ('\u00ff'): raised UnicodeEncodeError
 
 claim: for s in L[ascii], f(s) == s                     f = ascii_only
 
@@ -51,9 +51,10 @@ report `holds` for a claim that is false; the hazard corpus here is
 built from what the test suites of Django, Werkzeug, MarkupSafe, ftfy and
 CPython found the hard way, so those characters are among the first
 strings tried, not a lucky draw. The second claim is the same lesson at
-an alphabet boundary: `\u00df` is latin-1 and not ascii, and the function
-that encodes as ascii is falsified with it as the witness, while over
-`L[ascii]` the probe never leaves the language and the claim holds.
+an alphabet boundary: `\u00ff` (y with diaeresis) is latin-1 and not
+ascii, and the function that encodes as ascii is falsified with it as
+the witness, while over `L[ascii]` the probe never leaves the language
+and the claim holds.
 
 ## The languages
 
@@ -90,6 +91,41 @@ surrogate code points Python admits and no codec encodes),
 `nfkc_folding` (the characters whose NFKC form differs, ligatures and
 fullwidth forms among them) and `non_bmp` (everything past the basic
 multilingual plane).
+
+## Closure, containment and length
+
+A claim can hold an output to a language, or keep a token out of it,
+with the `in` relation, and it reads the way it is written (the
+functions are the catalogue's, below):
+
+```
+for s in L[unicode], f(s) in L[slug]          f = slugify
+for s in L[unicode], "<" not in f(s)           f = escape_html
+for n in N, f(n) in L[digit]                   f = render_count
+```
+
+The first is closure into a language other than the input's own, and it
+is falsified by any input with no ASCII letter or digit in it, which
+slugifies to the empty string, and the empty string is not a slug; the
+second is containment, and holds, since no angle bracket survives the
+escape; the third holds, every count spelling in the ten ASCII digits.
+Membership is decided by execution, since the symbolic lift has no
+reading of a language, and a missing value is a member of nothing.
+`output_in_language(f(s))` stays as the short form of closure into the
+input's own language, and its record names the language it held the
+output to and where that came from, under
+`meta["mathema.language"]["return"]`.
+
+A language can carry a bound on length, counted in code points the way
+Python's `len` counts: `L[ascii, len <= 80]`,
+`L[unicode, len in [1, 64]]`, `L[slug, len >= 3]`. The members at the
+bounds are among the first values a probe tries, and the member one past
+the bound is the outside draw `excluded_outside_domain` uses, so a
+function that truncates at seventy-nine is caught at eighty. A parameter
+annotated `Annotated[str, MaxLen(80)]` infers `L[unicode, len <= 80]` on
+its own, with the inference stated in the record's note, and in a claim
+that writes an `L[...]` domain `len(s)` renders as `len(s)` rather than
+as mathema's canonical `dim(s, 0)`.
 
 ## What to claim
 
@@ -128,8 +164,20 @@ nullable column all null, and one table per field hazard (the extremes,
 the text corpus in a string column, the datetime64[ns] bounds and a DST
 edge); a witness names the cell in one path grammar for every ecosystem,
 `[3].qty` for a cell, `key(id)` for a duplicated key, `rows` for the
-count. Over a dataclass the derive route lifts the numeric fields, so
-`for o in L[Order], f(o) >= 0` can be proven, not sampled.
+count.
+
+A row can be proven, not only sampled. Where the body reads only numeric
+fields, and text fields only through `len`, the derive route lifts each
+field the body reads to a symbol bounded by the schema, a quantity
+annotated `Ge(1), Le(10)` as a whole number from one to ten, a price
+annotated `Ge(0.0)` as a real at least zero, `len(o.sku)` on a field
+annotated `MaxLen(8)` as a whole number from nought to eight, so
+`for o in L[Order], f(o) >= 0` over `o.qty * o.price` is proven, and the
+fields the body never reads (a note, a list of tags) do not stand in the
+way. Where the body reads a field the lift has no reading of, a
+`Literal` compared against a string, say, the lift declines, the note
+names the field, and the claim is sampled instead. A table is never
+lifted, since its row count varies from one member to the next.
 
 ## What a probe visits
 
@@ -142,7 +190,9 @@ NFKC form changes their length, tag-sequence flags and joiner emoji, a
 Cyrillic homoglyph of `a`, no-break spaces, a string past the largest
 double, the text that spells `null` or `NA`, the entity that is escaped
 three times over, and the overlong inputs that make a backtracking
-regular expression crawl. The record states which language each name
+regular expression crawl. Every hazard of the language is visited once
+before any random member is drawn, however small a trial budget the
+function would otherwise get. The record states which language each name
 resolved to and where it came from.
 
 ## Writing your own
@@ -167,5 +217,5 @@ Apache-2.0. mathema itself is licensed separately.
 
 ## Version
 
-0.1.0. Text languages and the hazard corpus; the hazard families over
-text and the schema languages of rows follow.
+0.1.0. Text languages and the hazard corpus, the hazard families over
+text, and the schema languages of rows and frames.
