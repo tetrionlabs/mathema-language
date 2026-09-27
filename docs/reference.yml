@@ -3,6 +3,7 @@
 nav:
   - Languages: index.md
   - Rows: rows.md
+  - Recursive structures: recursive.md
   - Adaptors:
       - Writing an adaptor: adaptors.md
       - Dataclasses: adaptor-dataclass.md
