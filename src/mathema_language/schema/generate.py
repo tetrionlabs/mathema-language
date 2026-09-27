@@ -368,7 +368,9 @@ def hazards(f: Field) -> list[HazardValue]:
         if t.item is not None:
             out.append(("shape", [simplest(Field("item", t.item))], "one item"))
     elif base == "struct":
-        out += [("shape", {sub.name: simplest(sub) for sub in (t.fields or ())}, "the simplest struct")]
+        values = {sub.name: simplest(sub) for sub in (t.fields or ())}
+        out += [("shape", t.construct(**values) if t.construct is not None else values,
+                 "the simplest struct")]
     elif base == "map":
         out += [("shape", {}, "an empty map")]
     kept: list[HazardValue] = []

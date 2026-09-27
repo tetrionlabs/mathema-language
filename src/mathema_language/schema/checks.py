@@ -9,6 +9,7 @@ item of a list, `[i].col` a cell, `key(a, b)` a duplicated key,
 sort violation."""
 from __future__ import annotations
 
+import dataclasses
 import datetime as _dt
 import decimal
 import math
@@ -82,6 +83,15 @@ def type_problems(value: Any, t: NeutralType, path: str = "",
     walker = _Walker(definitions)
     walker.push_type(value, t, path, nan_allowed)
     return walker.run()
+
+
+def _record_class(construct: Any) -> type | None:
+    """The class every record of a schema is an instance of, when its
+    records are dataclass instances; None where a record may be any
+    mapping or object with the fields (a TypedDict, a JSON Schema)."""
+    if isinstance(construct, type) and dataclasses.is_dataclass(construct):
+        return construct
+    return None
 
 
 class _Walker:
@@ -171,7 +181,7 @@ class _Walker:
         if base == "struct":
             if t.fields is None:
                 return
-            self.push_row(RowSchema("struct", t.fields), value, path)
+            self.push_row(RowSchema("struct", t.fields, construct=t.construct), value, path)
             return
         if base == "ref":
             if self.definitions is None or t.ref is None:
@@ -192,6 +202,10 @@ class _Walker:
                 and not hasattr(row, "__slots__")
                 and not any(read(row, f.name)[0] for f in schema.fields)):
             self.out.append(Problem(path, schema.name, row))
+            return
+        cls = _record_class(schema.construct)
+        if cls is not None and not isinstance(row, cls):
+            self.out.append(Problem(path, cls.__name__, row))
             return
         if not self._enter(row, path):
             return
