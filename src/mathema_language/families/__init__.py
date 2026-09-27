@@ -248,10 +248,13 @@ def _return_hint(fn: Any) -> object | None:
         return getattr(fn, "__annotations__", {}).get("return")
 
 
-def _target_language(fn: Any, facts: Any, domain: dict[str, Any]) -> tuple[str, list[Any], str]:
-    """`(names, languages, how)` the output is held to: the language
-    the first text parameter is declared over, else the return
-    annotation through the text adaptor, else every `str`."""
+def _target_language(fn: Any, facts: Any,
+                     domain: dict[str, Any]) -> tuple[str, list[Any], str, list[dict[str, str]]]:
+    """`(names, languages, how, described)` the output is held to: the
+    language the first text parameter is declared over, else the return
+    annotation through the text adaptor, else every `str`. `described`
+    is the record's account, one `{"name", "from"}` entry per target
+    language."""
     for p in facts.params:
         bound = domain.get(p)
         if bound is not None and getattr(bound, "base_type", None) == "L":
@@ -259,14 +262,17 @@ def _target_language(fn: Any, facts: Any, domain: dict[str, Any]) -> tuple[str, 
             if refs:
                 return (" | ".join(ref.name for ref in refs),
                         [resolve_language(ref) for ref in refs],
-                        f"the language {p} is declared over")
+                        f"the language {p} is declared over",
+                        [{"name": ref.name, "from": f"parameter {p}"} for ref in refs])
     hint = _return_hint(fn)
     if hint is not None:
         language = adapt(hint)
         if language is not None:
             hint_text = getattr(hint, "__name__", None) or str(hint)
-            return language.name, [language], f"the return annotation {hint_text}"
-    return "unicode", [UNICODE], "no declared language, so every str"
+            return (language.name, [language], f"the return annotation {hint_text}",
+                    [{"name": language.name, "from": f"return annotation {hint_text}"}])
+    return ("unicode", [UNICODE], "no declared language, so every str",
+            [{"name": "unicode", "from": "default"}])
 
 
 def _explained(languages: list[Any], value: object) -> str:
@@ -296,7 +302,7 @@ def _output_in_language_probe(fn: Any, facts: Any, cj: Any, domain: dict[str, An
     domain = domain or {}
     if not facts.params:
         return None
-    names, languages, how = _target_language(fn, facts, domain)
+    names, languages, how, described = _target_language(fn, facts, domain)
     target = facts.params[0]
     bound = domain.get(target)
     lead: list[str] = []
@@ -323,7 +329,10 @@ def _output_in_language_probe(fn: Any, facts: Any, cj: Any, domain: dict[str, An
         return (f"{format_point(tuple(filled))}: output {out!r} is not in "
                 f"L[{names}], the target from {how}{_explained(languages, out)}")
 
-    return probe_trials(fn, facts, target, domain, rng, max(trials, len(lead)), trial)
+    result = probe_trials(fn, facts, target, domain, rng, max(trials, len(lead)), trial)
+    if result is None:
+        return None
+    return (*result, {"mathema.language": {"return": described}})
 
 
 class _OutputInLanguage(OutputPredicateFamily):
@@ -331,7 +340,8 @@ class _OutputInLanguage(OutputPredicateFamily):
     target language, which is the language the first text parameter is
     declared over (closure: a slug in, a slug out), else the language
     the return annotation adapts to, else every `str`. The witness
-    names the target and how it was chosen."""
+    names the target and how it was chosen, and the record says the
+    same under `meta["mathema.language"]["return"]`."""
 
     def __init__(self) -> None:
         super().__init__("output_in_language", lambda out: None)

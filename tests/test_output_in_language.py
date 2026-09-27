@@ -72,3 +72,52 @@ def test_with_no_declared_language_the_return_annotation_decides(tmp_path):
     p = _one(mod.wrap, "output_in_language(f(s))")
     assert p.verdict == "holds", (p.verdict, p.note, p.counterexample)
     assert claim("output_in_language(f(s))").relation == "output_in_language"
+
+
+def test_the_record_names_the_target_and_where_it_came_from(tmp_path):
+    mod = _load(tmp_path, '''
+        def shout(s: str) -> str:
+            """Upper case."""
+            return s.upper()
+    ''')
+    p = _one(mod.shout, "for s in L[ascii], output_in_language(f(s))")
+    assert p.verdict == "holds", (p.verdict, p.note)
+    described = p.meta["mathema.language"]
+    assert described["return"] == [{"name": "ascii", "from": "parameter s"}]
+    assert described["s"][0]["name"] == "ascii"
+
+
+def test_a_falsified_record_names_the_target_too(tmp_path):
+    mod = _load(tmp_path, '''
+        def accent(s: str) -> str:
+            """An accent appended."""
+            return s + "\\u00e9"
+    ''')
+    p = _one(mod.accent, "for s in L[ascii], output_in_language(f(s))")
+    assert p.verdict == "falsified", (p.verdict, p.note)
+    assert p.meta["mathema.language"]["return"] == [{"name": "ascii", "from": "parameter s"}]
+
+
+def test_a_union_of_languages_names_each_target(tmp_path):
+    mod = _load(tmp_path, '''
+        def same(s: str) -> str:
+            """The input."""
+            return s
+    ''')
+    p = _one(mod.same, "for s in L[digit] | L[ascii], output_in_language(f(s))")
+    assert p.verdict == "holds", (p.verdict, p.note)
+    assert p.meta["mathema.language"]["return"] == [
+        {"name": "digit", "from": "parameter s"}, {"name": "ascii", "from": "parameter s"}]
+
+
+def test_the_return_annotation_is_named_when_it_decides(tmp_path):
+    mod = _load(tmp_path, '''
+        def count(n: int) -> str:
+            """The number as text."""
+            return str(n)
+    ''')
+    p = _one(mod.count, "for n in [0, 100], output_in_language(f(n))")
+    assert p.verdict == "holds", (p.verdict, p.note)
+    assert p.meta["mathema.language"]["return"] == [
+        {"name": "unicode", "from": "return annotation str"}]
+    assert set(p.meta["mathema.language"]) == {"return"}
