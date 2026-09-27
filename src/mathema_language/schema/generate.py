@@ -8,10 +8,13 @@ simplest member shrinking heads for, and one non-member near the
 boundary."""
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import datetime as _dt
 import decimal
 import math
 import random
+from collections.abc import Iterator
 from typing import Any
 
 from .._surface import HazardValue
@@ -28,6 +31,62 @@ EPOCH = _dt.datetime(1970, 1, 1)
 DST_EDGE = _dt.datetime(2026, 3, 29, 1, 59, 59)
 
 _REJECTION_TRIES = 40
+
+#: the budget a draw of a nested value spends: the schema whose
+#: definitions a `ref` resolves through, how many more container levels
+#: may open, how many more values may be drawn, and the widest list; set
+#: by the language around every draw so a recursive type always ends
+_BUDGET: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "draw budget", default=None)
+
+
+@contextlib.contextmanager
+def drawing_within(definitions: Any, *, depth: int, nodes: int, children: int) -> Iterator[None]:
+    """Draw nested values under these bounds; `depth` counts container
+    levels the way `vocabulary.tree.depth` does."""
+    token = _BUDGET.set({"defs": definitions, "depth": depth, "nodes": nodes,
+                         "children": children, "level": 0})
+    try:
+        yield
+    finally:
+        _BUDGET.reset(token)
+
+
+def _definitions() -> Any:
+    budget = _BUDGET.get()
+    return budget["defs"] if budget else None
+
+
+def _room() -> int:
+    """How many more container levels may open under the budget."""
+    budget = _BUDGET.get()
+    if budget is None:
+        return 1 << 30
+    return int(budget["depth"]) - int(budget["level"])
+
+
+@contextlib.contextmanager
+def _deeper() -> Iterator[None]:
+    budget = _BUDGET.get()
+    if budget is not None:
+        budget["level"] += 1
+    try:
+        yield
+    finally:
+        if budget is not None:
+            budget["level"] -= 1
+
+
+def _record(rng: random.Random, fields: Any, construct: Any) -> Any:
+    """A struct's value: each field drawn one level down, then built
+    through `construct` (the record's class) or left a dict."""
+    with _deeper():
+        values = {sub.name: draw(rng, sub) for sub in (fields or ())}
+    return construct(**values) if construct is not None else values
+
+
+def _opens_a_container(t: NeutralType) -> bool:
+    return t.base in ("list", "struct", "map", "ref")
 
 
 def _zone(t: NeutralType) -> _dt.tzinfo | None:
@@ -135,26 +194,46 @@ def draw_raw(rng: random.Random, f: Field) -> Any:
     if base == "list":
         lo, hi = _length_range(f, 4)
         item = t.item or NeutralType("any")
-        return [draw(rng, Field("item", item)) for _ in range(rng.randint(lo, hi))]
+        budget = _BUDGET.get()
+        if budget is not None:
+            hi = min(hi, budget["children"], max(budget["nodes"], 0))
+            if _opens_a_container(item) and _room() <= 2:
+                hi = lo
+        n = rng.randint(lo, max(lo, hi))
+        with _deeper():
+            return [draw(rng, Field("item", item)) for _ in range(n)]
     if base == "struct":
-        return {sub.name: draw(rng, sub) for sub in (t.fields or ())}
+        return _record(rng, t.fields, t.construct)
+    if base == "ref":
+        defs = _definitions()
+        if defs is None or t.ref is None:
+            return None
+        schema = defs.definition(t.ref)
+        return _record(rng, schema.fields, schema.construct or t.construct)
     if base == "map":
         key_t = t.key or NeutralType("string")
         value_t = t.value or NeutralType("any")
-        return {draw(rng, Field("key", key_t)): draw(rng, Field("value", value_t))
-                for _ in range(rng.randint(0, 4))}
+        with _deeper():
+            return {draw(rng, Field("key", key_t)): draw(rng, Field("value", value_t))
+                    for _ in range(rng.randint(0, 4))}
     return rng.choice((0, 1.5, "x", None, True))
 
 
 def draw(rng: random.Random, f: Field) -> Any:
-    """One member of the field: null one draw in eight where allowed,
+    """One member of the field: null one draw in eight where allowed
+    (always, once a nested draw has no room left for a container),
     else a typed value the field's own checker accepts, found by
     rejection where the constraints are opaque."""
-    if f.nullable and rng.random() < 0.125:
+    budget = _BUDGET.get()
+    if budget is not None:
+        budget["nodes"] -= 1
+    if f.nullable and (rng.random() < 0.125
+                       or (_opens_a_container(f.type) and _room() <= 1)):
         return None
+    defs = _definitions()
     value = draw_raw(rng, f)
     for _ in range(_REJECTION_TRIES):
-        if not field_problems(value, f):
+        if not field_problems(value, f, definitions=defs):
             return value
         value = draw_raw(rng, f)
     return value
@@ -199,11 +278,21 @@ def simplest(f: Field) -> Any:
     elif base == "list":
         candidates += [[]]
     elif base == "struct":
-        candidates += [{sub.name: simplest(sub) for sub in (t.fields or ())}]
+        with _deeper():
+            values = {sub.name: simplest(sub) for sub in (t.fields or ())}
+        candidates += [t.construct(**values) if t.construct is not None else values]
+    elif base == "ref":
+        defs = _definitions()
+        if defs is not None and t.ref is not None and _room() > 1:
+            schema = defs.definition(t.ref)
+            with _deeper():
+                values = {sub.name: simplest(sub) for sub in schema.fields}
+            build = schema.construct or t.construct
+            candidates += [build(**values) if build is not None else values]
     elif base == "map":
         candidates += [{}]
     for candidate in candidates:
-        if not field_problems(candidate, f):
+        if not field_problems(candidate, f, definitions=_definitions()):
             return candidate
     return None if f.nullable else candidates[0] if candidates else None
 
@@ -266,7 +355,7 @@ def hazards(f: Field) -> list[HazardValue]:
     kept: list[HazardValue] = []
     seen: list[Any] = []
     for kind, value, note in out:
-        if any(_same(value, s) for s in seen) or field_problems(value, f):
+        if any(_same(value, s) for s in seen) or field_problems(value, f, definitions=_definitions()):
             continue
         seen.append(value)
         kept.append(HazardValue(kind, value, note))

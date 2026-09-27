@@ -13,7 +13,7 @@ from ..._priority import LIBRARY, priority
 from ..ecosystems.pydantic import PydanticEcosystem
 from ..languages import RowLanguage
 from ..model import RowSchema
-from ._hints import pydantic_fields
+from ._hints import _construct_of, read_record
 
 
 def _is_model(obj: Any) -> bool:
@@ -29,7 +29,9 @@ def schema_of(model: type) -> RowSchema:
     """The row schema of a pydantic model."""
     config = getattr(model, "model_config", {}) or {}
     policy = "exact" if config.get("extra") == "forbid" else "open"
-    return RowSchema(model.__name__, tuple(pydantic_fields(model)), column_policy=policy)
+    fields, definitions = read_record(model)
+    return RowSchema(model.__name__, tuple(fields), column_policy=policy,
+                     definitions=definitions, construct=_construct_of(model))
 
 
 @priority(LIBRARY)

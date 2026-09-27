@@ -24,9 +24,10 @@ def _is_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
-def type_problems(value: Any, t: NeutralType, path: str = "",
-                  nan_allowed: bool = False) -> list[Problem]:
-    """Every way `value` fails to be of type `t`."""
+def _scalar_problems(value: Any, t: NeutralType, path: str,
+                     nan_allowed: bool) -> list[Problem]:
+    """Every way `value` fails a scalar type `t`; containers are the
+    walker's."""
     base = t.base
     if base == "any":
         return []
@@ -70,29 +71,145 @@ def type_problems(value: Any, t: NeutralType, path: str = "",
     if base == "categorical":
         levels = t.levels or ()
         return [] if value in levels else [Problem(path, f"one of {list(levels)}", value)]
-    if base == "list":
-        if not isinstance(value, (list, tuple)):
-            return [Problem(path, "list", value)]
-        out: list[Problem] = []
-        if t.item is not None:
-            for i, item in enumerate(value):
-                out.extend(type_problems(item, t.item, f"{path}[{i}]"))
-        return out
-    if base == "struct":
-        if t.fields is None:
-            return []
-        return row_problems(RowSchema("struct", t.fields), value, path)
-    if base == "map":
-        if not isinstance(value, dict):
-            return [Problem(path, "map", value)]
-        out = []
-        for k, v in value.items():
-            if t.key is not None:
-                out.extend(type_problems(k, t.key, f"{path}[{k!r}]"))
-            if t.value is not None:
-                out.extend(type_problems(v, t.value, f"{path}[{k!r}]"))
-        return out
     return []
+
+
+def type_problems(value: Any, t: NeutralType, path: str = "",
+                  nan_allowed: bool = False,
+                  definitions: RowSchema | None = None) -> list[Problem]:
+    """Every way `value` fails to be of type `t`; a `ref` resolves
+    through `definitions`, the schema whose record types it names."""
+    walker = _Walker(definitions)
+    walker.push_type(value, t, path, nan_allowed)
+    return walker.run()
+
+
+class _Walker:
+    """One depth-first pass over a value and its schema with an
+    explicit stack, so a value nested past the interpreter's recursion
+    limit is checked, problems come out in field order, and a container
+    met again on its own path is a cycle, reported where it closes."""
+
+    def __init__(self, definitions: RowSchema | None) -> None:
+        self.definitions = definitions
+        self.stack: list[tuple[Any, ...]] = []
+        self.out: list[Problem] = []
+        self.on_path: dict[int, str] = {}
+
+    def run(self) -> list[Problem]:
+        while self.stack:
+            task = self.stack.pop()
+            getattr(self, "_" + task[0])(*task[1:])
+        return self.out
+
+    def push_type(self, value: Any, t: NeutralType, path: str, nan_allowed: bool = False) -> None:
+        self.stack.append(("type", value, t, path, nan_allowed))
+
+    def push_row(self, schema: RowSchema, row: Any, path: str,
+                 read: Callable[[Any, str], tuple[bool, Any]] | None = None,
+                 columns: Callable[[Any], tuple[str, ...] | None] | None = None,
+                 ) -> None:
+        self.stack.append(("row", schema, row, path, read or _read, columns or _columns_of))
+
+    def push_field(self, value: Any, f: Field, path: str) -> None:
+        self.stack.append(("field", value, f, path))
+
+    def _leave(self, value_id: int) -> None:
+        self.on_path.pop(value_id, None)
+
+    def _enter(self, value: Any, path: str) -> bool:
+        """Mark a container on the current path; False for a cycle."""
+        seen = self.on_path.get(id(value))
+        if seen is not None:
+            self.out.append(Problem(path, f"acyclic: this is the value at {seen or 'the root'}",
+                                    type(value).__name__))
+            return False
+        self.on_path[id(value)] = path
+        self.stack.append(("leave", id(value)))
+        return True
+
+    def _constraints(self, value: Any, f: Field, path: str, before: int) -> None:
+        if len(self.out) == before:
+            self.out.extend(constraint_problems(value, f.constraints, path))
+
+    def _field(self, value: Any, f: Field, path: str) -> None:
+        if value is None:
+            if not f.nullable:
+                self.out.append(Problem(path, "not null", value))
+            return
+        self.stack.append(("constraints", value, f, path, len(self.out)))
+        self.push_type(value, f.type, path, f.nan_allowed)
+
+    def _type(self, value: Any, t: NeutralType, path: str, nan_allowed: bool) -> None:
+        base = t.base
+        if base == "list":
+            if not isinstance(value, (list, tuple)):
+                self.out.append(Problem(path, "list", value))
+                return
+            if t.item is None or not self._enter(value, path):
+                return
+            for i in range(len(value) - 1, -1, -1):
+                self.push_type(value[i], t.item, f"{path}[{i}]")
+            return
+        if base == "map":
+            if not isinstance(value, dict):
+                self.out.append(Problem(path, "map", value))
+                return
+            if not self._enter(value, path):
+                return
+            for k, v in reversed(list(value.items())):
+                if t.value is not None:
+                    self.push_type(v, t.value, f"{path}[{k!r}]")
+                if t.key is not None:
+                    self.push_type(k, t.key, f"{path}[{k!r}]")
+            return
+        if base == "struct":
+            if t.fields is None:
+                return
+            self.push_row(RowSchema("struct", t.fields), value, path)
+            return
+        if base == "ref":
+            if self.definitions is None or t.ref is None:
+                return
+            try:
+                schema = self.definitions.definition(t.ref)
+            except KeyError:
+                self.out.append(Problem(path, f"a definition named {t.ref}", value))
+                return
+            self.push_row(schema, value, path)
+            return
+        self.out.extend(_scalar_problems(value, t, path, nan_allowed))
+
+    def _row(self, schema: RowSchema, row: Any, path: str,
+             read: Callable[[Any, str], tuple[bool, Any]],
+             columns: Callable[[Any], tuple[str, ...] | None]) -> None:
+        if (not isinstance(row, (dict, list, tuple, set)) and not hasattr(row, "__dict__")
+                and not hasattr(row, "__slots__")
+                and not any(read(row, f.name)[0] for f in schema.fields)):
+            self.out.append(Problem(path, schema.name, row))
+            return
+        if not self._enter(row, path):
+            return
+        if schema.column_policy == "exact":
+            self.stack.append(("extras", schema, row, path, columns))
+        for f in reversed(schema.fields):
+            present, value = read(row, f.name)
+            if not present:
+                if f.required and f.default is NO_DEFAULT:
+                    self.stack.append(("missing", f"{path}.{f.name}"))
+                continue
+            self.push_field(value, f, f"{path}.{f.name}")
+
+    def _missing(self, path: str) -> None:
+        self.out.append(Problem(path, "present", None))
+
+    def _extras(self, schema: RowSchema, row: Any, path: str,
+                columns: Callable[[Any], tuple[str, ...] | None]) -> None:
+        names = columns(row)
+        if names is not None:
+            for extra in names:
+                if extra not in schema.names:
+                    self.out.append(Problem(f"{path}.{extra}", "a column of the schema", None))
 
 
 def constraint_problems(value: Any, c: Constraints, path: str = "") -> list[Problem]:
@@ -134,15 +251,13 @@ def constraint_problems(value: Any, c: Constraints, path: str = "") -> list[Prob
     return out
 
 
-def field_problems(value: Any, f: Field, path: str = "") -> list[Problem]:
+def field_problems(value: Any, f: Field, path: str = "",
+                   definitions: RowSchema | None = None) -> list[Problem]:
     """Every way `value` fails field `f`: null where none is allowed,
     the type, then the constraints."""
-    if value is None:
-        return [] if f.nullable else [Problem(path, "not null", value)]
-    out = type_problems(value, f.type, path, f.nan_allowed)
-    if out:
-        return out
-    return constraint_problems(value, f.constraints, path)
+    walker = _Walker(definitions)
+    walker.push_field(value, f, path)
+    return walker.run()
 
 
 def _read(row: Any, name: str) -> tuple[bool, Any]:
@@ -164,25 +279,15 @@ def _columns_of(row: Any) -> tuple[str, ...] | None:
 
 def row_problems(schema: RowSchema, row: Any, path: str = "",
                  read: Callable[[Any, str], tuple[bool, Any]] = _read,
-                 columns: Callable[[Any], tuple[str, ...] | None] = _columns_of) -> list[Problem]:
+                 columns: Callable[[Any], tuple[str, ...] | None] = _columns_of,
+                 definitions: RowSchema | None = None) -> list[Problem]:
     """Every way `row` fails `schema`: a missing required column, an
     extra column under the exact policy, and each field's problems
-    at `path.col`."""
-    out: list[Problem] = []
-    for f in schema.fields:
-        present, value = read(row, f.name)
-        if not present:
-            if f.required and f.default is NO_DEFAULT:
-                out.append(Problem(f"{path}.{f.name}", "present", None))
-            continue
-        out.extend(field_problems(value, f, f"{path}.{f.name}"))
-    if schema.column_policy == "exact":
-        names = columns(row)
-        if names is not None:
-            for extra in names:
-                if extra not in schema.names:
-                    out.append(Problem(f"{path}.{extra}", "a column of the schema", None))
-    return out
+    at `path.col`, at any depth; a `ref` resolves through `definitions`
+    (the schema itself by default)."""
+    walker = _Walker(definitions if definitions is not None else schema)
+    walker.push_row(schema, row, path, read, columns)
+    return walker.run()
 
 
 def check_problems(checks: Iterable[Callable[[Any], bool]], value: Any, path: str = "") -> list[Problem]:
@@ -297,12 +402,16 @@ def json_schema(obj: NeutralType | Field | RowSchema | TableSchema) -> dict[str,
         return out
     if isinstance(obj, RowSchema):
         properties = {f.name: json_schema(f) for f in obj.fields}
+        definitions = {name: json_schema(RowSchema(d.name, d.fields, d.column_policy))
+                       for name, d in obj.definitions}
         required = [f.name for f in obj.fields if f.required and f.default is NO_DEFAULT]
         out = {"type": "object", "title": obj.name, "properties": properties}
         if required:
             out["required"] = required
         if obj.column_policy == "exact":
             out["additionalProperties"] = False
+        if definitions:
+            out["$defs"] = definitions
         return out
     if isinstance(obj, Field):
         out = json_schema(obj.type)
@@ -356,6 +465,8 @@ def json_schema(obj: NeutralType | Field | RowSchema | TableSchema) -> dict[str,
         return out
     if base == "categorical":
         return {"enum": list(t.levels or ())}
+    if base == "ref":
+        return {"$ref": f"#/$defs/{t.ref}"}
     if base == "list":
         return {"type": "array", "items": json_schema(t.item) if t.item else {}}
     if base == "struct":

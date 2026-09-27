@@ -7,6 +7,7 @@ model; members are dicts validated by `jsonschema`. A `$ref` is
 refused at adaptation."""
 from __future__ import annotations
 
+import contextvars
 import importlib.util
 from typing import Any
 
@@ -23,10 +24,41 @@ def _looks_like_row_schema(obj: Any) -> bool:
     return isinstance(obj, dict) and obj.get("type") == "object" and isinstance(obj.get("properties"), dict)
 
 
+_CONTEXT: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
+    "the JSON Schema being read", default=None)
+
+
+def _ref_type(ref: str) -> NeutralType:
+    """A local `$ref` (`#`, `#/$defs/<name>`, `#/definitions/<name>`)
+    as a `ref` to a named definition, read the first time it is met."""
+    context = _CONTEXT.get()
+    if context is None:
+        raise ValueError(f"$ref {ref!r} outside a schema being read")
+    if ref == "#":
+        return NeutralType("ref", ref=context["name"])
+    for prefix in ("#/$defs/", "#/definitions/"):
+        if ref.startswith(prefix):
+            name = ref[len(prefix):]
+            if "/" in name:
+                break
+            if name not in context["definitions"] and name not in context["reading"]:
+                target = (context["root"].get(prefix[2:-1]) or {}).get(name)
+                if not isinstance(target, dict):
+                    raise ValueError(f"$ref {ref!r} names no definition in the schema")
+                context["reading"].add(name)
+                fields = _fields(target) if isinstance(target.get("properties"), dict) else []
+                context["reading"].discard(name)
+                policy = "exact" if target.get("additionalProperties") is False else "open"
+                context["definitions"][name] = RowSchema(name, tuple(fields), column_policy=policy)
+            return NeutralType("ref", ref=name)
+    raise ValueError(f"$ref {ref!r} is not read: only local references (#, #/$defs/..., "
+                     "#/definitions/...) are; inline or bundle the rest")
+
+
 def _type_of(prop: dict[str, Any]) -> tuple[NeutralType, bool]:
     """`(type, nullable)` of one property."""
     if "$ref" in prop:
-        raise ValueError("a $ref in a JSON Schema is not read; inline the definition")
+        return _ref_type(str(prop["$ref"])), False
     if "enum" in prop and "type" not in prop:
         return NeutralType("categorical", levels=tuple(prop["enum"])), None in prop["enum"]
     if "anyOf" in prop or "oneOf" in prop:
@@ -84,9 +116,19 @@ def _fields(schema: dict[str, Any]) -> list[Field]:
 
 
 def schema_of(schema: dict[str, Any]) -> RowSchema:
-    """The row schema of a JSON Schema object."""
+    """The row schema of a JSON Schema object, its local `$ref`s read
+    into named definitions."""
+    name = str(schema.get("title") or "object")
+    context: dict[str, Any] = {"root": schema, "name": name, "definitions": {},
+                               "reading": set()}
+    token = _CONTEXT.set(context)
+    try:
+        fields = _fields(schema)
+    finally:
+        _CONTEXT.reset(token)
     policy = "exact" if schema.get("additionalProperties") is False else "open"
-    return RowSchema(str(schema.get("title") or "object"), tuple(_fields(schema)), column_policy=policy)
+    return RowSchema(name, tuple(fields), column_policy=policy,
+                     definitions=tuple(context["definitions"].items()))
 
 
 @priority(DOCUMENT)

@@ -4,6 +4,7 @@
 single records of the schema in one ecosystem."""
 from __future__ import annotations
 
+import functools
 import random
 from collections.abc import Iterable
 from typing import Any
@@ -12,7 +13,7 @@ from .._surface import HazardValue, LanguageRef, Problem, domain_bound_from_json
 from . import generate as _gen
 from .checks import check_problems, json_schema
 from .ecosystems._base import Ecosystem
-from .model import Field, RowSchema, TableSchema
+from .model import SAMPLING_BOUNDS, Field, RowSchema, TableSchema
 
 _REJECTION_TRIES = 50
 
@@ -67,6 +68,24 @@ def _field_bound(f: Field) -> Any:
     return None
 
 
+def _within_budget(method: Any) -> Any:
+    """Run a method that draws nested values under the language's
+    draw budget, so a recursive schema's draws resolve its references
+    and always end."""
+    @functools.wraps(method)
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+        bounds = self.sampling
+        with _gen.drawing_within(self.schema, depth=bounds["depth"], nodes=bounds["nodes"],
+                                 children=bounds["children"]):
+            return method(self, *args, **kwargs)
+    return wrapper
+
+
+#: the budget for a schema that does not refer to itself: wide enough
+#: never to cut a draw short
+_FLAT_BUDGET = {"depth": 64, "nodes": 1_000_000, "children": 1_000_000}
+
+
 class RowLanguage:
     """A language whose members are records of `schema` in
     `ecosystem`. Membership is the ecosystem's validation plus the
@@ -102,6 +121,7 @@ class RowLanguage:
     def _build(self, values: dict[str, Any]) -> Any:
         return self.ecosystem.build_row(self.schema, values)
 
+    @_within_budget
     def draw_values(self, rng: random.Random) -> dict[str, Any]:
         """One neutral record: a value per field, absent fields left
         out when they are optional one draw in eight."""
@@ -151,6 +171,7 @@ class RowLanguage:
                 out.append(row)
         return tuple(out)
 
+    @_within_budget
     def hazards(self) -> tuple[HazardValue, ...]:
         """Per field, one record with that field at each of its
         hazards and every other field at its simplest member; only
@@ -169,6 +190,7 @@ class RowLanguage:
                     out.append(HazardValue(hazard.kind, row, f"{f.name}: {hazard.note}"))
         return tuple(out)
 
+    @_within_budget
     def outside(self, rng: random.Random) -> Any:
         """A non-member near the boundary: one field at a value that
         breaks it, a required column missing, or an extra column."""
@@ -200,6 +222,7 @@ class RowLanguage:
                 return row
         return None
 
+    @_within_budget
     def shrink(self, value: Any) -> Iterable[Any]:
         """Records with one field moved to its simplest member, each
         a member itself."""
@@ -230,8 +253,19 @@ class RowLanguage:
     def render(self, ascii_mode: bool = True) -> str:
         return f"L[{self.name}]"
 
+    @property
+    def sampling(self) -> dict[str, int]:
+        """The bounds random members are drawn within: for a schema that
+        refers to itself and states no bound of its own, the published
+        sampling bounds, which are sampling choices and never bounds on
+        the language's members."""
+        return dict(SAMPLING_BOUNDS) if self.schema.recursive else dict(_FLAT_BUDGET)
+
     def to_json(self) -> dict[str, Any]:
-        return json_schema(self.schema)
+        out = json_schema(self.schema)
+        if self.schema.recursive:
+            out.setdefault("x-mathema", {})["sampling"] = self.sampling
+        return out
 
 
 def _read(row: Any, name: str) -> tuple[bool, Any]:

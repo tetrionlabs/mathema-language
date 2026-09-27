@@ -7,6 +7,7 @@ standard-library adaptors: the scalar types, `Optional`, `Literal`,
 `pattern`), lists, dicts and nested records."""
 from __future__ import annotations
 
+import contextvars
 import dataclasses
 import datetime as _dt
 import decimal
@@ -14,7 +15,7 @@ import types
 import typing
 from typing import Any
 
-from ..model import Constraints, Field, NeutralType
+from ..model import Constraints, Field, NeutralType, RowSchema
 
 _SCALARS: dict[Any, str] = {
     bool: "bool", int: "int", float: "float", decimal.Decimal: "decimal",
@@ -70,6 +71,69 @@ def field_of(name: str, hint: Any, *, required: bool = True, default: Any = ...,
                  default=NO_DEFAULT if default is ... else default)
 
 
+_READING: contextvars.ContextVar[dict[Any, str] | None] = contextvars.ContextVar(
+    "record types being read", default=None)
+_DEFINITIONS: contextvars.ContextVar[dict[str, RowSchema] | None] = contextvars.ContextVar(
+    "record types read", default=None)
+
+
+def record_name(cls: Any) -> str:
+    """The name a record type goes by in a schema's definitions."""
+    return str(getattr(cls, "__qualname__", None) or getattr(cls, "__name__", repr(cls)))
+
+
+def _construct_of(cls: Any) -> Any:
+    """How a struct of this record type is built from its field values."""
+    if isinstance(cls, type) and dataclasses.is_dataclass(cls):
+        return cls
+    if isinstance(cls, type) and isinstance(getattr(cls, "model_fields", None), dict):
+        return getattr(cls, "model_construct", None)
+    return None
+
+
+def _record_fields(cls: Any) -> list[Field] | None:
+    if isinstance(cls, type) and dataclasses.is_dataclass(cls):
+        return dataclass_fields(cls)
+    if typing.is_typeddict(cls):
+        return typeddict_fields(cls)
+    if isinstance(cls, type) and isinstance(getattr(cls, "model_fields", None), dict):
+        return pydantic_fields(cls)
+    return None
+
+
+def read_record(cls: Any) -> tuple[list[Field], tuple[tuple[str, RowSchema], ...]]:
+    """The fields of a record type and every record type reached from
+    it, as definitions: a type met again while it is still being read
+    is a `ref` to it, which is how a schema that refers to itself is
+    read without reading forever."""
+    reading = _READING.get()
+    definitions = _DEFINITIONS.get()
+    outermost = reading is None
+    if outermost:
+        reading, definitions = {}, {}
+        tokens = (_READING.set(reading), _DEFINITIONS.set(definitions))
+    assert reading is not None and definitions is not None
+    try:
+        reading[cls] = record_name(cls)
+        fields = _record_fields(cls) or []
+        del reading[cls]
+        definitions[record_name(cls)] = RowSchema(
+            record_name(cls), tuple(fields), construct=_construct_of(cls))
+        return fields, tuple(definitions.items())
+    finally:
+        if outermost:
+            _READING.reset(tokens[0])
+            _DEFINITIONS.reset(tokens[1])
+
+
+def _record_type(hint: Any) -> NeutralType:
+    reading = _READING.get()
+    if reading is not None and hint in reading:
+        return NeutralType("ref", ref=reading[hint], construct=_construct_of(hint))
+    fields, _ = read_record(hint)
+    return NeutralType("struct", fields=tuple(fields), construct=_construct_of(hint))
+
+
 def type_of(hint: Any) -> NeutralType:
     """The neutral type a hint names, `any` when it names none."""
     if hint in _SCALARS:
@@ -85,12 +149,9 @@ def type_of(hint: Any) -> NeutralType:
         args = typing.get_args(hint)
         return NeutralType("map", key=type_of(args[0]) if args else None,
                            value=type_of(args[1]) if len(args) > 1 else None)
-    if isinstance(hint, type) and dataclasses.is_dataclass(hint):
-        return NeutralType("struct", fields=tuple(dataclass_fields(hint)))
-    if typing.is_typeddict(hint):
-        return NeutralType("struct", fields=tuple(typeddict_fields(hint)))
-    if isinstance(hint, type) and isinstance(getattr(hint, "model_fields", None), dict):
-        return NeutralType("struct", fields=tuple(pydantic_fields(hint)))
+    if (isinstance(hint, type) and dataclasses.is_dataclass(hint)) or typing.is_typeddict(hint) \
+            or (isinstance(hint, type) and isinstance(getattr(hint, "model_fields", None), dict)):
+        return _record_type(hint)
     if isinstance(hint, type) and issubclass(hint, bool):
         return NeutralType("bool")
     if isinstance(hint, type):

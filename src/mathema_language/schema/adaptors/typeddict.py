@@ -13,18 +13,19 @@ from ..._priority import STRUCTURAL, priority
 from ..ecosystems.plain import PlainEcosystem
 from ..languages import RowLanguage
 from ..model import RowSchema
-from ._hints import typeddict_fields
+from ._hints import read_record
 
 
 def schema_of(cls: Any) -> RowSchema:
     """The row schema of a TypedDict."""
-    fields = typeddict_fields(cls)
+    fields, definitions = read_record(cls)
     for f in fields:
         if f.constraints.regex is not None:
             raise ValueError(f"{cls.__name__}.{f.name}: a regular expression on a TypedDict key "
                              "has no validator to hold it to; use a pydantic model or a JSON Schema")
     total = getattr(cls, "__total__", True)
-    return RowSchema(cls.__name__, tuple(fields), column_policy="exact" if total else "open")
+    return RowSchema(cls.__name__, tuple(fields), column_policy="exact" if total else "open",
+                     definitions=definitions)
 
 
 @priority(STRUCTURAL)

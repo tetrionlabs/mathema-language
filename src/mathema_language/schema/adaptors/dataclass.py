@@ -14,17 +14,18 @@ from ..._priority import STRUCTURAL, priority
 from ..ecosystems.plain import AttributeEcosystem
 from ..languages import RowLanguage
 from ..model import RowSchema
-from ._hints import dataclass_fields
+from ._hints import _construct_of, read_record
 
 
 def schema_of(cls: type) -> RowSchema:
     """The row schema of a dataclass."""
-    fields = dataclass_fields(cls)
+    fields, definitions = read_record(cls)
     for f in fields:
         if f.constraints.regex is not None:
             raise ValueError(f"{cls.__name__}.{f.name}: a regular expression on a dataclass field "
                              "has no validator to hold it to; use a pydantic model or a JSON Schema")
-    return RowSchema(cls.__name__, tuple(fields))
+    return RowSchema(cls.__name__, tuple(fields), definitions=definitions,
+                     construct=_construct_of(cls))
 
 
 @priority(STRUCTURAL)

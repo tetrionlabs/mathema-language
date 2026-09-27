@@ -13,7 +13,12 @@ from typing import Any
 
 #: the base types a `NeutralType` can have
 BASES = ("bool", "int", "float", "decimal", "string", "binary", "date", "time",
-         "datetime", "duration", "categorical", "list", "struct", "map", "any")
+         "datetime", "duration", "categorical", "list", "struct", "map", "ref", "any")
+
+#: the draw bounds a recursive schema is sampled within when it states
+#: none of its own; they are sampling choices, published by the
+#: language, never a bound on its members
+SAMPLING_BOUNDS = {"depth": 8, "nodes": 256, "children": 16}
 
 #: the marker for a field with no default and a constraint with no constant
 NO_DEFAULT: Any = type("NoDefault", (), {"__repr__": lambda self: "NO_DEFAULT"})()
@@ -25,7 +30,11 @@ class NeutralType:
     fixed-width number, `precision` and `scale` for a decimal, `unit`
     and `tz` for a datetime or duration (`tz` None means naive),
     `levels` and `ordered` for a categorical, `item` for a list,
-    `fields` for a struct, and `key` and `value` for a map."""
+    `fields` for a struct, `key` and `value` for a map, and for a
+    `ref` the name of a record type among the schema's definitions,
+    which is how a schema refers to itself. `construct` builds a
+    struct's value from its field values (a dataclass or model class);
+    without it a struct's value is a dict."""
     base: str
     bits: int | None = None
     signed: bool = True
@@ -39,6 +48,8 @@ class NeutralType:
     fields: tuple[Field, ...] | None = None
     key: NeutralType | None = None
     value: NeutralType | None = None
+    ref: str | None = None
+    construct: Callable[..., Any] | None = field(default=None, compare=False, repr=False)
 
     def __post_init__(self) -> None:
         if self.base not in BASES:
@@ -64,6 +75,8 @@ class NeutralType:
             return f"list[{self.item.render()}]"
         if self.base == "struct" and self.fields is not None:
             return "struct{" + ", ".join(f"{f.name}: {f.type.render()}" for f in self.fields) + "}"
+        if self.base == "ref" and self.ref is not None:
+            return self.ref
         if self.base == "map" and self.key is not None and self.value is not None:
             return f"map[{self.key.render()}, {self.value.render()}]"
         return self.base
@@ -154,11 +167,36 @@ class RowSchema:
     columns the schema does not name (`column_policy` `"exact"` or
     `"open"`), and opaque row checks, each a predicate over the whole
     row that membership requires and generation satisfies by
-    rejection."""
+    rejection. `definitions` names every record type a `ref` field may
+    point at, the schema itself included when it refers to itself."""
     name: str
     fields: tuple[Field, ...]
     column_policy: str = "exact"
     checks: tuple[Callable[[Any], bool], ...] = ()
+    definitions: tuple[tuple[str, RowSchema], ...] = ()
+    construct: Callable[..., Any] | None = field(default=None, compare=False, repr=False)
+
+    def definition(self, name: str) -> RowSchema:
+        """The record type a `ref` names."""
+        if name == self.name:
+            return self
+        for key, schema in self.definitions:
+            if key == name:
+                return schema
+        raise KeyError(name)
+
+    @property
+    def recursive(self) -> bool:
+        """Whether any field reaches a `ref`, at any depth."""
+        stack = [f.type for f in self.fields]
+        stack += [f.type for _, d in self.definitions for f in d.fields]
+        while stack:
+            t = stack.pop()
+            if t.base == "ref":
+                return True
+            stack += [x for x in (t.item, t.key, t.value) if x is not None]
+            stack += [f.type for f in (t.fields or ())]
+        return False
 
     def __post_init__(self) -> None:
         if self.column_policy not in ("exact", "open"):
