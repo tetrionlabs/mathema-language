@@ -72,7 +72,7 @@ def line_total(line: Line) -> float:
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `line_total` | `for line in L[django_models.Line], f(line) >= 0` | holds | Sampled, not proven: the lift does not yet read the fields of a Django model. |
+| `line_total` | `for line in L[django_models.Line], f(line) >= 0` | proven | The lift reads both bounds off the validators, a quantity of at least one times a price of at least zero. |
 | `line_total` | `for line in L[django_models.Line], f(line) <= 100` | falsified | The price has no upper bound. |
 
 ## A non-member

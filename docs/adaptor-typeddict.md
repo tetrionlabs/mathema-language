@@ -39,7 +39,7 @@ def line_total(line: Line) -> float:
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `line_total` | `for line in L[typeddict_models.Line], f(line) >= 0` | holds | Sampled, not proven: the lift does not yet read a field through a subscript, so the probe decides it over valid records, hazards first. |
+| `line_total` | `for line in L[typeddict_models.Line], f(line) >= 0` | proven | The lift reads both keys' bounds off the annotations, a quantity of at least one times a price of at least zero, through the subscripts the body uses. |
 | `line_total` | `for line in L[typeddict_models.Line], f(line) <= 100` | falsified | The price has no upper bound. |
 
 ## A non-member

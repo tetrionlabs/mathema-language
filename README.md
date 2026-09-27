@@ -157,7 +157,8 @@ one path grammar for every ecosystem, `.qty` for a column and
 
 A row can be proven, not only sampled. Where the body reads only numeric
 fields, and text fields only through `len`, the derive route lifts each
-field the body reads to a symbol bounded by the schema, a quantity
+field the body reads, through an attribute (`o.qty`) or a subscript
+(`o["qty"]`), to a symbol bounded by the schema, for every adaptor, a quantity
 annotated `Ge(1), Le(10)` as a whole number from one to ten, a price
 annotated `Ge(0.0)` as a real at least zero, `len(o.sku)` on a field
 annotated `MaxLen(8)` as a whole number from nought to eight, so

@@ -52,7 +52,7 @@ def line_total(line: dict) -> float:
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `line_total` | `for line in L[jsonschema_models.LINE], f(line) >= 0` | holds | Sampled, not proven: the lift does not yet read a field through a subscript. |
+| `line_total` | `for line in L[jsonschema_models.LINE], f(line) >= 0` | proven | The lift reads both bounds off the schema, a quantity of at least one times a price of at least zero. |
 | `line_total` | `for line in L[jsonschema_models.LINE], f(line) <= 100` | falsified | The price has no upper bound. |
 
 ## A non-member

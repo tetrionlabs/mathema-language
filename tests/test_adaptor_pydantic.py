@@ -35,3 +35,26 @@ def test_a_non_member_is_explained_in_pydantic_s_words():
 
 def test_extra_forbid_is_the_exact_column_policy():
     assert adapt(OrderModel).schema.column_policy == "exact"
+
+
+def _lift_verdict(fn, law):
+    from mathema.conjecture import check_conjectures, claim
+    (p,) = check_conjectures(fn, [claim(law)])
+    assert "UNCORROBORATED" not in (p.note or ""), p.note
+    return p.verdict
+
+
+def total(row) -> float:
+    """Quantity times price."""
+    return row.qty * row.price
+
+
+def width(row) -> int:
+    """The columns the sku takes, with a space either side."""
+    return len(row.sku) + 2
+
+
+def test_the_lift_reads_the_fields_through_this_adaptor():
+    assert _lift_verdict(total, "for row in L[tests._pydantic_shapes.OrderModel], f(row) >= 0") == "proven"
+    assert _lift_verdict(width, "for row in L[tests._pydantic_shapes.OrderModel], f(row) <= 10") == "proven"
+    assert _lift_verdict(width, "for row in L[tests._pydantic_shapes.OrderModel], f(row) <= 9") == "falsified"
