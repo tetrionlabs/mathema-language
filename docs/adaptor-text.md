@@ -3,13 +3,14 @@
 <!-- module: text_models -->
 
 The text adaptor answers two annotations, `str` and `Annotated[str,
-...]`, both with the language of every string, `L[unicode]`, and
-nothing else. It is how a `str` parameter with no binding gets a
-language: the claim needs no `for s in ...`, and the record's note says
-the language was inferred and from where. A length marker on the
-annotation (`MaxLen(80)`, pydantic's `max_length`) is read by mathema
-and refines the language to `L[unicode, len <= 80]`. It needs nothing
-installed beyond mathema and this package.
+...]`, and nothing else. `str` is the language of every string,
+`L[unicode]`; an `Annotated[str, ...]` carrying a length marker
+(`MaxLen(80)`, pydantic's `max_length`, and the `min_length` side) is
+that language refined by the marker, `L[unicode, len <= 80]`, and one
+with no length marker is `L[unicode]`. It is how a `str` parameter with
+no binding gets a language: the claim needs no `for s in ...`, and the
+record's note says the language was inferred and from where. It needs
+nothing installed beyond mathema and this package.
 
 ## What it reads
 

@@ -3,6 +3,8 @@
 """The text languages: alphabets, predicate languages and the hazard
 sub-alphabets, each a `Language` mathema resolves by the name in
 `LANGUAGES`."""
+from typing import Any
+
 from .._priority import STRUCTURAL, priority
 from ._kit import TextLanguage
 from .alphabets import (
@@ -51,9 +53,12 @@ __all__ = ["adapt", "ALNUM", "ALPHA", "ASCII", "BASE64", "C0", "COMBINING", "DIG
 
 
 @priority(STRUCTURAL)
-def adapt(hint: object) -> TextLanguage | None:
-    """The language a text annotation names: every `str` for `str` and
-    for `Annotated[str, ...]`, nothing for any other annotation.
+def adapt(hint: object) -> Any:
+    """The language a text annotation names: every `str` for `str`, and
+    for `Annotated[str, ...]` every `str` refined by the length markers
+    it carries (`max_length`, `min_length`, read by attribute, as
+    `annotated_types` and pydantic spell them), nothing for any other
+    annotation.
     Registered under `mathema.language_adaptors` as `text`, so a `str`
     parameter with no stated domain infers `L[unicode]`."""
     import typing
@@ -61,5 +66,16 @@ def adapt(hint: object) -> TextLanguage | None:
     if hint is str:
         return UNICODE
     if typing.get_origin(hint) is typing.Annotated and typing.get_args(hint)[:1] == (str,):
-        return UNICODE
+        lo, hi = 0, None
+        for marker in typing.get_args(hint)[1:]:
+            found = getattr(marker, "max_length", None)
+            if isinstance(found, int):
+                hi = found if hi is None else min(hi, found)
+            found = getattr(marker, "min_length", None)
+            if isinstance(found, int):
+                lo = max(lo, found)
+        if hi is None and lo == 0:
+            return UNICODE
+        from ..refinements import length, length_bound
+        return length(UNICODE, length_bound(lo, hi))
     return None

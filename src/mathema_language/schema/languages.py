@@ -63,7 +63,7 @@ def _field_bound(f: Field) -> Any:
             "lo": float(c.min_len or 0),
             "hi": float("inf") if c.max_len is None else float(c.max_len),
             "closed_lo": True, "closed_hi": True})
-        return LanguageRef("unicode", length)
+        return LanguageRef("unicode", (("len", length),))
     return None
 
 

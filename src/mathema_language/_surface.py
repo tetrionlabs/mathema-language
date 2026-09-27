@@ -19,6 +19,7 @@ from mathema.interfaces.extension import LanguageRef as LanguageRef
 from mathema.interfaces.extension import OutputPredicateFamily as OutputPredicateFamily
 from mathema.interfaces.extension import Problem as Problem
 from mathema.interfaces.extension import ProofResult as ProofResult
+from mathema.interfaces.extension import RefinedLanguage as RefinedLanguage
 from mathema.interfaces.extension import SafetyFamily as SafetyFamily
 from mathema.interfaces.extension import StringLanguage as StringLanguage
 from mathema.interfaces.extension import UnknownLanguage as UnknownLanguage
@@ -35,6 +36,7 @@ from mathema.interfaces.extension import lexicon_problems as lexicon_problems
 from mathema.interfaces.extension import lexicon_source as lexicon_source
 from mathema.interfaces.extension import pinned_float_env as pinned_float_env
 from mathema.interfaces.extension import probe_trials as probe_trials
+from mathema.interfaces.extension import refinement_keys as refinement_keys
 from mathema.interfaces.extension import register_language as register_language
 from mathema.interfaces.extension import resolve_language as resolve_language
 from mathema.interfaces.extension import sample_bound as sample_bound
