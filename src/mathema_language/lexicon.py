@@ -75,6 +75,19 @@ LEXICON: dict[str, str] = {
     # one under that bound, a valid record is the witness
     "row_length_field_tight": "for line in L[mathema_language.lexicon.Line], f(line) <= 9",
     # the hazard families over a language
+    # paths: bindings that reach into a member through fields and
+    # indices, a path past the end or through a missing field reaching
+    # the missing value
+    "path_every_element": "for o in L[mathema_language.lexicon.Order], o.lines[*].qty in [1, 3], f(o) <= 3",
+    "path_every_element_unbound": "for o in L[mathema_language.lexicon.Order], f(o) <= 3",
+    "path_nested_present":
+        "for o in L[mathema_language.lexicon.Order], o.address.zip in L[digit] \\ {missing}, f(o) == True",
+    "path_nested_missing": "for o in L[mathema_language.lexicon.Order], f(o) == True",
+    "path_nested_length": "for o in L[mathema_language.lexicon.Order], f(o) <= 5",
+    "path_nested_length_tight": "for o in L[mathema_language.lexicon.Order], f(o) <= 4",
+    "path_index_present":
+        "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7] \\ {missing}, f(o) >= 7",
+    "path_index_missing": "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7], f(o) >= 7",
     # structure: recursive record trees, bounded by depth, nodes and
     # children, and claims about folds over them proven by induction
     "structure_induction_constant": "for t in L[mathema_language.lexicon.Branch, depth <= 20], f(t) >= 1",
@@ -182,6 +195,40 @@ def accent(s: str) -> str:
 
 
 @dataclass
+class Address:
+    """Where an order ships: a postal code of up to five characters."""
+    zip: Annotated[str, MaxLen(5)] | None = None
+
+
+@dataclass
+class OrderLine:
+    """One order line: a quantity from one to ten."""
+    qty: Annotated[int, Ge(1), Le(10)]
+
+
+@dataclass
+class Order:
+    """An order: where it ships and its lines."""
+    address: Address
+    lines: list[OrderLine] = field(default_factory=list)
+
+
+def largest_qty(o: Order) -> int:
+    """The largest quantity on any line, 0 for no lines."""
+    return max((line.qty for line in o.lines), default=0)
+
+
+def zip_width(o: Order) -> int:
+    """The columns the postal code takes, 0 when there is none."""
+    return len(o.address.zip) if o.address.zip is not None else 0
+
+
+def has_zip(o: Order) -> bool:
+    """Whether the order has a postal code."""
+    return o.address.zip is not None
+
+
+@dataclass
 class Branch:
     """A tree node: a label and its children."""
     label: int
@@ -225,6 +272,9 @@ SECTIONS: dict[str, tuple[str, ...]] = {
                    "language_token_absent", "language_token_present"),
     "rows": ("row_lift_sign", "row_unbounded_field", "row_length_field",
              "row_length_field_tight"),
+    "paths": ("path_every_element", "path_every_element_unbound", "path_nested_present",
+              "path_nested_missing", "path_nested_length", "path_nested_length_tight",
+              "path_index_present", "path_index_missing"),
     "structure": ("structure_induction_constant", "structure_induction_equation",
                   "structure_induction_unbounded", "structure_induction_base_case",
                   "structure_depth_bound", "structure_depth_bound_tight",
@@ -252,6 +302,14 @@ TAGS: dict[str, tuple[str, ...]] = {
     "row_unbounded_field": ("unbounded field", "no upper bound"),
     "row_length_field": ("field length", "maxlen"),
     "row_length_field_tight": ("longest valid value", "column width"),
+    "path_every_element": ("every element", "each line", "star path"),
+    "path_every_element_unbound": ("nested quantity", "line quantity"),
+    "path_nested_present": ("nested field", "required path", "postal code"),
+    "path_nested_missing": ("missing nested field", "optional field"),
+    "path_nested_length": ("nested max length", "column width"),
+    "path_nested_length_tight": ("longest nested value",),
+    "path_index_present": ("first element", "index path"),
+    "path_index_missing": ("past the end", "empty list", "index out of range"),
     "structure_induction_constant": ("structural induction", "recursive function", "tree size"),
     "structure_induction_equation": ("induction equation", "two recursive functions"),
     "structure_induction_unbounded": ("recursion limit", "recursionerror", "deep tree"),
@@ -287,6 +345,10 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "first": (first, ["family_arbitrary_input"]),
     "accent": (accent, ["family_output_leaves_language"]),
     "escape_angle": (escape_angle, ["language_section_inverse"]),
+    "largest_qty": (largest_qty, ["path_every_element", "path_every_element_unbound",
+                                  "path_index_present", "path_index_missing"]),
+    "has_zip": (has_zip, ["path_nested_present", "path_nested_missing"]),
+    "zip_width": (zip_width, ["path_nested_length", "path_nested_length_tight"]),
     "tree_size": (tree_size, ["structure_induction_constant", "structure_induction_unbounded",
                               "structure_induction_base_case", "structure_nodes_bound"]),
     "tree_twice": (tree_twice, ["structure_induction_equation"]),
@@ -296,7 +358,7 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "loads": (loads, ["language_retraction"]),
 }
 
-__all__ = ["EXAMPLE_FUNCTIONS", "LEXICON", "SECTIONS", "TAGS", "Branch", "Line", "accent",
-           "ascii_only", "canonical_json", "collapse_spaces", "digits_to_int", "escape_angle", "escape_html", "first",
+__all__ = ["EXAMPLE_FUNCTIONS", "LEXICON", "SECTIONS", "TAGS", "Address", "Branch", "Line",
+           "Order", "OrderLine", "accent", "ascii_only", "canonical_json", "collapse_spaces", "digits_to_int", "escape_angle", "escape_html", "first", "has_zip", "largest_qty",
            "headline", "is_slug", "line_total", "line_width", "loads", "render_count",
-           "slugify", "tree_height", "tree_size", "tree_twice", "unescape_angle", "widest"]
+           "slugify", "tree_height", "tree_size", "tree_twice", "unescape_angle", "widest", "zip_width"]

@@ -79,6 +79,46 @@
   "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≤ 9",
   "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) <= 9"
  },
+ "path_every_element": {
+  "input": "for o in L[mathema_language.lexicon.Order], o.lines[*].qty in [1, 3], f(o) <= 3",
+  "unicode": "∀ o ∈ L[mathema_language.lexicon.Order]|missing, o.lines[*].qty ∈ [1.0, 3.0] ⊂ ℝ ∪ {∅}, f(o) ≤ 3",
+  "ascii": "for o in L[mathema_language.lexicon.Order]|missing, o.lines[*].qty in [1.0, 3.0]:float|missing, f(o) <= 3"
+ },
+ "path_every_element_unbound": {
+  "input": "for o in L[mathema_language.lexicon.Order], f(o) <= 3",
+  "unicode": "∀ o ∈ L[mathema_language.lexicon.Order]|missing, f(o) ≤ 3",
+  "ascii": "for o in L[mathema_language.lexicon.Order]|missing, f(o) <= 3"
+ },
+ "path_nested_present": {
+  "input": "for o in L[mathema_language.lexicon.Order], o.address.zip in L[digit] \\ {missing}, f(o) == True",
+  "unicode": "∀ o ∈ L[mathema_language.lexicon.Order]|missing, o.address.zip ∈ L[digit] \\ {missing}, f(o) = True",
+  "ascii": "for o in L[mathema_language.lexicon.Order]|missing, o.address.zip in L[digit] \\ {missing}, f(o) = True"
+ },
+ "path_nested_missing": {
+  "input": "for o in L[mathema_language.lexicon.Order], f(o) == True",
+  "unicode": "∀ o ∈ L[mathema_language.lexicon.Order]|missing, f(o) = True",
+  "ascii": "for o in L[mathema_language.lexicon.Order]|missing, f(o) = True"
+ },
+ "path_nested_length": {
+  "input": "for o in L[mathema_language.lexicon.Order], f(o) <= 5",
+  "unicode": "∀ o ∈ L[mathema_language.lexicon.Order]|missing, f(o) ≤ 5",
+  "ascii": "for o in L[mathema_language.lexicon.Order]|missing, f(o) <= 5"
+ },
+ "path_nested_length_tight": {
+  "input": "for o in L[mathema_language.lexicon.Order], f(o) <= 4",
+  "unicode": "∀ o ∈ L[mathema_language.lexicon.Order]|missing, f(o) ≤ 4",
+  "ascii": "for o in L[mathema_language.lexicon.Order]|missing, f(o) <= 4"
+ },
+ "path_index_present": {
+  "input": "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7] \\ {missing}, f(o) >= 7",
+  "unicode": "∀ o ∈ L[mathema_language.lexicon.Order]|missing, o.lines[0].qty ∈ [7.0, 7.0] ⊂ ℝ \\ {∅}, f(o) ≥ 7",
+  "ascii": "for o in L[mathema_language.lexicon.Order]|missing, o.lines[0].qty in [7.0, 7.0] \\ {missing}:float, f(o) >= 7"
+ },
+ "path_index_missing": {
+  "input": "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7], f(o) >= 7",
+  "unicode": "∀ o ∈ L[mathema_language.lexicon.Order]|missing, o.lines[0].qty ∈ [7.0, 7.0] ⊂ ℝ ∪ {∅}, f(o) ≥ 7",
+  "ascii": "for o in L[mathema_language.lexicon.Order]|missing, o.lines[0].qty in [7.0, 7.0]:float|missing, f(o) >= 7"
+ },
  "structure_induction_constant": {
   "input": "for t in L[mathema_language.lexicon.Branch, depth <= 20], f(t) >= 1",
   "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 20]|missing, f(t) ≥ 1",
