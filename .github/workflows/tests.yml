@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      # until mathema 0.7.0 is on PyPI: core from its integration branch,
+      # until mathema 0.6.1 is on PyPI: core from its integration branch,
       # then this package without dependency resolution
       - run: pip install "mathema @ git+https://github.com/tetrionlabs/mathema@develop"
       - run: pip install --no-deps . && pip install pytest ruff mypy

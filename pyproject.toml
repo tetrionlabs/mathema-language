@@ -28,9 +28,9 @@ classifiers = [
   "Topic :: Software Development :: Quality Assurance",
   "Typing :: Typed",
 ]
-# 0.7.0 is the first mathema with the languages, families and sampling
-# seams; the pin moves to >=0.7 in the release that follows it
-dependencies = ["mathema>=0.6"]
+# 0.6.1 is the first mathema with the language grammar and the
+# languages, families and sampling seams
+dependencies = ["mathema>=0.6.1"]
 
 [project.optional-dependencies]
 pydantic = ["pydantic>=2.0"]
