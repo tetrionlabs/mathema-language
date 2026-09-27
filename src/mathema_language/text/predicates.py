@@ -27,9 +27,11 @@ _SHELL_SAFE_CHARS = string.ascii_letters + string.digits + "@%_-+=:,./"
 
 
 def _is_json(s: str) -> bool:
+    """Whether `json.loads` reads `s`; a document nested past the
+    interpreter's recursion limit is one it does not."""
     try:
         json.loads(s)
-    except ValueError:
+    except (ValueError, RecursionError):
         return False
     return True
 
