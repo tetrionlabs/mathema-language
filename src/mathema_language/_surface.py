@@ -28,6 +28,7 @@ from mathema.interfaces.extension import (
     domain_bound_from_json as domain_bound_from_json,
 )
 from mathema.interfaces.extension import format_point as format_point
+from mathema.interfaces.extension import language_adaptors as language_adaptors
 from mathema.interfaces.extension import language_problems as language_problems
 from mathema.interfaces.extension import language_vocabulary as language_vocabulary
 from mathema.interfaces.extension import pinned_float_env as pinned_float_env

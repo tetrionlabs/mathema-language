@@ -3,6 +3,7 @@
 """The text languages: alphabets, predicate languages and the hazard
 sub-alphabets, each a `Language` mathema resolves by the name in
 `LANGUAGES`."""
+from .._priority import STRUCTURAL, priority
 from ._kit import TextLanguage
 from .alphabets import (
     ALNUM,
@@ -49,6 +50,7 @@ __all__ = ["adapt", "ALNUM", "ALPHA", "ASCII", "BASE64", "C0", "COMBINING", "DIG
            "TEXT_HAZARDS", "TextLanguage", "UNICODE", "UUID"]
 
 
+@priority(STRUCTURAL)
 def adapt(hint: object) -> TextLanguage | None:
     """The language a text annotation names: every `str` for `str` and
     for `Annotated[str, ...]`, nothing for any other annotation.

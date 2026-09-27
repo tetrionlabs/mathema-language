@@ -2,31 +2,26 @@
 # Copyright 2026 Tetrion Ltd
 """The adaptors, each turning one ecosystem's schema object into a
 `RowLanguage` and answering "not mine" without importing that
-ecosystem. Registered one per entry point under
-`mathema.language_adaptors`; `adapt_row` tries them in order."""
+ecosystem. Each is an ordinary registration under
+`mathema.language_adaptors`, and `adapt_row` asks the registry in
+mathema's order (priority, then name), so an adaptor from another
+package is found exactly as these are."""
 from __future__ import annotations
 
 from typing import Any
 
-from ..languages import RowLanguage
+from ..._surface import Language, language_adaptors
 
 
-def adapt_row(obj: Any) -> RowLanguage | None:
-    """The row language of `obj` through the first adaptor that
-    accepts it, or None."""
-    from . import dataclass, typeddict
-    for adapt in (dataclass.adapt, typeddict.adapt):
+def adapt_row(obj: Any) -> Language | None:
+    """The row language of `obj` from the first registered adaptor, in
+    mathema's order, that answers one (a language of kind `row`), or
+    None. An adaptor that refuses the object raises, and the refusal
+    reaches the caller."""
+    for _name, adapt in language_adaptors():
         language = adapt(obj)
-        if language is not None:
+        if language is not None and getattr(language, "kind", None) == "row":
             return language
-    for name in ("pydantic", "jsonschema", "sqlalchemy", "django"):
-        try:
-            module = __import__(f"{__name__}.{name}", fromlist=["adapt"])
-        except ImportError:
-            continue
-        adapted = module.adapt(obj)
-        if isinstance(adapted, RowLanguage):
-            return adapted
     return None
 
 

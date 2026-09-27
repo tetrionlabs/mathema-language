@@ -42,3 +42,16 @@ class LineDj(models.Model):
     sku = models.ForeignKey(SkuDj, on_delete=models.CASCADE)
     qty = models.PositiveIntegerField()
     batch = models.SlugField(max_length=12)
+
+
+def _upper(value):
+    from django.core.exceptions import ValidationError
+    if value != value.upper():
+        raise ValidationError("code must be upper case")
+
+
+class CodedDj(models.Model):
+    class Meta:
+        app_label = "mathema_language_tests"
+
+    code = models.CharField(max_length=8, validators=[_upper])

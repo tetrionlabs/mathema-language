@@ -10,6 +10,7 @@ from __future__ import annotations
 import sys
 from typing import Any
 
+from ..._priority import LIBRARY, priority
 from ..ecosystems.django import DjangoEcosystem
 from ..languages import RowLanguage
 from ..model import Constraints, Field, ForeignKey, NeutralType, RowSchema, TableSchema
@@ -119,6 +120,7 @@ def _table_schema_of(model: type) -> TableSchema:
                        foreign_keys=tuple(foreign))
 
 
+@priority(LIBRARY)
 def adapt(obj: Any) -> RowLanguage | None:
     """The row language of a Django model, or None for anything else."""
     if not _is_model(obj):

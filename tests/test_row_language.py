@@ -6,6 +6,7 @@ are members by the ecosystem's own validator, `outside` never is,
 shrinking stays inside, `fields()` states the one-deep bounds, a
 finite schema enumerates, and a schema nothing satisfies says so
 with the counts."""
+import importlib.util
 import random
 from dataclasses import dataclass, field
 from typing import Annotated, Literal, Optional, TypedDict
@@ -60,6 +61,8 @@ def _shapes():
                                ("jsonschema", "tests._jsonschema_shapes", "ORDER_SCHEMA"),
                                ("sqlalchemy", "tests._sqlalchemy_shapes", "ORDERS_TABLE"),
                                ("django", "tests._django_shapes", "OrderModelDj")):
+        if importlib.util.find_spec(name) is None:
+            continue
         try:
             shapes = __import__(module, fromlist=[attr])
         except ImportError:
@@ -171,6 +174,7 @@ def test_a_regex_on_a_stdlib_schema_is_refused_at_adaptation():
 
 
 def test_a_regex_field_generates_matching_members():
+    pytest.importorskip("jsonschema")
     from mathema_language.schema.adaptors.jsonschema import adapt as adapt_json
 
     lang = adapt_json({"type": "object", "title": "Coded",

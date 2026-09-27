@@ -9,6 +9,7 @@ from __future__ import annotations
 import typing
 from typing import Any
 
+from ..._priority import STRUCTURAL, priority
 from ..ecosystems.plain import PlainEcosystem
 from ..languages import RowLanguage
 from ..model import RowSchema
@@ -26,6 +27,7 @@ def schema_of(cls: Any) -> RowSchema:
     return RowSchema(cls.__name__, tuple(fields), column_policy="exact" if total else "open")
 
 
+@priority(STRUCTURAL)
 def adapt(obj: Any) -> RowLanguage | None:
     """The row language of a TypedDict, or None for anything else."""
     if not typing.is_typeddict(obj):

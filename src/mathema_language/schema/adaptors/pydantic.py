@@ -9,6 +9,7 @@ from __future__ import annotations
 import sys
 from typing import Any
 
+from ..._priority import LIBRARY, priority
 from ..ecosystems.pydantic import PydanticEcosystem
 from ..languages import RowLanguage
 from ..model import RowSchema
@@ -31,6 +32,7 @@ def schema_of(model: type) -> RowSchema:
     return RowSchema(model.__name__, tuple(pydantic_fields(model)), column_policy=policy)
 
 
+@priority(LIBRARY)
 def adapt(obj: Any) -> RowLanguage | None:
     """The row language of a pydantic model, or None for anything else."""
     if not _is_model(obj):

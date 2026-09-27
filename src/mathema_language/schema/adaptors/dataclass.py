@@ -10,6 +10,7 @@ from __future__ import annotations
 import dataclasses
 from typing import Any
 
+from ..._priority import STRUCTURAL, priority
 from ..ecosystems.plain import AttributeEcosystem
 from ..languages import RowLanguage
 from ..model import RowSchema
@@ -26,6 +27,7 @@ def schema_of(cls: type) -> RowSchema:
     return RowSchema(cls.__name__, tuple(fields))
 
 
+@priority(STRUCTURAL)
 def adapt(obj: Any) -> RowLanguage | None:
     """The row language of a dataclass, or None for anything else."""
     if not (isinstance(obj, type) and dataclasses.is_dataclass(obj)):

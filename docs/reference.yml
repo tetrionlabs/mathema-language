@@ -1,0 +1,15 @@
+# The pages of the language reference, in order, as mathema's site
+# imports them under /language/reference/. A nested list is a section.
+nav:
+  - Languages: index.md
+  - Rows: rows.md
+  - Adaptors:
+      - Writing an adaptor: adaptors.md
+      - Dataclasses: adaptor-dataclass.md
+      - TypedDicts: adaptor-typeddict.md
+      - pydantic: adaptor-pydantic.md
+      - JSON Schema: adaptor-jsonschema.md
+      - SQLAlchemy: adaptor-sqlalchemy.md
+      - Django: adaptor-django.md
+      - Text annotations: adaptor-text.md
+  - What to claim: catalogue.md

@@ -1,62 +1,14 @@
-# mathema-language
+# Languages
 
-The languages a mathema claim quantifies text over.
+A language is the set of values a name in a claim stands for, written
+`L[ascii]` or `L[json]` where a numeric claim writes `R` or `[0, 1]`.
+mathema parses, renders and records the domain; this package supplies
+the names, the hazards every probe visits first, and the generators
+that reach the members a fixed pool never would. The grammar itself,
+and what a record states about a language, is on
+[mathema's language page](https://mathema.tetrionlabs.com/language/).
 
-mathema checks claims about code, and a claim about a function of text
-needs a domain the way a claim about a function of numbers does, namely
-a language: the set of strings a name stands for, written `L[ascii]` or
-`L[json]` where a numeric claim writes `R` or `[0, 1]`. mathema itself
-parses, renders and records that domain and resolves no name, so on its
-own a claim over `L[unicode]` is not wrong, only unresolved. This package
-supplies the names, with Python's own reading of each alphabet or parser
-as the membership test, the hazard strings real code mishandles as the
-first members every probe visits, and a generator that reaches the
-astral planes and the character categories a fixed pool never would.
-
-## Install
-
-```
-pip install mathema-language
-```
-
-mathema discovers it through the `mathema.languages` entry point once
-installed; there is nothing to configure.
-
-## Before and after
-
-```
-claim: for s in L[unicode], len(f(s)) == len(s)        f = str.upper
-
-without:  skipped    unknown language L[unicode]: known languages are none in
-                     this process; a package adds one under the
-                     'mathema.languages' entry-point group, and
-                     'pip install "mathema[language]"' brings the built-in
-                     alphabets and languages
-with:     falsified  ('\u0390'): 3 vs 1
-
-claim: for s in L[latin-1], f(s) == s                   f = ascii_only
-
-with:     falsified  ('\u00ff'): raised UnicodeEncodeError
-
-claim: for s in L[ascii], f(s) == s                     f = ascii_only
-
-with:     holds      n=128
-```
-
-The falsifications are the point. Upper-casing looks like it keeps a
-string's length and does not over the whole of Unicode, because `\u0390`
-(iota with dialytika and tonos) upper-cases to three code points and
-`\u00df` to two, and a probe that never draws those characters would
-report `holds` for a claim that is false; the hazard corpus here is
-built from what the test suites of Django, Werkzeug, MarkupSafe, ftfy and
-CPython found the hard way, so those characters are among the first
-strings tried, not a lucky draw. The second claim is the same lesson at
-an alphabet boundary: `\u00ff` (y with diaeresis) is latin-1 and not
-ascii, and the function that encodes as ascii is falsified with it as
-the witness, while over `L[ascii]` the probe never leaves the language
-and the claim holds.
-
-## The languages
+## The text languages
 
 Every alphabet language is every string over its characters, the empty
 string included, the way a Kleene star reads; `L[ascii] \ {""}` is the
@@ -96,7 +48,7 @@ multilingual plane).
 
 A claim can hold an output to a language, or keep a token out of it,
 with the `in` relation, and it reads the way it is written (the
-functions are the catalogue's, below):
+functions are [the catalogue's](catalogue.md)):
 
 ```
 for s in L[unicode], f(s) in L[slug]          f = slugify
@@ -127,57 +79,6 @@ its own, with the inference stated in the record's note, and in a claim
 that writes an `L[...]` domain `len(s)` renders as `len(s)` rather than
 as mathema's canonical `dim(s, 0)`.
 
-## What to claim
-
-The nature of a function over text (parser, renderer, normaliser,
-validator, escaper, consumer) says which claims are worth writing before
-you have read the body, and [the catalogue](docs/catalogue.md) lists them
-by nature with a real function under each, every row run by the test
-suite and held to the verdict printed beside it.
-
-## Rows
-
-A schema is a language too. `L[myapp.models.Order]` names the records of
-a dataclass, a TypedDict, a pydantic model, a JSON Schema, a SQLAlchemy
-table or a Django model, read into one neutral model by an adaptor and
-validated by the library's own validator where it has one (pydantic's,
-the JSON Schema validator, an in-memory SQLite database for SQLAlchemy,
-`full_clean` for Django). A parameter annotated with the class infers
-the language on its own:
-
-```
-for o in L[myapp.models.Order], f(o) >= 0
-```
-
-The probe visits one record per field hazard first (the extremes, the
-text corpus in a string column, the longest string a column allows, the
-datetime64[ns] bounds and a DST edge), and a witness names the field in
-one path grammar for every ecosystem, `.qty` for a column and
-`.ship.city` for a nested one.
-
-A row can be proven, not only sampled. Where the body reads only numeric
-fields, and text fields only through `len`, the derive route lifts each
-field the body reads to a symbol bounded by the schema, a quantity
-annotated `Ge(1), Le(10)` as a whole number from one to ten, a price
-annotated `Ge(0.0)` as a real at least zero, `len(o.sku)` on a field
-annotated `MaxLen(8)` as a whole number from nought to eight, so
-`for o in L[Order], f(o) >= 0` over `o.qty * o.price` is proven, and the
-fields the body never reads (a note, a list of tags) do not stand in the
-way. Where the body reads a field the lift has no reading of, a
-`Literal` compared against a string, say, the lift declines, the note
-names the field, and the claim is sampled instead.
-
-The adaptors are ordinary registrations under mathema's
-`mathema.language_adaptors` group, asked in an explicit order (a
-library's own model classes before a schema written as data, both before
-a structural reading of any dataclass), so an adaptor from another
-package is found the same way. [Writing an adaptor](docs/adaptors.md)
-describes the contract, the public surface and
-`mathema_language.conformance`, the harness the package's own adaptors
-pass and a new one's tests can call, and each of the seven has a page of
-its own in [the reference](docs/index.md): what it reads, which
-validator decides membership, and a worked claim.
-
 ## What a probe visits
 
 A language's hazards come first, then random members, and never a value
@@ -207,18 +108,3 @@ members draw from, and the simplest character shrinking prefers. Register
 it in the process with `register_language`, under a `mathema.languages`
 entry point in your own package, or refer to it by its dotted path,
 `L[myapp.text.SLUG]`.
-
-## Requirements
-
-Python 3.10 or later and mathema. The package imports only from
-`mathema.interfaces.extension`, the surface mathema versions for
-extension authors, and a test pins that.
-
-## Licence
-
-Apache-2.0. mathema itself is licensed separately.
-
-## Version
-
-0.1.0. Text languages and the hazard corpus, the hazard families over
-text, and the schema languages of rows.

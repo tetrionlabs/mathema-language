@@ -5,8 +5,16 @@ on:
   pull_request:
   workflow_call:
 
+# Every job installs core from its integration branch until mathema
+# 0.6.1 is on PyPI, then this package without dependency resolution,
+# then only what that job is about. An adaptor that quietly depends on
+# another ecosystem being present fails its own job.
+
 jobs:
-  standalone:
+  base:
+    # no ecosystem at all: the text languages, the families, the
+    # dataclass and TypedDict adaptors, and every adaptor answering
+    # "not mine" without importing its ecosystem
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -17,10 +25,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      # until mathema 0.6.1 is on PyPI: core from its integration branch,
-      # then this package without dependency resolution
       - run: pip install "mathema @ git+https://github.com/tetrionlabs/mathema@develop"
-      - run: pip install --no-deps . && pip install pytest ruff mypy
+      - run: pip install --no-deps . && pip install pytest annotated-types
+      - name: no ecosystem is installed
+        run: |
+          python - <<'PY'
+          import importlib.util
+          present = [m for m in ("pydantic", "jsonschema", "sqlalchemy", "django")
+                     if importlib.util.find_spec(m) is not None]
+          assert not present, present
+          PY
       - name: licence headers
         run: |
           status=0
@@ -31,11 +45,46 @@ jobs:
             fi
           done
           exit $status
-      - run: ruff check .
-      - run: mypy src
       - run: pytest -v
 
-  integration:
+  adaptor:
+    # one ecosystem per job, at its lowest supported version and its
+    # latest release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {ecosystem: pydantic, spec: "pydantic==2.0", python-version: "3.11"}
+          - {ecosystem: pydantic, spec: "pydantic", python-version: "3.13"}
+          - {ecosystem: jsonschema, spec: "jsonschema==4.18.0", python-version: "3.11"}
+          - {ecosystem: jsonschema, spec: "jsonschema", python-version: "3.13"}
+          - {ecosystem: sqlalchemy, spec: "sqlalchemy==2.0.0", python-version: "3.11"}
+          - {ecosystem: sqlalchemy, spec: "sqlalchemy", python-version: "3.13"}
+          - {ecosystem: django, spec: "django==4.2", python-version: "3.11"}
+          - {ecosystem: django, spec: "django", python-version: "3.13"}
+    name: adaptor (${{ matrix.spec }}, Python ${{ matrix.python-version }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install "mathema @ git+https://github.com/tetrionlabs/mathema@develop"
+      - run: pip install --no-deps . && pip install pytest annotated-types "${{ matrix.spec }}"
+      - name: only this ecosystem is installed
+        env:
+          ECOSYSTEM: ${{ matrix.ecosystem }}
+        run: |
+          python - <<'PY'
+          import importlib.util, os
+          others = [m for m in ("pydantic", "jsonschema", "sqlalchemy", "django")
+                    if m != os.environ["ECOSYSTEM"] and importlib.util.find_spec(m) is not None]
+          assert not others, others
+          PY
+      - run: pytest -v
+
+  everything:
+    # every ecosystem together, and the static checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,5 +92,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install "mathema @ git+https://github.com/tetrionlabs/mathema@develop"
-      - run: pip install --no-deps . && pip install pytest pydantic jsonschema
+      - run: pip install --no-deps . && pip install pytest ruff mypy annotated-types pydantic jsonschema sqlalchemy django
+      - run: ruff check .
+      - run: mypy src
       - run: pytest -v

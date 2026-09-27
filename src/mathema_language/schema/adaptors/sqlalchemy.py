@@ -10,6 +10,7 @@ import re
 import sys
 from typing import Any
 
+from ..._priority import LIBRARY, priority
 from ..ecosystems.sqlalchemy import SqlAlchemyEcosystem
 from ..languages import RowLanguage
 from ..model import Constraints, Field, ForeignKey, NeutralType, RowSchema, TableSchema
@@ -120,6 +121,7 @@ def _table_schema_of(obj: Any) -> TableSchema:
                        unique=unique, foreign_keys=foreign)
 
 
+@priority(LIBRARY)
 def adapt(obj: Any) -> RowLanguage | None:
     """The row language of a `Table` or a declarative class, or None
     for anything else."""
