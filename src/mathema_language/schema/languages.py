@@ -34,19 +34,32 @@ class NoMember(RuntimeError):
 
 def _field_bound(f: Field) -> Any:
     """The one-deep domain of a field for the derive lift: a numeric
-    field as `(lo, hi)`, or `Z`, `N`, `R` when unbounded; a string
+    field as its interval (an integer field as an interval of `Z`),
+    one side infinite when only the other is bounded, or `Z`, `R` when
+    neither is; a string
     field as the unicode language, refined by its length bounds
     (`L[unicode, len <= 8]`); anything else None."""
     t, c = f.type, f.constraints
     if t.base in ("int", "float", "decimal"):
-        if c.low is not None and c.high is not None:
-            return (float(c.low), float(c.high))
+        low, high = c.low, c.high
+        if t.base == "int" and t.bits:
+            bit_lo, bit_hi = _gen._int_range(f)
+            low = bit_lo if low is None else low
+            high = bit_hi if high is None else high
+        if low is None and high is None:
+            return "Z" if t.base == "int" else "R"
+        interval = {"lo": float("-inf") if low is None else float(low),
+                    "hi": float("inf") if high is None else float(high),
+                    "closed_lo": c.min is not None or low is None,
+                    "closed_hi": c.max is not None or high is None}
+        if c.exclusive_min is not None and c.min is None:
+            interval["closed_lo"] = False
+        if c.exclusive_max is not None and c.max is None:
+            interval["closed_hi"] = False
         if t.base == "int":
-            if t.bits:
-                lo, hi = _gen._int_range(f)
-                return (float(lo), float(hi))
-            return "N" if c.low is not None and c.low >= 0 else "Z"
-        return "R"
+            return domain_bound_from_json({"base_type": "Z", "pieces": [interval],
+                                           "excluded": [], "explicit_type": True})
+        return domain_bound_from_json(interval)
     if t.base == "string":
         if c.min_len is None and c.max_len is None:
             return LanguageRef("unicode")

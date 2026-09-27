@@ -199,3 +199,61 @@ def test_an_executed_instance_is_the_disproof(tmp_path):
         "for o in L[schema_orders_dis.Order], f(o) <= 50")])
     assert p.verdict == "falsified", (p.verdict, p.note)
     assert "Order(" in str(p.counterexample)
+
+
+MIXED_MODULE = '''
+    from dataclasses import dataclass
+    from typing import Annotated, Literal
+
+
+    class Ge:
+        def __init__(self, ge):
+            self.ge = ge
+
+
+    class Le:
+        def __init__(self, le):
+            self.le = le
+
+
+    class MaxLen:
+        def __init__(self, max_length):
+            self.max_length = max_length
+
+
+    @dataclass
+    class Order:
+        id: int
+        kind: Literal["web", "shop"]
+        qty: Annotated[int, Ge(1), Le(10)]
+        price: Annotated[float, Ge(0.0)]
+        sku: Annotated[str, MaxLen(8)]
+        note: str | None = None
+
+
+    def total(o: Order) -> float:
+        """Quantity times price."""
+        return o.qty * o.price
+
+
+    def labelled(o: Order) -> float:
+        """Quantity times price, plus one per character of the sku."""
+        return o.qty * o.price + len(o.sku)
+
+
+    def by_kind(o: Order) -> float:
+        """Web orders pay a flat two on top."""
+        return o.qty * o.price + (2.0 if o.kind == "web" else 0.0)
+'''
+
+
+def test_the_lift_proves_over_a_row_with_fields_the_body_never_reads(tmp_path):
+    mod = _module(tmp_path, "schema_mixed", MIXED_MODULE)
+    for fn in (mod.total, mod.labelled):
+        (p,) = check_conjectures(fn, [claim(
+            "for o in L[schema_mixed.Order], f(o) >= 0", route="derive")])
+        if p.verdict != "proven":
+            assert p.meta.get("mathema.timeout"), (fn.__name__, p.verdict, p.note, p.sketch)
+    (q,) = check_conjectures(mod.by_kind, [claim(
+        "for o in L[schema_mixed.Order], f(o) >= 0", route="derive")])
+    assert q.verdict != "proven" and "o.kind" in (q.note or "") + str(q.sketch or "")

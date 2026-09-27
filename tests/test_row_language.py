@@ -121,11 +121,16 @@ def test_shrinking_stays_inside(language):
 
 
 def test_fields_state_the_one_deep_bounds(language):
+    from mathema.domain import domain_contains
     bounds = language.fields()
-    assert bounds["qty"] == (1.0, 10.0)
-    assert bounds["price"] == "R"
-    assert bounds["id"] == "Z" or (isinstance(bounds["id"], tuple) and bounds["id"][0] < 0 < bounds["id"][1])
+    qty = bounds["qty"]
+    assert getattr(qty, "base_type", None) == "Z", qty
+    assert domain_contains(1, qty) and domain_contains(10, qty)
+    assert not domain_contains(0, qty) and not domain_contains(11, qty)
+    assert tuple(bounds["price"]) == (0.0, float("inf"))
+    assert bounds["id"] == "Z" or getattr(bounds["id"], "base_type", None) == "Z"
     assert repr(bounds["sku"]) == "L[unicode, len <= 8]"
+    assert bounds["kind"] is None
 
 
 def test_a_finite_schema_enumerates():
