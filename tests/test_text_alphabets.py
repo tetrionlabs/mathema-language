@@ -130,3 +130,11 @@ def test_a_language_s_hazards_include_the_text_corpus_where_it_applies():
     ascii_values = {h.value for h in ASCII.hazards()}
     assert "\x00" in ascii_values and "\u00df" not in ascii_values
     assert any(h.kind == "length" for h in DIGIT.hazards())
+
+
+def test_shrinking_offers_shorter_members_before_same_length_ones():
+    from mathema_language.text import UNICODE
+    candidates = list(UNICODE.shrink("(" * 5000))
+    assert len(candidates[0]) < 5000
+    first_same_length = next(i for i, c in enumerate(candidates) if len(c) == 5000)
+    assert all(len(c) < 5000 for c in candidates[:first_same_length])

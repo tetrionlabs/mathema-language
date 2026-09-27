@@ -39,7 +39,7 @@
   "unicode": "∀ s ∈ L[unicode, len <= 81]|missing, f(s) = s",
   "ascii": "for s in L[unicode, len <= 81]|missing, f(s) = s"
  },
- "language_closure_into_another": {
+ "in_target_language": {
   "input": "for s in L[unicode], f(s) in L[slug]",
   "unicode": "∀ s ∈ L[unicode]|missing, f(s) ∈ L[slug]",
   "ascii": "for s in L[unicode]|missing, f(s) in L[slug]"

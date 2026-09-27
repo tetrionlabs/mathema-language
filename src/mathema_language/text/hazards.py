@@ -89,9 +89,20 @@ _ENTRIES: tuple[tuple[str, str, str], ...] = (
     ("text", "\u0149", "a letter with a preceding apostrophe, one code point that upper-cases to two"),
 )
 
+#: runs of one multi-byte character after a one-byte "a", so every
+#: character boundary sits at an odd byte offset and a cut at 24, 64,
+#: 255 or 256 bytes lands inside a character for at least one of them
+_BYTE_RUNS: tuple[tuple[str, str, str], ...] = tuple(
+    ("encoding", "a" + ch * n,
+     f"'a' then {n} of U+{ord(ch):04X} ({len(ch.encode('utf-8'))} bytes each), "
+     f"{1 + n * len(ch.encode('utf-8'))} bytes in all")
+    for ch, sizes in (("\u00e9", (12, 32, 128)), ("\u65e5", (8, 22, 85)),
+                      ("\U0001f600", (6, 16, 64)))
+    for n in sizes)
+
 #: the corpus, deduplicated by value in the order above
 TEXT_HAZARDS: tuple[HazardValue, ...] = tuple(
     HazardValue(kind, value, note)
-    for kind, value, note in _ENTRIES)
+    for kind, value, note in (*_ENTRIES, *_BYTE_RUNS))
 
 __all__ = ["TEXT_HAZARDS"]

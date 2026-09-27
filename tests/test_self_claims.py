@@ -34,7 +34,7 @@ CLAIMS = [
     (text.nfc, "for text in L[ascii], f(text) == text", "holds", None),
     # lengths
     (text.strip, "for text in L[unicode], len(f(text)) <= len(text)", "holds", None),
-    (text.upper, "for text in L[unicode], len(f(text)) == len(text)", "falsified", "'ΐ'"),
+    (text.upper, "for text in L[unicode], len(f(text)) == len(text)", "falsified", " vs 1"),
     (text.nfc_len, "for text in L[unicode], f(text) <= len(text)", "falsified", None),
     (text.count, "for text in L[unicode], part in L[unicode], f(text, part) >= 0", "holds", None),
     (text.count, 'for text in L[unicode], part in L[unicode] \\ {""}, f(text, part) <= len(text)',

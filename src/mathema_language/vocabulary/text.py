@@ -81,11 +81,18 @@ def nfc_len(text: str) -> int:
     return len(unicodedata.normalize("NFC", text))
 
 
+def utf8_len(text: str) -> int:
+    """The length of `text` in UTF-8 bytes, what a byte-limited field
+    counts."""
+    return len(text.encode("utf-8", "surrogatepass"))
+
+
 VOCABULARY: dict[str, object] = {
     "nfc": nfc, "nfd": nfd, "nfkc": nfkc, "nfkd": nfkd,
     "casefold": casefold, "lower": lower, "upper": upper,
     "count": count, "startswith": startswith, "endswith": endswith,
     "strip": strip, "splitlines": splitlines, "nfc_len": nfc_len,
+    "utf8_len": utf8_len,
 }
 
 for _name, _fn in VOCABULARY.items():
@@ -93,4 +100,4 @@ for _name, _fn in VOCABULARY.items():
 
 __all__ = ["VOCABULARY", "casefold", "count", "endswith", "lower", "nfc",
            "nfc_len", "nfd", "nfkc", "nfkd", "splitlines", "startswith",
-           "strip", "upper"]
+           "strip", "upper", "utf8_len"]

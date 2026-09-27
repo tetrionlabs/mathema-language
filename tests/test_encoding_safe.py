@@ -73,3 +73,9 @@ def test_inside_a_narrow_language_the_boundary_is_not_a_member(tmp_path):
     ''')
     p = _one(mod.wire, "for s in L[ascii], is_encoding_safe(s)")
     assert p.verdict == "holds", (p.verdict, p.note, p.counterexample)
+
+
+def test_the_witness_takes_the_article_its_word_needs():
+    from mathema_language.families import _article
+    assert _article("encoding") == "an encoding"
+    assert _article("length") == "a length"

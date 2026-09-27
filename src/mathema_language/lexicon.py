@@ -58,7 +58,7 @@ LEXICON: dict[str, str] = {
     # one past the bound, the member at the bound loses a character
     "language_length_bound_one_past": "for s in L[unicode, len <= 81], f(s) == s",
     # closure into a language other than the input's own
-    "language_closure_into_another": "for s in L[unicode], f(s) in L[slug]",
+    "in_target_language": "for s in L[unicode], f(s) in L[slug]",
     # a renderer's output held to a language
     "language_closure_rendered": "for n in N, f(n) in L[digit]",
     # containment: a token that never survives
@@ -175,7 +175,7 @@ SECTIONS: dict[str, tuple[str, ...]] = {
              "language_idempotent"),
     "boundaries": ("language_encoding_boundary",),
     "length": ("language_length_bound_identity", "language_length_bound_one_past"),
-    "membership": ("language_closure_into_another", "language_closure_rendered",
+    "membership": ("in_target_language", "language_closure_rendered",
                    "language_token_absent", "language_token_present"),
     "rows": ("row_lift_sign", "row_unbounded_field", "row_length_field",
              "row_length_field_tight"),
@@ -193,7 +193,7 @@ TAGS: dict[str, tuple[str, ...]] = {
     "language_idempotent": ("idempotent", "normaliser", "apply twice"),
     "language_length_bound_identity": ("truncate", "length bound", "max length"),
     "language_length_bound_one_past": ("one past the bound", "truncation bug"),
-    "language_closure_into_another": ("slugify", "closure", "output language"),
+    "in_target_language": ("slugify", "closure", "output language"),
     "language_closure_rendered": ("renderer output", "digits only"),
     "language_token_absent": ("never emits", "token absent", "escape angle brackets"),
     "language_token_present": ("escape character", "ampersand"),
@@ -217,7 +217,7 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "ascii_only": (ascii_only, ["language_encoding_boundary", "family_encoding_safe"]),
     "headline": (headline, ["language_length_bound_identity",
                             "language_length_bound_one_past"]),
-    "slugify": (slugify, ["language_closure_into_another"]),
+    "slugify": (slugify, ["in_target_language"]),
     "render_count": (render_count, ["language_closure_rendered"]),
     "escape_html": (escape_html, ["language_token_absent", "language_token_present"]),
     "line_total": (line_total, ["row_lift_sign", "row_unbounded_field"]),

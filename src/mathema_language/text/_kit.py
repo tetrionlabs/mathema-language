@@ -60,6 +60,9 @@ class TextLanguage(StringLanguage):
                 seen.add(s)
                 out.append(s)
 
+        for s in super().shrink(value):
+            if len(s) < len(value):
+                offer(s)
         for i, ch in enumerate(value):
             if ch != self.simplest:
                 offer(value[:i] + self.simplest + value[i + 1:])

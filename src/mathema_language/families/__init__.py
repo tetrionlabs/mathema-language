@@ -144,6 +144,11 @@ def _describe(value: str) -> str:
     return repr(value)
 
 
+def _article(word: str) -> str:
+    """`word` with the indefinite article its first letter takes."""
+    return f"{'an' if word[:1].lower() in 'aeiou' else 'a'} {word}"
+
+
 def _probe_over(kinds: tuple[str, ...], extra: Callable[..., list[str]],
                 crashes: tuple[type[BaseException], ...],
                 what: str) -> Callable[..., Any]:
@@ -191,7 +196,7 @@ def _probe_over(kinds: tuple[str, ...], extra: Callable[..., list[str]],
             minimal = shrink(value, lambda s: crash_on(args, s) is not None
                              and _contains(languages, s))
             return (f"{target} = {_describe(minimal)} (inside L[{names}]) "
-                    f"raised {exc} on a {what} hazard, an unguarded crash, "
+                    f"raised {exc} on {_article(what)} hazard, an unguarded crash, "
                     f"not a declared rejection")
 
         return probe_trials(fn, facts, target, domain, rng,
