@@ -2,10 +2,21 @@
 # Copyright 2026 Tetrion Ltd
 """The refinement keys this package serves inside `L[...]`, each
 registered under mathema's `mathema.language_refinements` group and
-built from mathema's `RefinedLanguage` kit. `len`: the length in code
-points, Python's `len`, the plain member of length `n` one repeated
-simple character the language admits (`"a" * 80`), a built member a run
-of the language's own members cut to length."""
+built from mathema's `RefinedLanguage` kit.
+
+- `len`: the length in code points, Python's `len`; the plain member of
+  length `n` is one repeated simple character the language admits
+  (`"a" * 80`), a built member a run of the language's own members cut
+  to length.
+- `depth`, `nodes`, `children`: the structure of a nested member, as
+  `vocabulary.tree` measures it: nesting levels, every value counted
+  once, and the most children any one container has. They apply to a
+  language whose members are nested values (a row or schema language)
+  or text that denotes one (`L[json]`, measured off the text so any
+  depth is read); on a language of plain text they are refused. The
+  plain member at a bound for `L[json]` is the simplest document with
+  that measure (`[[[]]]` for depth 3), and built members are random
+  documents of exactly that measure."""
 from __future__ import annotations
 
 import random
@@ -63,4 +74,99 @@ def length_bound(lo: int, hi: int | None) -> Any:
                                    "closed_lo": True, "closed_hi": True})
 
 
-__all__ = ["length", "length_bound"]
+_STRUCTURE_KEYS = {"depth": 0, "nodes": 1, "children": 2}
+
+
+def _denotes_json(language: Any) -> bool:
+    base = language
+    while hasattr(base, "base"):
+        base = base.base
+    return getattr(base, "name", None) == "json"
+
+
+def _structure_measure(language: Any, key: str) -> Any:
+    """The measure `key` takes of a member of `language`."""
+    from .text.json_structure import scan
+    from .vocabulary.tree import _walk
+
+    index = _STRUCTURE_KEYS[key]
+    if _denotes_json(language):
+        return lambda value: scan(value)[index] if isinstance(value, str) else None
+    if getattr(language, "kind", None) in ("string",):
+        raise ValueError(
+            f"{key} measures the structure of a nested value; L[{language.name}] "
+            "is plain text. Refine a language of nested values: L[json], or a row "
+            "or schema language")
+    return lambda value: _walk(value)[index]
+
+
+def _json_plain(key: str, n: int) -> str | None:
+    if n < 0:
+        return None
+    if key == "depth":
+        return "[" * n + "]" * n if n else "0"
+    if key == "nodes":
+        return None if n == 0 else "0" if n == 1 else "[" + ",".join(["0"] * (n - 1)) + "]"
+    return "[" + ",".join(["0"] * n) + "]"
+
+
+def _json_build(key: str, rng: random.Random, n: int) -> str | None:
+    """A random JSON document whose `key` measure is exactly `n`."""
+    import json
+
+    def scalar() -> Any:
+        return rng.choice([0, 1, -1, 2.5, "a", "", True, False, None])
+
+    if key == "depth":
+        value: Any = scalar()
+        for _ in range(n):
+            extra = [scalar() for _ in range(rng.randint(0, 3))]
+            if rng.random() < 0.5:
+                value = [*extra[:1], value, *extra[1:]]
+            else:
+                value = {"k": value, **{f"v{i}": x for i, x in enumerate(extra)}}
+        return json.dumps(value)
+    if key == "nodes":
+        if n < 1:
+            return None
+        # a random tree of exactly n nodes: each new node hangs under an
+        # earlier one, and a node with children is a container
+        parents = [rng.randrange(i) for i in range(1, n)]
+        kids: dict[int, list[int]] = {}
+        for child, parent in enumerate(parents, start=1):
+            kids.setdefault(parent, []).append(child)
+        built: dict[int, Any] = {}
+        for node in range(n - 1, -1, -1):
+            below = [built[k] for k in kids.get(node, [])]
+            built[node] = below if node in kids else scalar()
+        return json.dumps(built[0])
+    width = n
+    rows = [scalar() for _ in range(width)]
+    for i in range(len(rows)):
+        if rng.random() < 0.3:
+            rows[i] = [scalar() for _ in range(rng.randint(0, max(0, width)))]
+    return json.dumps(rows)
+
+
+def structure(key: str) -> Any:
+    """The refinement for `key` in `depth`, `nodes`, `children`."""
+
+    def refine(language: Any, interval: Any) -> Any:
+        measure = _structure_measure(language, key)
+        json_text = _denotes_json(language)
+        return RefinedLanguage(
+            language, key, interval, measure=measure,
+            plain=(lambda n: _json_plain(key, n)) if json_text else None,
+            build=(lambda rng, n: _json_build(key, rng, n)) if json_text else None,
+            schema={"x-mathema": {key: [_range(interval)[0], _range(interval)[1]]}},
+            hazard_kind="shape")
+
+    return refine
+
+
+depth = structure("depth")
+nodes = structure("nodes")
+children = structure("children")
+
+
+__all__ = ["children", "depth", "length", "length_bound", "nodes"]

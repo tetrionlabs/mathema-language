@@ -34,9 +34,9 @@ def test_the_held_table_code_is_still_importable_internally():
     assert "_build_frame" in dir(TableEcosystem)
 
 
-def test_the_table_vocabulary_is_held_and_the_text_vocabulary_public():
+def test_the_table_vocabulary_is_held_and_the_text_and_tree_vocabularies_public():
     import mathema_language.vocabulary as vocabulary
-    assert vocabulary.__all__ == ["text"]
+    assert vocabulary.__all__ == ["text", "tree"]
     assert not hasattr(vocabulary, "table")
     from mathema_language.vocabulary import _table, text
     assert callable(_table.frame_eq) and callable(text.nfc)
