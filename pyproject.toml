@@ -86,6 +86,9 @@ jsonschema = "mathema_language.schema.adaptors.jsonschema:adapt"
 sqlalchemy = "mathema_language.schema.adaptors.sqlalchemy:adapt"
 django = "mathema_language.schema.adaptors.django:adapt"
 
+[project.entry-points."mathema.lexicon"]
+language = "mathema_language.lexicon"
+
 [tool.hatch.version]
 path = "src/mathema_language/__init__.py"
 

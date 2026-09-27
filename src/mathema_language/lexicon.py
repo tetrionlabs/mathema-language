@@ -4,7 +4,10 @@
 draw from and the tests check: each parses, its language resolves,
 and it adjudicates against the function beside it. mathema's own
 lexicon holds the grammar; this one holds the claims a parser, a
-renderer, a normaliser or a validator earns over a language."""
+renderer, a normaliser or a validator earns over a language.
+Registered under `mathema.lexicon` as `language`, so with the package
+installed these rows join mathema's own in `mathema.lexicon.entries()`,
+`search()` and `find()`."""
 from __future__ import annotations
 
 LEXICON: dict[str, str] = {
@@ -20,7 +23,7 @@ LEXICON: dict[str, str] = {
     # past the boundary as the witness
     "language_encoding_boundary": "for s in L[latin-1], f(s) == s",
     # a section: the inverse, bound with let, undoes the function
-    "language_section":
+    "language_section_inverse":
         "let u = mathema_language.lexicon.unescape_angle, "
         "for s in L[unicode], u(f(s)) == s",
     # a retraction on a predicate language: parse, render, parse again
@@ -62,15 +65,34 @@ def loads(s: str) -> object:
     return json.loads(s)
 
 
+#: the lexicon's table of contents, every key in exactly one section;
+#: installed, mathema reads these as `language/<section>`
+SECTIONS: dict[str, tuple[str, ...]] = {
+    "domains": ("language_with_special_member",),
+    "laws": ("language_homomorphism", "language_section_inverse", "language_retraction",
+             "language_idempotent"),
+    "boundaries": ("language_encoding_boundary",),
+}
+
+#: everyday words each row is found by through `mathema.lexicon.find`
+TAGS: dict[str, tuple[str, ...]] = {
+    "language_with_special_member": ("sentinel", "placeholder value", "union with a set"),
+    "language_homomorphism": ("homomorphism", "append a digit", "parse digits"),
+    "language_encoding_boundary": ("encoding error", "codec", "latin-1"),
+    "language_section_inverse": ("round trip", "inverse", "unescape"),
+    "language_retraction": ("retraction", "parse render parse", "json round trip"),
+    "language_idempotent": ("idempotent", "normaliser", "apply twice"),
+}
+
 #: which function each lexicon key is checked against
 EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "collapse_spaces": (collapse_spaces, ["language_with_special_member",
                                           "language_idempotent"]),
     "digits_to_int": (digits_to_int, ["language_homomorphism"]),
     "ascii_only": (ascii_only, ["language_encoding_boundary"]),
-    "escape_angle": (escape_angle, ["language_section"]),
+    "escape_angle": (escape_angle, ["language_section_inverse"]),
     "loads": (loads, ["language_retraction"]),
 }
 
-__all__ = ["EXAMPLE_FUNCTIONS", "LEXICON", "ascii_only", "collapse_spaces",
+__all__ = ["EXAMPLE_FUNCTIONS", "LEXICON", "SECTIONS", "TAGS", "ascii_only", "collapse_spaces",
            "digits_to_int", "escape_angle", "loads", "unescape_angle"]

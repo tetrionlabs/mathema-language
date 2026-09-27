@@ -1,0 +1,32 @@
+{
+ "language_with_special_member": {
+  "input": "for s in L[alnum] | {\"n/a\"}, len(f(s)) <= len(s)",
+  "unicode": "∀ s ∈ L[alnum] ∪ {\"n/a\"}|missing, len(f(s)) ≤ len(s)",
+  "ascii": "for s in L[alnum] ∪ {\"n/a\"}|missing, len(f(s)) <= len(s)"
+ },
+ "language_homomorphism": {
+  "input": "for s in L[digit] \\ {\"\"}, f(s + \"0\") == 10 * f(s)",
+  "unicode": "∀ s ∈ L[digit] \\ {\"\"}|missing, f(s + '0') = 10*f(s)",
+  "ascii": "for s in L[digit] \\ {\"\"}|missing, f(s + '0') = 10*f(s)"
+ },
+ "language_encoding_boundary": {
+  "input": "for s in L[latin-1], f(s) == s",
+  "unicode": "∀ s ∈ L[latin-1]|missing, f(s) = s",
+  "ascii": "for s in L[latin-1]|missing, f(s) = s"
+ },
+ "language_section_inverse": {
+  "input": "let u = mathema_language.lexicon.unescape_angle, for s in L[unicode], u(f(s)) == s",
+  "unicode": "let u = mathema_language.lexicon.unescape_angle, ∀ s ∈ L[unicode]|missing, u(f(s)) = s",
+  "ascii": "let u = mathema_language.lexicon.unescape_angle, for s in L[unicode]|missing, u(f(s)) = s"
+ },
+ "language_retraction": {
+  "input": "let dump = json.dumps, for s in L[json], f(dump(f(s))) == f(s)",
+  "unicode": "let dump = json.dumps, ∀ s ∈ L[json]|missing, f(dump(f(s))) = f(s)",
+  "ascii": "let dump = json.dumps, for s in L[json]|missing, f(dump(f(s))) = f(s)"
+ },
+ "language_idempotent": {
+  "input": "for s in L[unicode], f(f(s)) == f(s)",
+  "unicode": "∀ s ∈ L[unicode]|missing, f(f(s)) = f(s)",
+  "ascii": "for s in L[unicode]|missing, f(f(s)) = f(s)"
+ }
+}
