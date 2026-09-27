@@ -125,7 +125,7 @@ def test_fields_state_the_one_deep_bounds(language):
     assert bounds["qty"] == (1.0, 10.0)
     assert bounds["price"] == "R"
     assert bounds["id"] == "Z" or (isinstance(bounds["id"], tuple) and bounds["id"][0] < 0 < bounds["id"][1])
-    assert str(bounds["sku"]) in ("L[unicode]", "LanguageRef(name='unicode')")
+    assert repr(bounds["sku"]) == "L[unicode, len <= 8]"
 
 
 def test_a_finite_schema_enumerates():

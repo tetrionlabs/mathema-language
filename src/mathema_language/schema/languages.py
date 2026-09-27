@@ -11,7 +11,7 @@ import random
 from collections.abc import Iterable
 from typing import Any
 
-from .._surface import HazardValue, LanguageRef, Problem
+from .._surface import HazardValue, LanguageRef, Problem, domain_bound_from_json
 from . import generate as _gen
 from .checks import check_problems, json_schema
 from .ecosystems._base import Ecosystem
@@ -35,7 +35,8 @@ class NoMember(RuntimeError):
 def _field_bound(f: Field) -> Any:
     """The one-deep domain of a field for the derive lift: a numeric
     field as `(lo, hi)`, or `Z`, `N`, `R` when unbounded; a string
-    field as the unicode language; anything else None."""
+    field as the unicode language, refined by its length bounds
+    (`L[unicode, len <= 8]`); anything else None."""
     t, c = f.type, f.constraints
     if t.base in ("int", "float", "decimal"):
         if c.low is not None and c.high is not None:
@@ -47,7 +48,13 @@ def _field_bound(f: Field) -> Any:
             return "N" if c.low is not None and c.low >= 0 else "Z"
         return "R"
     if t.base == "string":
-        return LanguageRef("unicode")
+        if c.min_len is None and c.max_len is None:
+            return LanguageRef("unicode")
+        length = domain_bound_from_json({
+            "lo": float(c.min_len or 0),
+            "hi": float("inf") if c.max_len is None else float(c.max_len),
+            "closed_lo": True, "closed_hi": True})
+        return LanguageRef("unicode", length)
     return None
 
 

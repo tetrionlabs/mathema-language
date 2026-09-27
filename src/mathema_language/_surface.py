@@ -24,6 +24,7 @@ from mathema.interfaces.extension import StringLanguage as StringLanguage
 from mathema.interfaces.extension import UnknownLanguage as UnknownLanguage
 from mathema.interfaces.extension import call_with_target as call_with_target
 from mathema.interfaces.extension import describe_language as describe_language
+from mathema.interfaces.extension import domain_bound_from_json as domain_bound_from_json
 from mathema.interfaces.extension import format_point as format_point
 from mathema.interfaces.extension import language_problems as language_problems
 from mathema.interfaces.extension import language_vocabulary as language_vocabulary
