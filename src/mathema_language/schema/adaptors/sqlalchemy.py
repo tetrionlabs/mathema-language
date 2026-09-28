@@ -13,7 +13,7 @@ from typing import Any
 from ..._priority import LIBRARY, priority
 from ..ecosystems.sqlalchemy import SqlAlchemyEcosystem
 from ..languages import RowLanguage
-from ..model import Constraints, Field, ForeignKey, NeutralType, RowSchema, TableSchema
+from ..model import Constraints, Field, NeutralType, RowSchema
 
 _BETWEEN = re.compile(r"(\w+)\s+BETWEEN\s+(-?\d+(?:\.\d+)?)\s+AND\s+(-?\d+(?:\.\d+)?)", re.I)
 _COMPARE = re.compile(r"(\w+)\s*(>=|<=|>|<)\s*(-?\d+(?:\.\d+)?)")
@@ -95,13 +95,12 @@ def _type_of(col_type: Any) -> tuple[NeutralType, dict[str, Any]]:
     return NeutralType("any"), {}
 
 
-def _table_schema_of(obj: Any) -> TableSchema:
-    """The table schema of a `Table` or a declarative class."""
+def _row_schema_of(obj: Any) -> RowSchema:
+    """The record schema of a `Table` or a declarative class."""
     found = _table_of(obj)
     if found is None:
         raise TypeError(f"not a SQLAlchemy table or declarative class: {obj!r}")
     table, _ = found
-    sa = _sa()
     bounds = _check_bounds(table)
     fields: list[Field] = []
     for col in table.columns:
@@ -113,15 +112,7 @@ def _table_schema_of(obj: Any) -> TableSchema:
         fields.append(Field(col.name, t, nullable=(bool(col.nullable) and not col.primary_key) or auto,
                             required=not (auto or has_default or col.nullable),
                             unique=bool(col.unique), constraints=Constraints(**extra)))
-    unique = tuple(tuple(c.name for c in constraint.columns)
-                   for constraint in table.constraints
-                   if isinstance(constraint, sa.UniqueConstraint))
-    foreign = tuple(ForeignKey(tuple(c.name for c in fk.columns), fk.referred_table.name,
-                               tuple(e.column.name for e in fk.elements))
-                    for fk in table.foreign_key_constraints)
-    row = RowSchema(getattr(obj, "__name__", None) or table.name, tuple(fields))
-    return TableSchema(row, primary_key=tuple(c.name for c in table.primary_key.columns),
-                       unique=unique, foreign_keys=foreign)
+    return RowSchema(getattr(obj, "__name__", None) or table.name, tuple(fields))
 
 
 @priority(LIBRARY)
@@ -132,10 +123,7 @@ def adapt(obj: Any) -> RowLanguage | None:
     if found is None:
         return None
     table, cls = found
-    schema = _table_schema_of(obj)
-    language = RowLanguage(schema.row, SqlAlchemyEcosystem(table, cls))
-    language._table_defaults = schema
-    return language
+    return RowLanguage(_row_schema_of(obj), SqlAlchemyEcosystem(table, cls))
 
 
 __all__ = ["adapt"]

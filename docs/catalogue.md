@@ -232,11 +232,3 @@ def line_width(line: Line) -> int:
 | `line_total` | `for line in L[catalogue_row.Line], f(line) <= 50` | falsified | The price has no upper bound, and an executed record with a large price is the witness. |
 | `line_width` | `for line in L[catalogue_row.Line], f(line) <= 10` | proven | `len(line.sku)` lifts as a whole number no larger than the `MaxLen(8)` on the field. |
 | `line_width` | `for line in L[catalogue_row.Line], f(line) <= 9` | falsified | An eight-character sku is valid and needs ten columns. |
-
-## What is not here yet
-
-Tables. A loader or a cleaner takes a table of rows and returns one, and
-the claims worth writing about it (the row count never grows, the keys
-stay unique, the output is still a table of valid rows) need a language
-whose members are tables, which is written in the claim itself and is
-not part of this release.

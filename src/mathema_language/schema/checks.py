@@ -18,7 +18,7 @@ from collections.abc import Callable, Iterable
 from typing import Any
 
 from .._surface import Problem
-from .model import NO_DEFAULT, Constraints, Field, NeutralType, RowSchema, TableSchema
+from .model import NO_DEFAULT, Constraints, Field, NeutralType, RowSchema
 
 
 def _is_int(value: object) -> bool:
@@ -326,69 +326,6 @@ def check_problems(checks: Iterable[Callable[[Any], bool]], value: Any, path: st
     return out
 
 
-def frame_problems(table: TableSchema, rows: list[Any], columns: tuple[str, ...] | None,
-                   row_check: Callable[[Any], list[Problem]],
-                   cell: Callable[[Any, str], Any],
-                   parents: dict[str, list[Any]] | None = None) -> list[Problem]:
-    """Every way a table fails `table`: the row count, each row's
-    problems at `[i]`, a duplicated key at `key(a, b)`, an orphan at
-    `fk(col)->parent` when the parent table is given, a missing or
-    extra column, and a sort violation at `order(col)`."""
-    out: list[Problem] = []
-    lo, hi = table.row_count
-    n = len(rows)
-    if n < lo:
-        out.append(Problem("rows", f">= {lo}", n))
-    if hi is not None and n > hi:
-        out.append(Problem("rows", f"<= {hi}", n))
-    if columns is not None:
-        for name in table.row.names:
-            if name not in columns and table.row.field(name).required:
-                out.append(Problem(f".{name}", "present", None))
-        if table.row.column_policy == "exact":
-            for extra in columns:
-                if extra not in table.row.names:
-                    out.append(Problem(f".{extra}", "a column of the schema", None))
-    for i, row in enumerate(rows):
-        for problem in row_check(row):
-            out.append(Problem(f"[{i}]{problem.path}", problem.predicate, problem.value))
-    for cols in table.key_sets:
-        seen: dict[tuple[Any, ...], int] = {}
-        for i, row in enumerate(rows):
-            key = tuple(_hashable(cell(row, c)) for c in cols)
-            if key in seen:
-                out.append(Problem(f"key({', '.join(cols)})", "unique", key))
-            else:
-                seen[key] = i
-    for f in table.row.fields:
-        if f.unique and (f.name,) not in table.key_sets:
-            seen_values: set[Any] = set()
-            for row in rows:
-                v = _hashable(cell(row, f.name))
-                if v in seen_values:
-                    out.append(Problem(f"key({f.name})", "unique", v))
-                seen_values.add(v)
-    if parents:
-        for fk in table.foreign_keys:
-            parent_rows = parents.get(fk.parent)
-            if parent_rows is None:
-                continue
-            keys = {tuple(_hashable(cell(p, c)) for c in fk.parent_columns) for p in parent_rows}
-            for row in rows:
-                key = tuple(_hashable(cell(row, c)) for c in fk.columns)
-                if key not in keys:
-                    out.append(Problem(f"fk({', '.join(fk.columns)})->{fk.parent}", "a key of the parent", key))
-    for col in table.ordered:
-        values = [cell(row, col) for row in rows]
-        try:
-            if values != sorted(values):
-                out.append(Problem(f"order({col})", "sorted", None))
-        except TypeError:
-            out.append(Problem(f"order({col})", "sortable", None))
-    out.extend(check_problems(table.checks, rows))
-    return out
-
-
 def _hashable(value: Any) -> Any:
     try:
         hash(value)
@@ -397,37 +334,16 @@ def _hashable(value: Any) -> Any:
         return repr(value)
 
 
-def json_schema(obj: NeutralType | Field | RowSchema | TableSchema) -> dict[str, Any]:
-    """The JSON Schema (draft 2020-12) of a type, a field, a row or a
-    table; ecosystem detail that JSON Schema cannot say (a fixed
-    width, a time zone, keys) rides in `x-mathema`."""
-    if isinstance(obj, TableSchema):
-        out: dict[str, Any] = {"type": "array", "items": json_schema(obj.row)}
-        lo, hi = obj.row_count
-        if lo:
-            out["minItems"] = lo
-        if hi is not None:
-            out["maxItems"] = hi
-        extra: dict[str, Any] = {}
-        if obj.primary_key:
-            extra["primary_key"] = list(obj.primary_key)
-        if obj.unique:
-            extra["unique"] = [list(u) for u in obj.unique]
-        if obj.foreign_keys:
-            extra["foreign_keys"] = [{"columns": list(fk.columns), "parent": fk.parent,
-                                      "parent_columns": list(fk.parent_columns)}
-                                     for fk in obj.foreign_keys]
-        if obj.ordered:
-            extra["ordered"] = list(obj.ordered)
-        if extra:
-            out["x-mathema"] = extra
-        return out
+def json_schema(obj: NeutralType | Field | RowSchema) -> dict[str, Any]:
+    """The JSON Schema (draft 2020-12) of a type, a field or a record;
+    ecosystem detail that JSON Schema cannot say (a fixed width, a time
+    zone) rides in `x-mathema`."""
     if isinstance(obj, RowSchema):
         properties = {f.name: json_schema(f) for f in obj.fields}
         definitions = {name: json_schema(RowSchema(d.name, d.fields, d.column_policy))
                        for name, d in obj.definitions}
         required = [f.name for f in obj.fields if f.required and f.default is NO_DEFAULT]
-        out = {"type": "object", "title": obj.name, "properties": properties}
+        out: dict[str, Any] = {"type": "object", "title": obj.name, "properties": properties}
         if required:
             out["required"] = required
         if obj.column_policy == "exact":
@@ -498,5 +414,5 @@ def json_schema(obj: NeutralType | Field | RowSchema | TableSchema) -> dict[str,
     return {}
 
 
-__all__ = ["check_problems", "constraint_problems", "field_problems", "frame_problems",
+__all__ = ["check_problems", "constraint_problems", "field_problems",
            "json_schema", "row_problems", "type_problems"]

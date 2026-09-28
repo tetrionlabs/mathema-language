@@ -219,47 +219,4 @@ class RowSchema:
         return f"{self.name}{{" + ", ".join(f.render() for f in self.fields) + "}"
 
 
-@dataclass(frozen=True)
-class ForeignKey:
-    """Columns of this table that must appear as `parent_columns` of
-    the table named `parent`."""
-    columns: tuple[str, ...]
-    parent: str
-    parent_columns: tuple[str, ...]
-
-
-@dataclass(frozen=True)
-class TableSchema:
-    """A table of `row`: its primary key and other unique column sets,
-    foreign keys, the closed row-count range (`None` for no upper
-    bound), opaque table checks, and the columns the rows are sorted
-    by."""
-    row: RowSchema
-    primary_key: tuple[str, ...] = ()
-    unique: tuple[tuple[str, ...], ...] = ()
-    foreign_keys: tuple[ForeignKey, ...] = ()
-    row_count: tuple[int, int | None] = (0, None)
-    checks: tuple[Callable[[Any], bool], ...] = ()
-    ordered: tuple[str, ...] = ()
-
-    def __post_init__(self) -> None:
-        lo, hi = self.row_count
-        if lo < 0 or (hi is not None and hi < lo):
-            raise ValueError(f"row_count must be a closed range from 0, not {self.row_count}")
-        for cols in (self.primary_key, *self.unique, self.ordered,
-                     *(fk.columns for fk in self.foreign_keys)):
-            for col in cols:
-                if col not in self.row.names:
-                    raise ValueError(f"{self.row.name} has no column {col!r}")
-
-    @property
-    def name(self) -> str:
-        return self.row.name
-
-    @property
-    def key_sets(self) -> tuple[tuple[str, ...], ...]:
-        """The primary key first, then every other unique set."""
-        return ((self.primary_key,) if self.primary_key else ()) + self.unique
-
-
 __all__ = ["BASES", "NO_DEFAULT", "Constraints", "Field", "NeutralType", "RowSchema"]

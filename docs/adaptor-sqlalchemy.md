@@ -27,7 +27,7 @@ and is tested at 2.0 and at the latest release.
 | an autoincrement primary key, a default, a server default | not required | |
 | `CheckConstraint("quantity BETWEEN 1 AND 100")`, `"unit_price >= 0"`, on the table or on a column | `min`, `max` and the exclusive bounds | plain comparisons and `BETWEEN` only |
 | any other `CheckConstraint` | not read | decided by the database |
-| `unique=True`, `UniqueConstraint`, `ForeignKey` | not checked on a single row | uniqueness and keys are facts about a table, and tables are not part of this release |
+| `unique=True`, `UniqueConstraint`, `ForeignKey` | not checked on a single record | uniqueness and keys are facts about many records, not one |
 
 ## A worked claim
 

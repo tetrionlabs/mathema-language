@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any, Protocol, runtime_checkable
 
 from ..._surface import Problem
-from ..model import RowSchema, TableSchema
+from ..model import RowSchema
 
 
 @runtime_checkable
@@ -25,7 +25,7 @@ class Ecosystem(Protocol):
 
     def accepts(self, obj: Any) -> bool: ...
 
-    def to_model(self, obj: Any) -> RowSchema | TableSchema: ...
+    def to_model(self, obj: Any) -> RowSchema: ...
 
     def build_row(self, schema: RowSchema, values: dict[str, Any]) -> Any: ...
 

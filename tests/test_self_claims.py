@@ -15,7 +15,6 @@ pytest.importorskip("mathema")
 from mathema.conjecture import check_conjectures, claim  # noqa: E402
 
 import mathema_language.text.predicates as predicates  # noqa: E402
-import mathema_language.vocabulary._table as table  # noqa: E402
 import mathema_language.vocabulary.text as text  # noqa: E402
 
 V = "mathema_language.vocabulary.text"
@@ -55,9 +54,6 @@ CLAIMS = [
     (predicates._is_base64, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
     (predicates._is_hex, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
     (predicates._is_shell_safe, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
-    # the table vocabulary's empty cases
-    (table.unique, "f([]) == True", "holds", None),
-    (table.rows, "f([]) == 0", "holds", None),
 ]
 
 

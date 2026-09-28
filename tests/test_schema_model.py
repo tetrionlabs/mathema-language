@@ -12,7 +12,6 @@ from mathema_language.schema import (
     RowSchema,
 )
 from mathema_language.schema.checks import json_schema
-from mathema_language.schema.model import ForeignKey, TableSchema
 
 
 def test_types_render():
@@ -43,14 +42,9 @@ def test_a_schema_refuses_what_it_cannot_mean():
         RowSchema("R", (Field("a", NeutralType("int")), Field("a", NeutralType("int"))))
     with pytest.raises(ValueError, match="column_policy"):
         RowSchema("R", (), column_policy="loose")
-    row = RowSchema("R", (Field("id", NeutralType("int")),))
-    with pytest.raises(ValueError, match="no column 'x'"):
-        TableSchema(row, primary_key=("x",))
-    with pytest.raises(ValueError, match="row_count"):
-        TableSchema(row, row_count=(5, 2))
 
 
-def test_the_json_schema_of_a_row_and_a_table():
+def test_the_json_schema_of_a_record():
     row = RowSchema("Order", (
         Field("id", NeutralType("int"), unique=True),
         Field("qty", NeutralType("int"), constraints=Constraints(min=1, max=10)),
@@ -66,10 +60,3 @@ def test_the_json_schema_of_a_row_and_a_table():
     assert js["properties"]["note"] == {"anyOf": [{"type": "string"}, {"type": "null"}], "default": None}
     assert js["properties"]["kind"] == {"enum": ["a", "b"]}
     assert js["properties"]["id"]["x-mathema"] == {"unique": True}
-    table = TableSchema(row, primary_key=("id",), row_count=(1, 100),
-                        foreign_keys=(ForeignKey(("kind",), "kinds", ("name",)),), ordered=("id",))
-    tj = json_schema(table)
-    assert tj["type"] == "array" and tj["minItems"] == 1 and tj["maxItems"] == 100
-    assert tj["x-mathema"] == {"primary_key": ["id"], "ordered": ["id"],
-                               "foreign_keys": [{"columns": ["kind"], "parent": "kinds",
-                                                 "parent_columns": ["name"]}]}

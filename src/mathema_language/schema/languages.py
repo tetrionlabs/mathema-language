@@ -16,7 +16,7 @@ from .._surface import HazardValue, LanguageRef, Problem, domain_bound_from_json
 from . import generate as _gen
 from .checks import check_problems, json_schema
 from .ecosystems._base import Ecosystem
-from .model import SAMPLING_BOUNDS, Field, RowSchema, TableSchema
+from .model import SAMPLING_BOUNDS, Field, RowSchema
 
 _REJECTION_TRIES = 50
 
@@ -132,9 +132,6 @@ class RowLanguage:
         #: it stops before the interpreter's recursion limit (found while
         #: building the hazards, stated in the persisted form)
         self.validator_depth_limit: int | None = None
-        #: internal: the table-level facts an ORM adaptor read off its
-        #: table (keys, foreign keys), kept for the held table languages
-        self._table_defaults: TableSchema | None = None
 
     def __repr__(self) -> str:
         return f"RowLanguage({self.name!r}, {self.ecosystem.name})"

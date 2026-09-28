@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""A Django model as a row schema: its concrete fields with their
-types, `null`, `blank`, `unique`, `choices`, `max_length`, the value
-and length validators, and a `ForeignKey` as the `<name>_id` column
-with a foreign key to the parent model; membership through
-`full_clean`."""
+"""A Django model as a record schema: its concrete fields with their
+types, `null`, `blank`, `unique`, `choices`, `max_length` and the value
+and length validators, a `ForeignKey` as its `<name>_id` column;
+membership through `full_clean`."""
 from __future__ import annotations
 
 import sys
@@ -13,7 +12,7 @@ from typing import Any
 from ..._priority import LIBRARY, priority
 from ..ecosystems.django import DjangoEcosystem
 from ..languages import RowLanguage
-from ..model import Constraints, Field, ForeignKey, NeutralType, RowSchema, TableSchema
+from ..model import Constraints, Field, NeutralType, RowSchema
 
 _INTS = {"SmallIntegerField": (16, None), "PositiveSmallIntegerField": (16, 0),
          "IntegerField": (32, None), "PositiveIntegerField": (32, 0),
@@ -106,18 +105,10 @@ def _field_of(f: Any) -> Field:
                  unique=bool(f.unique) and not f.primary_key, constraints=Constraints(**constraints))
 
 
-def _table_schema_of(model: type) -> TableSchema:
-    """The table schema of a Django model."""
+def _row_schema_of(model: type) -> RowSchema:
+    """The record schema of a Django model."""
     fields = [_field_of(f) for f in model._meta.fields]  # type: ignore[attr-defined]
-    foreign: list[ForeignKey] = []
-    for f in model._meta.fields:  # type: ignore[attr-defined]
-        if f.is_relation and f.related_model is not None:
-            parent = f.related_model
-            foreign.append(ForeignKey((f.attname,), parent.__name__, (parent._meta.pk.attname,)))
-    pk = model._meta.pk  # type: ignore[attr-defined]
-    return TableSchema(RowSchema(model.__name__, tuple(fields)),
-                       primary_key=(pk.attname,) if pk is not None else (),
-                       foreign_keys=tuple(foreign))
+    return RowSchema(model.__name__, tuple(fields))
 
 
 @priority(LIBRARY)
@@ -125,10 +116,7 @@ def adapt(obj: Any) -> RowLanguage | None:
     """The row language of a Django model, or None for anything else."""
     if not _is_model(obj):
         return None
-    schema = _table_schema_of(obj)
-    language = RowLanguage(schema.row, DjangoEcosystem(obj), obj.__name__)
-    language._table_defaults = schema
-    return language
+    return RowLanguage(_row_schema_of(obj), DjangoEcosystem(obj), obj.__name__)
 
 
 __all__ = ["adapt"]

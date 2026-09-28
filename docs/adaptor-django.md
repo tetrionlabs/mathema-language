@@ -9,8 +9,8 @@ definitions spell plainly is read into the neutral model and checked
 there first; everything else is left to `full_clean`, so a custom
 validator on a field counts, and its message is the explanation. Fields
 that need a database (relations, uniqueness) are excluded from
-`full_clean`, since a single unsaved record has no table to be unique
-in. It needs Django 4.2 or later, `pip install "mathema-language[django]"`,
+`full_clean`, since a single unsaved record has nothing to be unique
+among. It needs Django 4.2 or later, `pip install "mathema-language[django]"`,
 with settings configured before the model is defined, and is tested at
 4.2 and at the latest release.
 
@@ -27,7 +27,7 @@ with settings configured before the model is defined, and is tested at
 | `null=True` | nullable | |
 | `blank=False` on a text field | `min_len` 1 | |
 | `MinValueValidator`, `MaxValueValidator`, `MinLengthValidator`, `MaxLengthValidator` | the matching bounds | |
-| `ForeignKey`, `OneToOneField` | the `<name>_id` column, an integer | whether the parent exists is a fact about tables, not part of this release |
+| `ForeignKey`, `OneToOneField` | the `<name>_id` column, an integer | whether the parent exists is a fact about many records, not checked on one |
 | an `AutoField` primary key | nullable and not required | an unsaved record has none |
 | any other validator | not read | decided by `full_clean` |
 
