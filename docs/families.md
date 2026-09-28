@@ -14,7 +14,6 @@ says whether it lies inside or outside the claim's domain.
 | `excluded_outside_domain(s)` | values just outside the language | it accepts one without an error |
 | `is_encoding_safe(s)` | characters at the language's alphabet edges, and the codecs the body names | it raises an unguarded `UnicodeError` |
 | `is_length_safe(s)` | the language's longest members and overlong inputs | it crashes, or runs past mathema's time limit |
-| `output_in_language(f(s))` | the language's members | an output is outside the language the input is declared over |
 
 A deliberate `ValueError` is a rejection, not a crash, so
 `is_arbitrary_input_safe` holds for a parser that raises one; a value

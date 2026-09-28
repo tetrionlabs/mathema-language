@@ -97,7 +97,8 @@ def test_the_families_are_discovered_and_parse():
 
     assert {"is_length_safe", "is_encoding_safe"} <= set(families.families())
     assert {"is_length_safe", "is_encoding_safe"} <= routes.safety_predicates()
-    assert "output_in_language" in routes.output_predicates()
+    # an output is held to a language with `in`; the package adds no output predicate
+    assert "output_in_language" not in routes.output_predicates()
     assert claim("is_length_safe(s)").relation == "is_length_safe"
     assert claim("s is encoding safe").relation == "is_encoding_safe"
     # the crash taxonomy is the same seven types mathema's own fuzz counts

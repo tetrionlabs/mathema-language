@@ -349,14 +349,14 @@
   "unicode": "∀ s ∈ L[unicode]|missing, s is arbitrary input safe",
   "ascii": "for s in L[unicode]|missing, is_arbitrary_input_safe(s)"
  },
- "family_output_in_language": {
-  "input": "for s in L[ascii], output_in_language(f(s))",
-  "unicode": "∀ s ∈ L[ascii]|missing, output_in_language(f(s))",
-  "ascii": "for s in L[ascii]|missing, output_in_language(f(s))"
+ "closure_ascii_in_ascii_out": {
+  "input": "for s in L[ascii], f(s) in L[ascii]",
+  "unicode": "∀ s ∈ L[ascii]|missing, f(s) ∈ L[ascii]",
+  "ascii": "for s in L[ascii]|missing, f(s) in L[ascii]"
  },
- "family_output_leaves_language": {
-  "input": "for s in L[ascii], output_in_language(f(s))",
-  "unicode": "∀ s ∈ L[ascii]|missing, output_in_language(f(s))",
-  "ascii": "for s in L[ascii]|missing, output_in_language(f(s))"
+ "closure_ascii_leaves": {
+  "input": "for s in L[ascii], f(s) in L[ascii]",
+  "unicode": "∀ s ∈ L[ascii]|missing, f(s) ∈ L[ascii]",
+  "ascii": "for s in L[ascii]|missing, f(s) in L[ascii]"
  }
 }

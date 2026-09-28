@@ -23,17 +23,14 @@ from typing import Any
 
 from .._surface import (
     LanguageRef,
-    OutputPredicateFamily,
     SafetyFamily,
     call_with_target,
-    format_point,
     pinned_float_env,
     probe_trials,
     resolve_language,
-    sample_bound,
     shrink,
 )
-from ..text import UNICODE, adapt
+from ..text import UNICODE
 
 #: the exception types that signal a crash rather than a rejection;
 #: the same seven mathema's own fuzz family counts, pinned against it
@@ -241,120 +238,4 @@ ENCODING_SAFE = SafetyFamily(
                       ACCIDENTAL_CRASHES, "encoding"),
     suggest_targets=_string_params, probe_route="probe:minimal_example")
 
-
-
-def _return_hint(fn: Any) -> object | None:
-    """The function's return annotation, resolved when it can be."""
-    import typing
-
-    try:
-        return typing.get_type_hints(fn).get("return")
-    except Exception:
-        return getattr(fn, "__annotations__", {}).get("return")
-
-
-def _target_language(fn: Any, facts: Any,
-                     domain: dict[str, Any]) -> tuple[str, list[Any], str, list[dict[str, str]]]:
-    """`(names, languages, how, described)` the output is held to: the
-    language the first text parameter is declared over, else the return
-    annotation through the text adaptor, else every `str`. `described`
-    is the record's account, one `{"name", "from"}` entry per target
-    language."""
-    for p in facts.params:
-        bound = domain.get(p)
-        if bound is not None and getattr(bound, "base_type", None) == "L":
-            refs = [piece for piece in bound.pieces if isinstance(piece, LanguageRef)]
-            if refs:
-                return (" | ".join(ref.name for ref in refs),
-                        [resolve_language(ref) for ref in refs],
-                        f"the language {p} is declared over",
-                        [{"name": ref.name, "from": f"parameter {p}"} for ref in refs])
-    hint = _return_hint(fn)
-    if hint is not None:
-        language = adapt(hint)
-        if language is not None:
-            hint_text = getattr(hint, "__name__", None) or str(hint)
-            return (language.name, [language], f"the return annotation {hint_text}",
-                    [{"name": language.name, "from": f"return annotation {hint_text}"}])
-    return ("unicode", [UNICODE], "no declared language, so every str",
-            [{"name": "unicode", "from": "default"}])
-
-
-def _explained(languages: list[Any], value: object) -> str:
-    """The first language's account of why `value` is not a member,
-    parenthesised, or nothing: each problem as its path, the piece
-    at fault and the predicate it failed."""
-    for language in languages:
-        try:
-            problems = language.explain(value)
-        except Exception:
-            continue
-        if problems:
-            parts = []
-            for problem in problems:
-                where = f"at {problem.path} " if problem.path else ""
-                parts.append(f"{where}{_describe(problem.value)} fails {problem.predicate}"
-                             if isinstance(problem.value, str)
-                             else f"{where}{problem.value!r} fails {problem.predicate}")
-            return " (" + "; ".join(parts) + ")"
-    return ""
-
-
-def _output_in_language_probe(fn: Any, facts: Any, cj: Any, domain: dict[str, Any] | None,
-                              rng: random.Random, trials: int) -> Any:
-    """Feed the first parameter its declared language's hazards, then
-    draws; every output must be a member of the target language."""
-    domain = domain or {}
-    if not facts.params:
-        return None
-    names, languages, how, described = _target_language(fn, facts, domain)
-    target = facts.params[0]
-    bound = domain.get(target)
-    lead: list[str] = []
-    if bound is not None and getattr(bound, "base_type", None) == "L":
-        lead = _hazard_values([resolve_language(piece) for piece in bound.pieces
-                               if isinstance(piece, LanguageRef)])
-    state = {"i": 0}
-    where = facts.params.index(target)
-
-    def trial(args: list[Any]) -> Any:
-        filled = list(args)
-        if state["i"] < len(lead):
-            filled[where] = lead[state["i"]]
-            state["i"] += 1
-        else:
-            filled[where] = sample_bound(bound, rng, facts.param_kinds.get(target, "scalar"))
-        try:
-            with pinned_float_env():
-                out = fn(*filled)
-        except Exception:
-            return None
-        if _contains(languages, out):
-            return True
-        return (f"{format_point(tuple(filled))}: output {out!r} is not in "
-                f"L[{names}], the target from {how}{_explained(languages, out)}")
-
-    result = probe_trials(fn, facts, target, domain, rng, max(trials, len(lead)), trial)
-    if result is None:
-        return None
-    return (*result, {"mathema.language": {"return": described}})
-
-
-class _OutputInLanguage(OutputPredicateFamily):
-    """`output_in_language(f(s))`: every output is a member of the
-    target language, which is the language the first text parameter is
-    declared over (closure: a slug in, a slug out), else the language
-    the return annotation adapts to, else every `str`. The witness
-    names the target and how it was chosen, and the record says the
-    same under `meta["mathema.language"]["return"]`."""
-
-    def __init__(self) -> None:
-        super().__init__("output_in_language", lambda out: None)
-
-    def routes(self) -> dict[str, Any]:
-        return {"probe:algorithmic": _output_in_language_probe}
-
-
-OUTPUT_IN_LANGUAGE = _OutputInLanguage()
-
-__all__ = ["ACCIDENTAL_CRASHES", "ENCODING_SAFE", "LENGTH_SAFE", "OUTPUT_IN_LANGUAGE"]
+__all__ = ["ACCIDENTAL_CRASHES", "ENCODING_SAFE", "LENGTH_SAFE"]

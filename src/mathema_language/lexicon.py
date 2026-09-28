@@ -150,8 +150,8 @@ LEXICON: dict[str, str] = {
     "family_length_safe": "for s in L[slug], is_length_safe(s)",
     "family_encoding_safe": "for s in L[unicode], is_encoding_safe(s)",
     "family_arbitrary_input": "for s in L[unicode], is_arbitrary_input_safe(s)",
-    "family_output_in_language": "for s in L[ascii], output_in_language(f(s))",
-    "family_output_leaves_language": "for s in L[ascii], output_in_language(f(s))",
+    "closure_ascii_in_ascii_out": "for s in L[ascii], f(s) in L[ascii]",
+    "closure_ascii_leaves": "for s in L[ascii], f(s) in L[ascii]",
 }
 
 
@@ -446,7 +446,7 @@ SECTIONS: dict[str, tuple[str, ...]] = {
              "language_idempotent"),
     "boundaries": ("language_encoding_boundary",),
     "length": ("language_length_bound_identity", "language_length_bound_one_past"),
-    "membership": ("in_target_language", "language_closure_rendered",
+    "membership": ("closure_ascii_in_ascii_out", "closure_ascii_leaves", "in_target_language", "language_closure_rendered",
                    "language_token_absent", "language_token_present"),
     "rows": ("row_lift_sign", "row_unbounded_field", "row_length_field",
              "row_length_field_tight"),
@@ -462,8 +462,7 @@ SECTIONS: dict[str, tuple[str, ...]] = {
     "adaptors": ("adaptor_text_annotation", "adaptor_pydantic_proven", "adaptor_pydantic_falsified", "adaptor_sqlalchemy_proven", "adaptor_sqlalchemy_falsified", "adaptor_django_proven", "adaptor_django_falsified", "adaptor_jsonschema_proven", "adaptor_jsonschema_falsified", "adaptor_typeddict_proven", "adaptor_typeddict_falsified"),
     "vocabulary": ("vocabulary_tree_depth",),
     "families": ("family_excluded_outside_domain", "family_excluded_outside_domain_accepts",
-                 "family_length_safe", "family_encoding_safe", "family_arbitrary_input",
-                 "family_output_in_language", "family_output_leaves_language"),
+                 "family_length_safe", "family_encoding_safe", "family_arbitrary_input"),
 }
 
 #: everyday words each row is found by through `mathema.lexicon.find`
@@ -538,15 +537,15 @@ TAGS: dict[str, tuple[str, ...]] = {
     "family_length_safe": ("long input", "backtracking", "regex dos"),
     "family_encoding_safe": ("encode", "unicodeencodeerror"),
     "family_arbitrary_input": ("fuzz", "crash", "empty string"),
-    "family_output_in_language": ("output stays", "ascii in ascii out"),
-    "family_output_leaves_language": ("output leaves", "accent"),
+    "closure_ascii_in_ascii_out": ("output stays", "ascii in ascii out"),
+    "closure_ascii_leaves": ("output leaves", "accent"),
 }
 
 #: which function each lexicon key is checked against
 EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "collapse_spaces": (collapse_spaces, ["language_with_special_member",
                                           "language_idempotent",
-                                          "family_output_in_language"]),
+                                          "closure_ascii_in_ascii_out"]),
     "digits_to_int": (digits_to_int, ["language_homomorphism"]),
     "ascii_only": (ascii_only, ["language_encoding_boundary", "family_encoding_safe"]),
     "headline": (headline, ["language_length_bound_identity",
@@ -558,7 +557,7 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "line_width": (line_width, ["row_length_field", "row_length_field_tight"]),
     "is_slug": (is_slug, ["family_length_safe"]),
     "first": (first, ["family_arbitrary_input"]),
-    "accent": (accent, ["family_output_leaves_language"]),
+    "accent": (accent, ["closure_ascii_leaves"]),
     "escape_angle": (escape_angle, ["language_section_inverse"]),
     "largest_qty": (largest_qty, ["path_every_element", "path_every_element_unbound",
                                   "path_index_present", "path_index_missing"]),

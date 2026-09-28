@@ -108,8 +108,8 @@ EXPECTED = {
     "family_length_safe": "holds",
     "family_encoding_safe": ("falsified", "raised UnicodeEncodeError"),
     "family_arbitrary_input": ("falsified", "s = '' (inside L[unicode]) raised IndexError"),
-    "family_output_in_language": "holds",
-    "family_output_leaves_language": ("falsified", "output 'é' is not in L[ascii]"),
+    "closure_ascii_in_ascii_out": "holds",
+    "closure_ascii_leaves": ("falsified", "is not in L[ascii]"),
 }
 
 

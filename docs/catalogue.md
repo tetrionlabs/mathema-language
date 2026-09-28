@@ -8,7 +8,7 @@ is a real finding about the function above it, not a hypothetical. The
 domain binding is always the input side (`for s in L[ascii]` says what
 the function is fed), and anything said about `f(...)` is the output side.
 
-The rows use four kinds of claim. A hazard family (`is_length_safe`,
+The rows use three kinds of claim. A hazard family (`is_length_safe`,
 `is_encoding_safe`, `is_arbitrary_input_safe`, `excluded_outside_domain`)
 feeds the function the language's own hazards and reports an unguarded
 crash or a missing rejection. A law (`f(f(s)) == f(s)`,
@@ -17,10 +17,8 @@ and by sampling where it does not, sampling never proving. Membership,
 `f(s) in L[slug]` or `"<" not in f(s)`, holds every output to a language
 of your choosing or keeps a token out of it, which is what closure and
 containment mean for a normaliser or an escaper, and is decided by
-execution, since the symbolic lift has no reading of a language. And
-`output_in_language(f(s))` is the short form of closure, holding every
-output to the language the input is declared over, with the record
-naming the target it chose and where it came from.
+execution, since the symbolic lift has no reading of a language.
+
 
 A language can carry a length bound, `L[unicode, len <= 80]`, the
 members of the language no longer than eighty code points, and a
@@ -65,7 +63,6 @@ the matching parser.
 |---|---|---|---|
 | `render_count` | `for n in N, len(f(n)) >= 1` | holds | Every count spells as at least one digit. |
 | `render_count` | `for n in N, parse_count(f(n)) == n` | holds | The parser inverts the renderer on the renderer's own output, which is the direction that does hold. |
-| `render_count` | `for n in N, output_in_language(f(n))` | holds | With no text parameter declared, the target language comes from the `str` return annotation, every string, so this row is the weak form. |
 | `render_count` | `for n in N, f(n) in L[digit]` | holds | The sharp form: every count spells in the ten ASCII digits and nothing else. |
 
 ## Normaliser
@@ -111,7 +108,7 @@ def label(s: Annotated[str, MaxLen(80)]) -> str:
 |---|---|---|---|
 | `collapse_spaces` | `for s in L[unicode], f(f(s)) == f(s)` | holds | Idempotent: a second pass finds nothing to collapse. |
 | `collapse_spaces` | `for s in L[unicode], len(f(s)) <= len(s)` | holds | A contraction, since it only ever removes characters. |
-| `collapse_spaces` | `for s in L[ascii], output_in_language(f(s))` | holds | Closure: ASCII in, ASCII out. |
+| `collapse_spaces` | `for s in L[ascii], f(s) in L[ascii]` | holds | Closure: ASCII in, ASCII out. |
 | `collapse_spaces` | `for s in L[ascii], f(s) in L[ascii]` | holds | The same closure written as membership, which is the spelling to reach for when the target is not the input's own language. |
 | `collapse_spaces` | `for s in L[unicode], "  " not in f(s)` | holds | No two spaces survive in a row, which is the whole job of the function stated as a containment. |
 | `collapse_spaces` | `let n = mathema_language.vocabulary.text.nfc, for s in L[unicode], n(f(s)) == f(n(s))` | holds | Commutes with NFC, because composition never creates or removes whitespace. |
@@ -167,7 +164,7 @@ def escape_html(s: str) -> str:
 |---|---|---|---|
 | `escape_html` | `for s in L[unicode], len(f(s)) >= len(s)` | holds | Every replacement is longer than the character it replaces. |
 | `escape_html` | `let u = html.unescape, for s in L[unicode], u(f(s)) == s` | holds | The round trip through `html.unescape` is exact. |
-| `escape_html` | `for s in L[ascii], output_in_language(f(s))` | holds | Entities are ASCII, so ASCII in gives ASCII out. |
+| `escape_html` | `for s in L[ascii], f(s) in L[ascii]` | holds | Entities are ASCII, so ASCII in gives ASCII out. |
 | `escape_html` | `for s in L[unicode], "<" not in f(s)` | holds | No angle bracket survives, whatever the input holds, which is the claim a template relies on. |
 | `escape_html` | `for s in L[unicode], "&" not in f(s)` | falsified | The ampersand is the escape character itself, so every entity puts one back; containment is the wrong claim for it, and the round trip above is the right one. |
 | `escape_html` | `for s in L[unicode], is_encoding_safe(s)` | holds | No codec in the body, so no codec boundary to fall off. |
