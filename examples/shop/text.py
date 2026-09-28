@@ -46,3 +46,44 @@ def normalise_config(text: str) -> str:
 def short_title(title: Annotated[str, MaxLen(60)]) -> str:
     """The title, cut to the sixty characters the column holds."""
     return title[:60]
+
+
+def username_key(name: str) -> str:
+    """The key an account is stored under, so two spellings of a name
+    find the same account."""
+    return name.strip().lower()
+
+
+def is_blank(name: str) -> bool:
+    """Whether a display name has nothing visible in it."""
+    return not name.strip()
+
+
+def first_initial(name: str) -> str:
+    """The avatar letter shown for a user."""
+    return name[0].upper()
+
+
+def to_bytes(text: str) -> bytes:
+    """The text as the database driver sends it."""
+    return text.encode("utf-8")
+
+
+def js_length(text: str) -> int:
+    """The length the browser's JavaScript reports for the text."""
+    return len(text.encode("utf-16-le")) // 2
+
+
+def log_line(message: str) -> str:
+    """A message made safe to write to a log file."""
+    return "".join(c for c in message if c.isprintable())
+
+
+def note_header(note: str) -> str:
+    """An HTTP header carrying a free-text note."""
+    return "X-Note: " + note
+
+
+def parse_quantity(text: str) -> int:
+    """The quantity typed into a form, 0 when it is not a number."""
+    return int(text) if text.isdigit() else 0
