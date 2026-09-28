@@ -19,6 +19,7 @@ import shlex
 import string
 import sys
 import uuid
+from collections.abc import Callable
 
 from .._surface import HazardValue
 from ._kit import TextLanguage
@@ -209,23 +210,40 @@ UUID = TextLanguage(
                    HazardValue("text", "12345678123456781234567812345678", "a uuid with no hyphens"),
                    HazardValue("text", "12345678-1234-5678-1234-567812345678".upper(), "an upper-case uuid")))
 
+def _accepted(accepts: Callable[[str], bool],
+              hazards: tuple[HazardValue, ...]) -> tuple[HazardValue, ...]:
+    """The hazards `accepts` takes on the running Python: a parser's
+    other spellings are members only where that parser reads them."""
+    return tuple(h for h in hazards if accepts(h.value))
+
+
 #: what `date.fromisoformat` accepts on the running Python
 ISO_DATE = TextLanguage(
     "iso_date", level="predicate", accepts=_is_iso_date,
     generate=_generate_iso_date, pool="0123456789-", outside_pool="/ a",
-    extra_hazards=(HazardValue("time", "0001-01-01", "the first date"),
-                   HazardValue("time", "9999-12-31", "the last date"),
-                   HazardValue("time", "2000-02-29", "a leap day")))
+    extra_hazards=_accepted(_is_iso_date, (
+        HazardValue("time", "0001-01-01", "the first date"),
+        HazardValue("time", "9999-12-31", "the last date"),
+        HazardValue("time", "2000-02-29", "a leap day"),
+        HazardValue("time", "20260928", "a basic-format date, no hyphens"),
+        HazardValue("time", "2026-W39-1", "a week date"),
+        HazardValue("time", "2026W391", "a basic-format week date"))))
 
 #: what `datetime.fromisoformat` accepts on the running Python
 ISO_DATETIME = TextLanguage(
     "iso_datetime", level="predicate", accepts=_is_iso_datetime,
     generate=_generate_iso_datetime, pool="0123456789-T:.+", outside_pool="/ a",
-    extra_hazards=(HazardValue("time", "1970-01-01T00:00:00+00:00", "the epoch, aware"),
-                   HazardValue("time", "1970-01-01T00:00:00", "the epoch, naive"),
-                   HazardValue("time", "2021-03-28T02:30:00", "inside a daylight-saving gap in Europe"),
-                   HazardValue("time", "2021-10-31T02:30:00", "inside a daylight-saving fold in Europe"),
-                   HazardValue("time", "9999-12-31T23:59:59.999999", "the last microsecond")))
+    extra_hazards=_accepted(_is_iso_datetime, (
+        HazardValue("time", "1970-01-01T00:00:00+00:00", "the epoch, aware"),
+        HazardValue("time", "1970-01-01T00:00:00", "the epoch, naive"),
+        HazardValue("time", "2021-03-28T02:30:00", "inside a daylight-saving gap in Europe"),
+        HazardValue("time", "2021-10-31T02:30:00", "inside a daylight-saving fold in Europe"),
+        HazardValue("time", "9999-12-31T23:59:59.999999", "the last microsecond"),
+        HazardValue("time", "2026-09-28T12:00:00Z", "a Z offset"),
+        HazardValue("time", "2026-09-28 12:00:00", "a space between date and time"),
+        HazardValue("time", "20260928T120000", "a basic-format datetime"),
+        HazardValue("time", "2026-09-28", "a date with no time"),
+        HazardValue("time", "2026-09-28T12:00:00,5", "a comma before the fraction"))))
 
 #: what `ipaddress.IPv4Address` accepts
 IPV4 = TextLanguage(
