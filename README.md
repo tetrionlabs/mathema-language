@@ -1,225 +1,209 @@
 # mathema-language
 
-The languages a mathema claim quantifies text over.
+**mathema for strings, records and schemas.**
 
-mathema checks claims about code, and a claim about a function of text
-needs a domain the way a claim about a function of numbers does, namely
-a language: the set of strings a name stands for, written `L[ascii]` or
-`L[json]` where a numeric claim writes `R` or `[0, 1]`. mathema itself
-parses, renders and records that domain and resolves no name, so on its
-own a claim over `L[unicode]` is not wrong, only unresolved. This package
-supplies the names, with Python's own reading of each alphabet or parser
-as the membership test, the hazard strings real code mishandles as the
-first members every probe visits, and a generator that reaches the
-astral planes and the character categories a fixed pool never would.
-
-## Install
+mathema checks claims about code, proving them where it can and
+falsifying them with a real input where they are wrong, and every claim
+quantifies over a domain. For a function of numbers that domain is `R`
+or `[0, 1]`. This package supplies the domains for everything else a
+function takes: strings (`L[ascii]`, `L[json]`, `L[slug]`), records (a
+dataclass, a TypedDict, a pydantic model), and the schemas that describe
+them (a JSON Schema, a SQLAlchemy table, a Django model), each written
+the same way, `L[...]`.
 
 ```
 pip install mathema-language
 ```
 
-mathema discovers it through the `mathema.languages` entry point once
-installed; there is nothing to configure.
+mathema finds the package through its entry points once installed, so
+there is nothing to configure. Without it, mathema still parses and
+records an `L[...]` domain but resolves no name, and a claim over one is
+skipped with the reason.
 
-## Before and after
+## Strings
 
 ```
-claim: for s in L[unicode], len(f(s)) == len(s)        f = str.upper
+for s in L[unicode], len(f(s)) == len(s)        f = str.upper
+    falsified   ('ﬁ'): 2 vs 1
 
-without:  skipped    unknown language L[unicode]: known languages are none in
-                     this process; a package adds one under the
-                     'mathema.languages' entry-point group, and
-                     'pip install "mathema[language]"' brings the built-in
-                     alphabets and languages
-with:     falsified  ('\u0390'): 3 vs 1
+for s in L[latin-1], f(s) == s                   f = ascii_only
+    falsified   ('\xa0'): raised UnicodeEncodeError
 
-claim: for s in L[latin-1], f(s) == s                   f = ascii_only
-
-with:     falsified  ('\u00ff'): raised UnicodeEncodeError
-
-claim: for s in L[ascii], f(s) == s                     f = ascii_only
-
-with:     holds      n=128
+for s in L[ascii], f(s) == s                     f = ascii_only
+    holds       n=192
 ```
 
-The falsifications are the point. Upper-casing looks like it keeps a
-string's length and does not over the whole of Unicode, because `\u0390`
-(iota with dialytika and tonos) upper-cases to three code points and
-`\u00df` to two, and a probe that never draws those characters would
-report `holds` for a claim that is false; the hazard corpus here is
-built from what the test suites of Django, Werkzeug, MarkupSafe, ftfy and
-CPython found the hard way, so those characters are among the first
-strings tried, not a lucky draw. The second claim is the same lesson at
-an alphabet boundary: `\u00ff` (y with diaeresis) is latin-1 and not
-ascii, and the function that encodes as ascii is falsified with it as
-the witness, while over `L[ascii]` the probe never leaves the language
-and the claim holds.
+Upper-casing looks as though it keeps a string's length, and over the
+whole of Unicode it does not: the ligature `ﬁ` upper-cases to the two
+letters `FI`. A probe drawing random letters would almost never try it
+and would report `holds` for a claim that is false. Every language here
+visits its hazards first, the strings real code mishandles, collected
+from what the test suites of Django, Werkzeug, MarkupSafe, ftfy and
+CPython found the hard way, so `ﬁ` is among the first strings tried
+rather than a lucky draw. The second and third claims are the same
+lesson at an alphabet boundary: a function that encodes as ASCII fails
+on the no-break space, which is latin-1 but not ASCII, and over
+`L[ascii]` it holds.
 
-## The languages
+Each language is decided by Python's own reading of it, never a regular
+expression standing in for a parser:
 
-Every alphabet language is every string over its characters, the empty
-string included, the way a Kleene star reads; `L[ascii] \ {""}` is the
-spelling that excludes it. Every predicate language is exactly what its
-standard-library parser accepts on the running Python, and nothing here
-re-implements a parser as a regular expression.
-
-| Name | Members | Membership test |
+| Name | Members | Membership |
 |---|---|---|
 | `unicode` | every `str`, lone surrogates included | none needed |
-| `ascii` | strings over the 128 ascii code points | `ord(c) < 128` |
-| `latin-1` | what the latin-1 codec encodes | `ord(c) < 256` |
-| `printable` | what `str.isprintable` accepts | `str.isprintable` |
-| `digit` | strings over the ten ascii digits | `c in "0123456789"` |
+| `ascii`, `latin-1` | strings over those code points | `ord(c) < 128`, `< 256` |
+| `printable` | what Python calls printable | `str.isprintable` |
+| `digit` | strings over the ten ASCII digits | `c in "0123456789"` |
 | `alpha`, `alnum` | letters, and letters with digits, any script | `str.isalpha`, `str.isalnum` |
 | `identifier` | Python identifiers | `str.isidentifier` |
 | `json` | JSON documents | `json.loads` |
-| `uuid` | every spelling `uuid.UUID` reads, braces and urns included | `uuid.UUID` |
-| `iso_date`, `iso_datetime` | what `fromisoformat` accepts | `date.fromisoformat`, `datetime.fromisoformat` |
-| `ipv4`, `ipv6` | addresses | `ipaddress.IPv4Address`, `ipaddress.IPv6Address` |
-| `base64` | canonical base64 | `b64decode(validate=True)` and back |
-| `hex` | what `bytes.fromhex` accepts | `bytes.fromhex` |
+| `uuid` | every spelling `uuid.UUID` reads | `uuid.UUID` |
+| `iso_date`, `iso_datetime` | ISO 8601 dates and times | `fromisoformat` |
+| `ipv4`, `ipv6` | addresses | `ipaddress` |
+| `base64`, `hex` | encoded bytes | `b64decode(validate=True)`, `bytes.fromhex` |
 | `slug` | lower-case words joined by single hyphens | `[a-z0-9]+(-[a-z0-9]+)*` |
-| `shell_safe` | a non-empty word a shell reads literally | `shlex.quote(s) == s` |
+| `shell_safe` | a word a shell reads literally | `shlex.quote(s) == s` |
 
-The hazard sub-alphabets are languages of their own, so a claim can
-quantify over exactly the characters a parser tends to get wrong: `c0`
-(the control code points and the space), `format` (zero-width joiners
-and spaces, the byte-order mark, the bidirectional controls, the tag
-characters), `combining` (the combining marks), `surrogate` (the
-surrogate code points Python admits and no codec encodes),
-`nfkc_folding` (the characters whose NFKC form differs, ligatures and
-fullwidth forms among them) and `non_bmp` (everything past the basic
-multilingual plane).
+An alphabet language includes the empty string, the way a Kleene star
+reads, and `L[ascii] \ {""}` leaves it out. The characters parsers tend
+to get wrong are languages of their own, so a claim can quantify over
+exactly them: `c0`, `format`, `combining`, `surrogate`, `nfkc_folding`
+and `non_bmp`.
 
-## Closure, containment and length
-
-A claim can hold an output to a language, or keep a token out of it,
-with the `in` relation, and it reads the way it is written (the
-functions are the catalogue's, below):
+A language can carry a length bound, counted in code points the way
+`len` counts, and the members at the bound and one past it are among
+the first values tried, so a function that truncates at eighty is held
+to exactly that:
 
 ```
-for s in L[unicode], f(s) in L[slug]          f = slugify
-for s in L[unicode], "<" not in f(s)           f = escape_html
-for n in N, f(n) in L[digit]                   f = render_count
+for s in L[unicode, len <= 80], f(s) == s        f = headline (cuts at 80)
+    holds       n=224
+
+for s in L[unicode, len <= 81], f(s) == s
+    falsified   ('aaaa…a', 81 characters)
 ```
 
-The first is closure into a language other than the input's own, and it
-is falsified by any input with no ASCII letter or digit in it, which
-slugifies to the empty string, and the empty string is not a slug; the
-second is containment, and holds, since no angle bracket survives the
-escape; the third holds, every count spelling in the ten ASCII digits.
-Membership is decided by execution, since the symbolic lift has no
-reading of a language, and a missing value is a member of nothing.
-`output_in_language(f(s))` stays as the short form of closure into the
-input's own language, and its record names the language it held the
-output to and where that came from, under
-`meta["mathema.language"]["return"]`.
+With `in` and `not in`, a claim holds an output to a language or keeps
+a token out of it:
 
-A language can carry a bound on length, counted in code points the way
-Python's `len` counts: `L[ascii, len <= 80]`,
-`L[unicode, len in [1, 64]]`, `L[slug, len >= 3]`. The members at the
-bounds are among the first values a probe tries, and the member one past
-the bound is the outside draw `excluded_outside_domain` uses, so a
-function that truncates at seventy-nine is caught at eighty. A parameter
-annotated `Annotated[str, MaxLen(80)]` infers `L[unicode, len <= 80]` on
-its own, with the inference stated in the record's note, and in a claim
-that writes an `L[...]` domain `len(s)` renders as `len(s)` rather than
-as mathema's canonical `dim(s, 0)`.
+```
+for s in L[unicode], f(s) in L[slug]             f = slugify
+    falsified   (''): '' is not in L[slug]
 
-## What to claim
+for s in L[unicode], "<" not in f(s)             f = escape_html
+    holds       n=224
+```
 
-The nature of a function over text (parser, renderer, normaliser,
-validator, escaper, consumer) says which claims are worth writing before
-you have read the body, and [the catalogue](docs/catalogue.md) lists them
-by nature with a real function under each, every row run by the test
-suite and held to the verdict printed beside it.
+The first is falsified by any input with no ASCII letter or digit in it,
+which slugifies to the empty string, and the empty string is not a
+slug.
 
-## Rows
+## Records and schemas
 
-A schema is a language too. `L[myapp.models.Order]` names the records of
+Whatever describes a record is a language too, and names its records:
 a dataclass, a TypedDict, a pydantic model, a JSON Schema, a SQLAlchemy
-table or a Django model, read into one neutral model by an adaptor and
-validated by the library's own validator where it has one (pydantic's,
-the JSON Schema validator, an in-memory SQLite database for SQLAlchemy,
-`full_clean` for Django). A parameter annotated with the class infers
-the language on its own:
+table or a Django model, read into one neutral model and checked by the
+library's own validator where it has one. A parameter annotated with the
+class infers its language on its own.
+
+```python
+@dataclass
+class Line:
+    sku: Annotated[str, MaxLen(8)]
+    qty: Annotated[int, Ge(1), Le(10)]
+    price: Annotated[float, Ge(0.0)]
+
+def line_total(line: Line) -> float:
+    return line.qty * line.price
+```
 
 ```
-for o in L[myapp.models.Order], f(o) >= 0
+for line in L[myapp.Line], f(line) >= 0
+    proven      (derive)
 ```
 
-The probe visits one record per field hazard first (the extremes, the
-text corpus in a string column, the longest string a column allows, the
-datetime64[ns] bounds and a DST edge), and a witness names the field in
-one path grammar for every ecosystem, `.qty` for a column and
-`.ship.city` for a nested one.
+That claim is proven, not sampled: the fields the body reads become
+symbols bounded by the schema (`qty` a whole number from one to ten,
+`price` a real at least zero), and the ordinary prover runs. Where the
+body reads a field the proof has no reading of, it says which, and the
+claim is sampled instead.
 
-A row can be proven, not only sampled. Where the body reads only numeric
-fields, and text fields only through `len`, the derive route lifts each
-field the body reads, through an attribute (`o.qty`) or a subscript
-(`o["qty"]`), to a symbol bounded by the schema, for every adaptor, a quantity
-annotated `Ge(1), Le(10)` as a whole number from one to ten, a price
-annotated `Ge(0.0)` as a real at least zero, `len(o.sku)` on a field
-annotated `MaxLen(8)` as a whole number from nought to eight, so
-`for o in L[Order], f(o) >= 0` over `o.qty * o.price` is proven, and the
-fields the body never reads (a note, a list of tags) do not stand in the
-way. Where the body reads a field the lift has no reading of, a
-`Literal` compared against a string, say, the lift declines, the note
-names the field, and the claim is sampled instead.
+A binding reaches into a record at any depth, through fields and
+indices, and `[*]` means every element:
 
-The adaptors are ordinary registrations under mathema's
-`mathema.language_adaptors` group, asked in an explicit order (a
-library's own model classes before a schema written as data, both before
-a structural reading of any dataclass), so an adaptor from another
-package is found the same way. [Writing an adaptor](docs/adaptors.md)
-describes the contract, the public surface and
-`mathema_language.conformance`, the harness the package's own adaptors
-pass and a new one's tests can call, and each of the seven has a page of
-its own in [the reference](docs/index.md): what it reads, which
-validator decides membership, and a worked claim.
+```
+for o in L[myapp.Order], o.lines[*].qty in [1, 3], f(o) <= 3     f = largest_qty
+    holds       n=192
 
-## What a probe visits
+for o in L[myapp.Order], f(o) <= 3
+    falsified   (Order(address=Address(zip=''), lines=[OrderLine(qty=6)])): 6 vs 3
+```
 
-A language's hazards come first, then random members, and never a value
-outside the language: the empty string and whitespace, NUL and the
-other control code points, the byte-order mark and the bidirectional
-override, lone and paired surrogates, combining sequences that render as
-fewer characters than they hold, the characters whose case mapping or
-NFKC form changes their length, tag-sequence flags and joiner emoji, a
-Cyrillic homoglyph of `a`, no-break spaces, a string past the largest
-double, the text that spells `null` or `NA`, the entity that is escaped
-three times over, and the overlong inputs that make a backtracking
-regular expression crawl. Every hazard of the language is visited once
-before any random member is drawn. The hazards count toward the trial
-budget the way a wide interval does, so a claim over a language gets
-more trials and a confidence score marked down for the cases it has to
-cover, and a language whose hazards still outnumber the budget raises
-the trial count to the number of hazards, which the record's sampling
-line states. The record also states which language each name resolved
-to and where it came from.
+A path past the end of a list, or through a missing field, reaches the
+missing value, and `\ {missing}` on the bound says the path must be
+there.
 
-## Writing your own
+## Trees
 
-A language is any object satisfying `mathema.languages.Language`, and
-`TextLanguage` here assembles one from a per-character test or a
-whole-string predicate, a character pool, the Unicode categories random
-members draw from, and the simplest character shrinking prefers. Register
-it in the process with `register_language`, under a `mathema.languages`
-entry point in your own package, or refer to it by its dotted path,
-`L[myapp.text.SLUG]`.
+A record that refers to itself is a language of trees, and so is a JSON
+Schema whose `$ref` points back into itself. Three bounds apply inside
+the brackets, counted in records: `depth` (records along the deepest
+path), `nodes` (records in all) and `children` (the most any one record
+holds). Over `L[json]` they count containers instead.
+
+```python
+@dataclass
+class Branch:
+    label: int
+    children: list[Branch] = field(default_factory=list)
+
+def tree_size(t: Branch) -> int:
+    return 1 + sum(tree_size(c) for c in t.children)
+```
+
+```
+for t in L[myapp.Branch, depth <= 20], f(t) >= 1
+    proven      (derive:induction)
+
+for t in L[myapp.Branch], f(t) >= 1
+    falsified   (<Branch nested 2100 levels deep (1050 Branch records)>): raised RecursionError
+```
+
+The first is proven by structural induction: true for a leaf, and true
+for a node whenever it is true of each child. It reaches claims about
+folds over the children, such as a tree's size, its height or the sum
+of a field, and says why when a claim is outside that class. The second
+is the same function over trees of any depth, and there the mathematics
+is still right while the implementation is not, because Python's recursion stops at about a
+thousand frames. The probe builds that tree, and the witness is
+summarised because it is too deep to print. Hazards on these axes come
+first as they do for text (the empty tree, the deepest and widest the
+bounds allow, and the tree one past each bound), draws climb in depth
+instead of clustering shallow, and a failing tree is shrunk to the
+smallest one that still fails.
+
+## Where next
+
+- [What to claim](docs/catalogue.md): the claims worth writing for a
+  parser, renderer, normaliser, validator, escaper or consumer, each
+  with a real function and the verdict the test suite holds it to.
+- [Rows](docs/rows.md) and [recursive structures](docs/recursive.md), in
+  more depth.
+- [The adaptors](docs/adaptors.md): one page each for dataclasses,
+  TypedDicts, pydantic, JSON Schema, SQLAlchemy and Django, saying what
+  each reads and whose validator decides membership, and how to write
+  your own.
+- Your own language: any object satisfying
+  `mathema.languages.Language`, registered with `register_language`,
+  under a `mathema.languages` entry point, or named by its dotted path,
+  `L[myapp.text.SLUG]`.
 
 ## Requirements
 
-Python 3.10 or later and mathema. The package imports only from
-`mathema.interfaces.extension`, the surface mathema versions for
-extension authors, and a test pins that.
+Python 3.10 or later and mathema 0.6.1 or later. The package imports
+only from `mathema.interfaces.extension`, the surface mathema versions
+for extension authors, and a test pins that.
 
 ## Licence
 
 Apache-2.0. mathema itself is licensed separately.
-
-## Version
-
-0.1.0. Text languages and the hazard corpus, the hazard families over
-text, and the schema languages of rows.
