@@ -10,6 +10,7 @@ CHARGE_EVENT = {
         "amount": {"type": "integer", "minimum": 0},
     },
     "required": ["type", "amount"],
+    "additionalProperties": False,
 }
 
 QUEUES = {"charge.succeeded": "billing", "charge.failed": "alerts"}
@@ -18,3 +19,8 @@ QUEUES = {"charge.succeeded": "billing", "charge.failed": "alerts"}
 def queue_for(event: dict) -> str:
     """The queue a charge event is routed to."""
     return QUEUES[event["type"]]
+
+
+def processing_fee(event: dict) -> float:
+    """The provider's fee on a charge, in cents: 2.9% plus 30."""
+    return event["amount"] * 0.029 + 30

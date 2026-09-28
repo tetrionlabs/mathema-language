@@ -1,7 +1,7 @@
 # pydantic
 
 <!-- requires: pydantic -->
-<!-- module: pydantic_models -->
+<!-- shop: forms -->
 
 The pydantic adaptor reads any subclass of `pydantic.BaseModel`, and its
 members are instances of the model. Membership is the model's own
@@ -27,41 +27,42 @@ later, `pip install "mathema-language[pydantic]"`, and is tested at
 
 ## A worked claim
 
+The shop's signup form, from `examples/shop/forms.py`:
+
 ```python
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class Line(BaseModel):
+class SignupForm(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    sku: str = Field(max_length=8)
-    qty: int = Field(ge=1, le=10)
-    price: float = Field(ge=0.0)
+    username: str = Field(min_length=3, max_length=32)
+    age: int = Field(ge=13, le=120)
 
 
-def line_total(line: Line) -> float:
-    """Quantity times price."""
-    return line.qty * line.price
+def years_until_adult(form: SignupForm) -> int:
+    """How long until the user may see adult content."""
+    return max(0, 18 - form.age)
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `line_total` | `for line in L[pydantic_models.Line], f(line) >= 0` | proven | The lift reads both bounds off the model's fields, a quantity of at least one times a price of at least zero. |
-| `line_total` | `for line in L[pydantic_models.Line], f(line) <= 100` | falsified | The price has no upper bound. |
+| `years_until_adult` | `for form in L[shop.forms.SignupForm], 0 <= f(form) <= 5` | proven | The lift reads the age's bounds off the model's fields, so the wait is between none and five years. |
+| `years_until_adult` | `for form in L[shop.forms.SignupForm], f(form) <= 4` | falsified | A thirteen-year-old waits five years. |
 
 ## A non-member
 
 ```python
 from mathema_language.schema.adaptors import adapt_row
 
-language = adapt_row(Line)
-bad = Line.model_construct(sku="ABCDEFGHIJ", qty=0, price=2.5)
+language = adapt_row(SignupForm)
+bad = SignupForm.model_construct(username="ab", age=12)
 for problem in language.explain(bad):
     print(repr(problem.path), "|", problem.predicate)
 ```
 
 <!-- output -->
 ```text
-'.sku' | String should have at most 8 characters
-'.qty' | Input should be greater than or equal to 1
+'.username' | String should have at least 3 characters
+'.age' | Input should be greater than or equal to 13
 ```

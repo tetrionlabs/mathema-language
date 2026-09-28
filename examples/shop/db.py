@@ -16,7 +16,7 @@ class Base(DeclarativeBase):
 class Order(Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(primary_key=True)
-    sku: Mapped[str] = mapped_column(sa.String(12))
+    sku: Mapped[str] = mapped_column(sa.String(12), sa.CheckConstraint("length(sku) >= 3"))
     quantity: Mapped[int] = mapped_column(sa.CheckConstraint("quantity BETWEEN 1 AND 100"))
     unit_price: Mapped[Decimal] = mapped_column(sa.Numeric(10, 2),
                                                 sa.CheckConstraint("unit_price >= 0"))

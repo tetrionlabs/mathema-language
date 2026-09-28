@@ -109,7 +109,7 @@ annotated with the class infers its language on its own.
 class Order(Base):
     __tablename__ = "orders"
     id: Mapped[int] = mapped_column(primary_key=True)
-    sku: Mapped[str] = mapped_column(sa.String(12))
+    sku: Mapped[str] = mapped_column(sa.String(12), sa.CheckConstraint("length(sku) >= 3"))
     quantity: Mapped[int] = mapped_column(sa.CheckConstraint("quantity BETWEEN 1 AND 100"))
     unit_price: Mapped[Decimal] = mapped_column(sa.Numeric(10, 2),
                                                 sa.CheckConstraint("unit_price >= 0"))
@@ -120,6 +120,8 @@ def order_total(order: Order) -> Decimal:
 
 
 class SignupForm(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     username: str = Field(min_length=3, max_length=32)
     age: int = Field(ge=13, le=120)
 

@@ -1,6 +1,6 @@
 # TypedDicts
 
-<!-- module: typeddict_models -->
+<!-- shop: search -->
 
 The TypedDict adaptor reads any class `typing.is_typeddict` says is
 one, and its members are plain dicts. Like the dataclass adaptor it has
@@ -20,41 +20,44 @@ needs nothing installed beyond mathema and this package.
 
 ## A worked claim
 
+A search result as the shop's search service returns it, from
+`examples/shop/search.py`:
+
 ```python
 from typing import Annotated, TypedDict
 
-from annotated_types import Ge, Le, MaxLen
+from annotated_types import Ge, Le
 
 
-class Line(TypedDict):
-    sku: Annotated[str, MaxLen(8)]
-    qty: Annotated[int, Ge(1), Le(10)]
-    price: Annotated[float, Ge(0.0)]
+class SearchHit(TypedDict):
+    title: str
+    score: Annotated[float, Ge(0.0), Le(1.0)]
+    clicks: Annotated[int, Ge(0)]
 
 
-def line_total(line: Line) -> float:
-    """Quantity times price."""
-    return line["qty"] * line["price"]
+def rank(hit: SearchHit) -> float:
+    """Where the hit sorts: relevance first, popularity after."""
+    return hit["score"] * 10 + hit["clicks"] / 1000
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `line_total` | `for line in L[typeddict_models.Line], f(line) >= 0` | proven | The lift reads both keys' bounds off the annotations, a quantity of at least one times a price of at least zero, through the subscripts the body uses. |
-| `line_total` | `for line in L[typeddict_models.Line], f(line) <= 100` | falsified | The price has no upper bound. |
+| `rank` | `for hit in L[shop.search.SearchHit], f(hit) >= 0` | proven | The lift reads both keys' bounds off the annotations, through the subscripts the body uses. |
+| `rank` | `for hit in L[shop.search.SearchHit], f(hit) <= 10` | falsified | Nothing bounds the clicks from above. |
 
 ## A non-member
 
 ```python
 from mathema_language.schema.adaptors import adapt_row
 
-language = adapt_row(Line)
-for problem in language.explain({"sku": "ABC", "qty": 11, "note": "x"}):
+language = adapt_row(SearchHit)
+for problem in language.explain({"title": "mugs", "score": 1.5, "note": "x"}):
     print(repr(problem.path), "|", problem.predicate)
 ```
 
 <!-- output -->
 ```text
-'.qty' | <= 10
-'.price' | present
+'.score' | <= 1.0
+'.clicks' | present
 '.note' | a column of the schema
 ```

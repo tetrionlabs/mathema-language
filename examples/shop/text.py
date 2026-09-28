@@ -4,6 +4,9 @@
 rendering and config files."""
 import html
 import json
+from typing import Annotated
+
+from annotated_types import MaxLen
 
 
 def display_name(username: str) -> str:
@@ -38,3 +41,8 @@ def render_comment(body: str) -> str:
 def normalise_config(text: str) -> str:
     """A JSON config file with its keys sorted, as the repo stores it."""
     return json.dumps(json.loads(text), sort_keys=True, indent=2)
+
+
+def short_title(title: Annotated[str, MaxLen(60)]) -> str:
+    """The title, cut to the sixty characters the column holds."""
+    return title[:60]

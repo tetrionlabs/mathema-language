@@ -1,6 +1,6 @@
 # Text annotations
 
-<!-- module: text_models -->
+<!-- shop: text -->
 
 The text adaptor reads two annotations, `str` and `Annotated[str,
 ...]`, and nothing else. `str` is the language of every string,
@@ -23,26 +23,28 @@ nothing installed beyond mathema and this package.
 
 ## A worked claim
 
+Two of the shop's text helpers, from `examples/shop/text.py`:
+
 ```python
 from typing import Annotated
 
 from annotated_types import MaxLen
 
 
-def shout(s: str) -> str:
-    """Upper case."""
-    return s.upper()
+def display_name(username: str) -> str:
+    """The username as shown in the header, upper-cased."""
+    return username.upper()
 
 
-def label(s: Annotated[str, MaxLen(8)]) -> str:
-    """The label, cut to the eight characters it is declared to fit."""
-    return s[:8]
+def short_title(title: Annotated[str, MaxLen(60)]) -> str:
+    """The title, cut to the sixty characters the column holds."""
+    return title[:60]
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `shout` | `len(f(s)) == len(s)` | falsified | Inferred `L[unicode]`, and `'ΐ'` upper-cases to three code points. |
-| `label` | `f(s) == s` | holds | Inferred `L[unicode, len <= 8]`, inside which the cut changes nothing. |
+| `display_name` | `len(f(username)) == len(username)` | falsified | Inferred `L[unicode]`, and `'ﬁ'` upper-cases to two code points. |
+| `short_title` | `f(title) == title` | holds | Inferred `L[unicode, len <= 60]`, inside which the cut changes nothing. |
 
 ## A non-member
 

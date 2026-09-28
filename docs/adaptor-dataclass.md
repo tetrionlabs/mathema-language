@@ -1,6 +1,6 @@
 # Dataclasses
 
-<!-- module: dataclass_models -->
+<!-- shop: shipping -->
 
 The dataclass adaptor reads any class `dataclasses.is_dataclass` says
 is one, and its members are instances of that class. There is no
@@ -27,6 +27,8 @@ package, and it runs on every Python the package supports.
 
 ## A worked claim
 
+The shop's parcels, from `examples/shop/shipping.py`:
+
 ```python
 from dataclasses import dataclass
 from typing import Annotated
@@ -35,34 +37,33 @@ from annotated_types import Ge, Le, MaxLen
 
 
 @dataclass
-class Line:
-    sku: Annotated[str, MaxLen(8)]
-    qty: Annotated[int, Ge(1), Le(10)]
-    price: Annotated[float, Ge(0.0)]
+class Parcel:
+    postcode: Annotated[str, MaxLen(8)]
+    weight_kg: Annotated[float, Ge(0.0), Le(30.0)]
 
 
-def line_total(line: Line) -> float:
-    """Quantity times price."""
-    return line.qty * line.price
+def postage(parcel: Parcel) -> float:
+    """What it costs to send the parcel: a base rate plus a rate per kilo."""
+    return 3.5 + 1.2 * parcel.weight_kg
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `line_total` | `for line in L[dataclass_models.Line], f(line) >= 0` | proven | The lift reads both bounds off the annotations, a quantity of at least one times a price of at least zero. |
-| `line_total` | `for line in L[dataclass_models.Line], f(line) <= 100` | falsified | The price has no upper bound, and an executed record is the witness. |
+| `postage` | `for parcel in L[shop.shipping.Parcel], 3.5 <= f(parcel) <= 39.5` | proven | The lift reads the weight's bounds off the annotation, nought to thirty kilos. |
+| `postage` | `for parcel in L[shop.shipping.Parcel], f(parcel) <= 30` | falsified | A thirty-kilo parcel costs 39.50. |
 
 ## A non-member
 
 ```python
 from mathema_language.schema.adaptors import adapt_row
 
-language = adapt_row(Line)
-for problem in language.explain(Line(sku="ABCDEFGHIJ", qty=0, price=2.5)):
+language = adapt_row(Parcel)
+for problem in language.explain(Parcel(postcode="SW1A 1AAXX", weight_kg=31.0)):
     print(repr(problem.path), "|", problem.predicate)
 ```
 
 <!-- output -->
 ```text
-'.sku' | len <= 8
-'.qty' | >= 1
+'.postcode' | len <= 8
+'.weight_kg' | <= 30.0
 ```

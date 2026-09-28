@@ -1,7 +1,7 @@
 # JSON Schema
 
 <!-- requires: jsonschema -->
-<!-- module: jsonschema_models -->
+<!-- shop: webhooks -->
 
 The JSON Schema adaptor reads a dict with `"type": "object"` and a
 `"properties"` mapping, and its members are dicts. Membership is the
@@ -31,43 +31,51 @@ tested at 4.18 and at the latest release.
 
 ## A worked claim
 
+The payment provider's charge events and the shop's router, from
+`examples/shop/webhooks.py`:
+
 ```python
-LINE = {
-    "title": "Line",
+CHARGE_EVENT = {
     "type": "object",
     "properties": {
-        "sku": {"type": "string", "maxLength": 8},
-        "qty": {"type": "integer", "minimum": 1, "maximum": 10},
-        "price": {"type": "number", "minimum": 0},
+        "type": {"enum": ["charge.succeeded", "charge.failed", "charge.refunded"]},
+        "amount": {"type": "integer", "minimum": 0},
     },
-    "required": ["sku", "qty", "price"],
+    "required": ["type", "amount"],
     "additionalProperties": False,
 }
 
+QUEUES = {"charge.succeeded": "billing", "charge.failed": "alerts"}
 
-def line_total(line: dict) -> float:
-    """Quantity times price."""
-    return line["qty"] * line["price"]
+
+def queue_for(event: dict) -> str:
+    """The queue a charge event is routed to."""
+    return QUEUES[event["type"]]
+
+
+def processing_fee(event: dict) -> float:
+    """The provider's fee on a charge, in cents: 2.9% plus 30."""
+    return event["amount"] * 0.029 + 30
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `line_total` | `for line in L[jsonschema_models.LINE], f(line) >= 0` | proven | The lift reads both bounds off the schema, a quantity of at least one times a price of at least zero. |
-| `line_total` | `for line in L[jsonschema_models.LINE], f(line) <= 100` | falsified | The price has no upper bound. |
+| `processing_fee` | `for event in L[shop.webhooks.CHARGE_EVENT], f(event) >= 30` | proven | The lift reads the amount's minimum off the schema. |
+| `queue_for` | `for event in L[shop.webhooks.CHARGE_EVENT], f(event) in {"billing", "alerts"}` | falsified | A `charge.refunded` event has no queue, and the router raises KeyError. |
 
 ## A non-member
 
 ```python
 from mathema_language.schema.adaptors import adapt_row
 
-language = adapt_row(LINE)
-for problem in language.explain({"sku": "ABCDEFGHIJ", "qty": 0, "price": 2.5, "note": "x"}):
+language = adapt_row(CHARGE_EVENT)
+for problem in language.explain({"type": "charge.disputed", "amount": -5, "note": "x"}):
     print(repr(problem.path), "|", problem.predicate)
 ```
 
 <!-- output -->
 ```text
-'.sku' | 'ABCDEFGHIJ' is too long
-'.qty' | 0 is less than the minimum of 1
+'.type' | 'charge.disputed' is not one of ['charge.succeeded', 'charge.failed', 'charge.refunded']
+'.amount' | -5 is less than the minimum of 0
 '' | Additional properties are not allowed ('note' was unexpected)
 ```

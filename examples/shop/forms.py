@@ -3,10 +3,12 @@
 """The signup form and the basket, as pydantic models."""
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SignupForm(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     username: str = Field(min_length=3, max_length=32)
     age: int = Field(ge=13, le=120)
 
