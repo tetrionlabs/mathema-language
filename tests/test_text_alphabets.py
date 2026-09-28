@@ -112,7 +112,7 @@ def test_explain_names_the_offending_character():
 
 
 def test_shrinking_prefers_the_simplest_character():
-    smaller = DIGIT.shrink("789")
+    smaller = list(DIGIT.shrink("789"))
     assert "089" in smaller and "" in smaller
     assert all(DIGIT.contains(s) for s in smaller)
 

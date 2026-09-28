@@ -7,7 +7,7 @@ prefers the language's simplest character.
 from __future__ import annotations
 
 import random
-from collections.abc import Iterable
+from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import cast
 
@@ -49,26 +49,28 @@ class TextLanguage(StringLanguage):
                     return s
         return cast(str, super().sample(rng))
 
-    def shrink(self, value: object) -> Iterable[str]:
+    def shrink(self, value: object) -> Iterator[str]:
+        """Smaller members one at a time: the base kit's deletions first,
+        largest first, then each character replaced by this language's
+        simplest one, then the base kit's other candidates; a caller
+        that stops at the first useful candidate checks only the ones
+        before it."""
         if not isinstance(value, str):
-            return ()
-        out: list[str] = []
+            return
         seen = {value}
-
-        def offer(s: str) -> None:
-            if s not in seen and self.contains(s):
-                seen.add(s)
-                out.append(s)
-
         for s in super().shrink(value):
-            if len(s) < len(value):
-                offer(s)
+            if len(s) < len(value) and s not in seen:
+                seen.add(s)
+                yield s
         for i, ch in enumerate(value):
             if ch != self.simplest:
-                offer(value[:i] + self.simplest + value[i + 1:])
+                s = value[:i] + self.simplest + value[i + 1:]
+                if s not in seen and self.contains(s):
+                    seen.add(s)
+                    yield s
         for s in super().shrink(value):
-            offer(s)
-        return tuple(out)
-
+            if s not in seen:
+                seen.add(s)
+                yield s
 
 __all__ = ["TextLanguage"]
