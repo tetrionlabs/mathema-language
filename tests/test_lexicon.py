@@ -42,7 +42,7 @@ EXPECTED = {
     "language_homomorphism": "holds",
     "language_encoding_boundary": ("falsified", "raised UnicodeEncodeError"),
     "language_section_inverse": "holds",
-    "language_retraction": "holds",
+    "language_retraction": ("falsified", "('NaN'): f returned nan"),
     "language_idempotent": "holds",
     "language_length_bound_identity": "holds",
     "language_length_bound_one_past": ("falsified", "('" + "a" * 81 + "')"),
