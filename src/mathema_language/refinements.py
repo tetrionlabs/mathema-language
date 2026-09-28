@@ -215,13 +215,51 @@ def _row_member(language: Any, key: str, n: int) -> Any:
     return None
 
 
+def _json_object(key: str, n: int) -> str | None:
+    """A JSON document made of objects whose `key` measure is exactly
+    `n`: nested one key deep for `depth`, and one flat object for
+    `nodes` (itself and its values) and `children` (its keys)."""
+    import json
+
+    if key == "depth":
+        if n < 1:
+            return None
+        value: Any = {}
+        for _ in range(n - 1):
+            value = {"k": value}
+        return json.dumps(value)
+    count = n - 1 if key == "nodes" else n
+    if count < 0:
+        return None
+    return json.dumps({f"k{i}": 0 for i in range(count)})
+
+
+class _JsonStructureLanguage(RefinedLanguage):
+    """A structure refinement of `L[json]` whose hazards also hold an
+    object at the upper bound, beside the array the plain member is, so
+    code that walks keys meets the bound as well as code that walks
+    items."""
+
+    def hazards(self) -> tuple[Any, ...]:
+        out = list(super().hazards())
+        if self.hi is None:
+            return tuple(out)
+        document = _json_object(self.key, self.hi)
+        if document is not None and self.contains(document) \
+                and document not in [h.value for h in out]:
+            out.append(HazardValue(self.hazard_kind, document,
+                                   f"an object with {self.key} {self.hi}, at the bound"))
+        return tuple(out)
+
+
 def structure(key: str) -> Any:
     """The refinement for `key` in `depth`, `nodes`, `children`."""
 
     def refine(language: Any, interval: Any) -> Any:
         measure = _structure_measure(language, key)
         json_text = _denotes_json(language)
-        return RefinedLanguage(
+        kit = _JsonStructureLanguage if json_text else RefinedLanguage
+        return kit(
             language, key, interval, measure=measure,
             plain=(lambda n: _json_plain(key, n)) if json_text else
             (lambda n: _row_member(language, key, n)),

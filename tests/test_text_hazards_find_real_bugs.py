@@ -28,3 +28,10 @@ def test_json_nested_past_the_recursion_limit_is_tried():
     assert deepest > sys.getrecursionlimit(), deepest
     (p,) = check_conjectures(bugs.json_keys, [claim("for text in L[json], f(text) >= 0")])
     assert p.verdict == "falsified" and "RecursionError" in p.counterexample, (p.verdict, p.note)
+
+
+def test_a_json_bound_on_nodes_or_children_tries_an_object_at_the_bound():
+    (p,) = check_conjectures(bugs.json_keys, [claim("for text in L[json, nodes <= 20], f(text) <= 9")])
+    assert p.verdict == "falsified", (p.verdict, p.note)
+    (q,) = check_conjectures(bugs.json_keys, [claim("for text in L[json, children <= 12], f(text) <= 5")])
+    assert q.verdict == "falsified", (q.verdict, q.note)
