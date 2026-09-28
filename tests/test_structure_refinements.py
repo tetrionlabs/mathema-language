@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""`depth`, `nodes` and `children` refine a language of nested values:
+"""`depth`, `nodes` and `width` refine a language of nested values:
 `L[json, depth <= 3]` is the JSON documents nested at most three
 levels. The measures are `vocabulary.tree`'s, taken iteratively so a
 document far deeper than the recursion limit is measured; members,
@@ -28,12 +28,12 @@ def _language(text):
 
 
 def test_the_tree_measures():
-    assert (tree.depth(0), tree.nodes(0), tree.children(0), tree.leaves(0)) == (0, 1, 0, 1)
-    assert (tree.depth([]), tree.nodes([]), tree.children([]), tree.leaves([])) == (1, 1, 0, 1)
+    assert (tree.depth(0), tree.nodes(0), tree.width(0), tree.leaves(0)) == (0, 1, 0, 1)
+    assert (tree.depth([]), tree.nodes([]), tree.width([]), tree.leaves([])) == (1, 1, 0, 1)
     assert tree.depth([[1]]) == 2 and tree.nodes([[1]]) == 3
     doc = {"a": [1, 2, {"b": None}], "c": "x"}
     assert tree.depth(doc) == 3 and tree.nodes(doc) == 7
-    assert tree.children(doc) == 3 and tree.leaves(doc) == 4
+    assert tree.width(doc) == 3 and tree.leaves(doc) == 4
 
     @dataclass
     class Address:
@@ -44,8 +44,9 @@ def test_the_tree_measures():
         name: str
         home: Address
 
+    # a record tree is counted in records: a person and the address it holds
     assert tree.depth(Person("a", Address("b"))) == 2
-    assert tree.nodes(Person("a", Address("b"))) == 4
+    assert tree.nodes(Person("a", Address("b"))) == 2
 
 
 def test_the_measures_are_iterative_and_refuse_a_cycle():
@@ -66,28 +67,28 @@ def test_the_text_scan_agrees_with_the_parsed_value():
         text = lang.sample(rng)
         value = json.loads(text)
         assert scan(text) == (tree.depth(value), tree.nodes(value),
-                              tree.children(value), tree.leaves(value)), text
+                              tree.width(value), tree.leaves(value)), text
     for text in ('{"a": {"b": [1, "x,y", {"c": "]"}]}, "d": true}', '"s"', "[]", "{}",
                  '[{"k": "v\\\\"}, -1.5e3, null]'):
         value = json.loads(text)
         assert scan(text) == (tree.depth(value), tree.nodes(value),
-                              tree.children(value), tree.leaves(value)), text
+                              tree.width(value), tree.leaves(value)), text
     assert scan("[" * 5000 + "]" * 5000)[0] == 5000
 
 
 def test_the_keys_are_registered_by_the_package():
-    assert {"depth", "nodes", "children"} <= set(refinement_keys())
+    assert {"depth", "nodes", "width"} <= set(refinement_keys())
 
 
 @pytest.mark.parametrize("text,key,lo,hi", [
     ("L[json, depth <= 3]", "depth", 0, 3),
     ("L[json, depth in [2, 4]]", "depth", 2, 4),
     ("L[json, nodes <= 6]", "nodes", 1, 6),
-    ("L[json, children <= 2]", "children", 0, 2),
+    ("L[json, width <= 2]", "width", 0, 2),
 ])
 def test_samples_and_hazards_stay_inside_and_the_outside_draw_does_not(text, key, lo, hi):
     lang = _language(text)
-    measure = {"depth": 0, "nodes": 1, "children": 2}[key]
+    measure = {"depth": 0, "nodes": 1, "width": 2}[key]
     rng = random.Random(0)
     for _ in range(100):
         s = lang.sample(rng)

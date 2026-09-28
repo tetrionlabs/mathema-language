@@ -149,15 +149,15 @@
   "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 6]|missing, f(t) ≤ 5",
   "ascii": "for t in L[mathema_language.lexicon.Branch, depth <= 6]|missing, f(t) <= 5"
  },
- "structure_children_bound": {
-  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 5, children <= 3], f(t) <= 3",
-  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, children <= 3, depth <= 5]|missing, f(t) ≤ 3",
-  "ascii": "for t in L[mathema_language.lexicon.Branch, children <= 3, depth <= 5]|missing, f(t) <= 3"
+ "structure_width_bound": {
+  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 5, width <= 3], f(t) <= 3",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 5, width <= 3]|missing, f(t) ≤ 3",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, depth <= 5, width <= 3]|missing, f(t) <= 3"
  },
- "structure_children_one_past": {
-  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 5, children <= 4], f(t) <= 3",
-  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, children <= 4, depth <= 5]|missing, f(t) ≤ 3",
-  "ascii": "for t in L[mathema_language.lexicon.Branch, children <= 4, depth <= 5]|missing, f(t) <= 3"
+ "structure_width_one_past": {
+  "input": "for t in L[mathema_language.lexicon.Branch, depth <= 5, width <= 4], f(t) <= 3",
+  "unicode": "∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 5, width <= 4]|missing, f(t) ≤ 3",
+  "ascii": "for t in L[mathema_language.lexicon.Branch, depth <= 5, width <= 4]|missing, f(t) <= 3"
  },
  "structure_nodes_bound": {
   "input": "for t in L[mathema_language.lexicon.Branch, nodes <= 50], f(t) <= 50",
@@ -285,9 +285,9 @@
   "ascii": "for s in L[ascii]|missing, excluded_outside_domain(s)"
  },
  "vocabulary_tree_depth": {
-  "input": "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5], depth(t) == 2 * f(t)",
-  "unicode": "let depth = mathema_language.vocabulary.tree.depth, ∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = 2*f(t)",
-  "ascii": "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = 2*f(t)"
+  "input": "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5], depth(t) == f(t)",
+  "unicode": "let depth = mathema_language.vocabulary.tree.depth, ∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = f(t)",
+  "ascii": "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = f(t)"
  },
  "adaptor_text_annotation": {
   "input": "len(f(title)) <= 60",

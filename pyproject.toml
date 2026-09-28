@@ -91,7 +91,7 @@ django = "mathema_language.schema.adaptors.django:adapt"
 len = "mathema_language.refinements:length"
 depth = "mathema_language.refinements:depth"
 nodes = "mathema_language.refinements:nodes"
-children = "mathema_language.refinements:children"
+width = "mathema_language.refinements:width"
 
 [project.entry-points."mathema.lexicon"]
 language = "mathema_language.lexicon"

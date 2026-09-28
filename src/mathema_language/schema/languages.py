@@ -79,7 +79,7 @@ def _within_budget(method: Any) -> Any:
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
         bounds = getattr(self, "_draw_override", None) or self.sampling
         with _gen.drawing_within(self.schema, depth=bounds["depth"], nodes=bounds["nodes"],
-                                 children=bounds["children"]):
+                                 width=bounds["width"]):
             budget = _gen._BUDGET.get()
             if budget is not None and bounds.get("reach"):
                 budget["reach"] = True
@@ -98,7 +98,7 @@ def _ladder(top: int) -> list[int]:
 
 #: the budget for a schema that does not refer to itself: wide enough
 #: never to cut a draw short
-_FLAT_BUDGET = {"depth": 64, "nodes": 1_000_000, "children": 1_000_000}
+_FLAT_BUDGET = {"depth": 64, "nodes": 1_000_000, "width": 1_000_000}
 
 
 #: marks a validator depth limit not measured yet
@@ -481,7 +481,7 @@ class RowLanguage:
 
         out: list[HazardValue] = []
         bound = self.sampling
-        width_bound = bound["children"]
+        width_bound = bound["width"]
         found = self._edge()
         if found is not None and found[1].constraints.max_len is not None:
             width_bound = min(width_bound, found[1].constraints.max_len)

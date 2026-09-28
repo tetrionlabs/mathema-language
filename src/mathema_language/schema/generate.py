@@ -41,13 +41,13 @@ _BUDGET: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar(
 
 
 @contextlib.contextmanager
-def drawing_within(definitions: Any, *, depth: int, nodes: int, children: int) -> Iterator[None]:
+def drawing_within(definitions: Any, *, depth: int, nodes: int, width: int) -> Iterator[None]:
     """Draw nested values under these bounds, counted in records the
     way `structure.record_measures` counts them: `depth` records along
     any path (the record being drawn is the first), `nodes` records in
-    all, `children` records under any one."""
+    all, `width` records under any one."""
     token = _BUDGET.set({"defs": definitions, "depth": depth, "nodes": nodes - 1,
-                         "children": children, "level": 1})
+                         "width": width, "level": 1})
     try:
         yield
     finally:
@@ -209,7 +209,7 @@ def draw_raw(rng: random.Random, f: Field) -> Any:
         budget = _BUDGET.get()
         if budget is not None:
             if _reaches_a_record(item):
-                hi = min(hi, budget["children"], max(budget["nodes"], 0))
+                hi = min(hi, budget["width"], max(budget["nodes"], 0))
             if _reaches_a_record(item) and _room() <= 0:
                 hi = lo
             elif budget.get("reach") and _reaches_a_record(item) and hi >= 1:

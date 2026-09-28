@@ -18,7 +18,7 @@ BASES = ("bool", "int", "float", "decimal", "string", "binary", "date", "time",
 #: the draw bounds a recursive schema is sampled within when it states
 #: none of its own; they are sampling choices, published by the
 #: language, never a bound on its members
-SAMPLING_BOUNDS = {"depth": 8, "nodes": 256, "children": 16}
+SAMPLING_BOUNDS = {"depth": 8, "nodes": 256, "width": 16}
 
 #: the marker for a field with no default and a constraint with no constant
 NO_DEFAULT: Any = type("NoDefault", (), {"__repr__": lambda self: "NO_DEFAULT"})()

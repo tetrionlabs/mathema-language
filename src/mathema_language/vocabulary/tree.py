@@ -1,12 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
 """Structure of nested values, for claims about nesting: `depth`,
-`nodes`, `children` and `leaves` over any nest of dicts, lists, tuples,
-sets and records (a dataclass, a pydantic model, any object with a
-`__dict__` of fields is not walked: only those two record shapes are).
-A scalar has depth 0 and is one node; a container has depth one more
-than its deepest child (so `[]` has depth 1) and is one node plus its
-descendants. Every walk is iterative, so a value nested far past the
+`nodes`, `width` and `leaves`. On a record tree (a dataclass or a
+pydantic model whose fields hold more of its records) they count
+records, exactly as the refinement keys of the same names do: a record
+with no child records has depth 1, is one node and one leaf, and width
+is the most child records any one record holds. On any other nest of
+dicts, lists, tuples and sets, which has no schema to say what a record
+is, they count containers and values: a scalar has depth 0 and is one
+node, a container has depth one more than its deepest child (so `[]`
+has depth 1). Every walk is iterative, so a value nested far past the
 interpreter's recursion limit is measured, and a value that contains
 itself raises ValueError naming the cycle rather than looping.
 
@@ -39,7 +42,8 @@ def children_of(value: Any) -> list[Any] | None:
 
 
 def _walk(value: Any) -> tuple[int, int, int, int]:
-    """(depth, nodes, children, leaves) of `value`, iteratively; a
+    """(depth, nodes, width, leaves) of `value` in containers and
+    values, iteratively; a
     container met again on its own path is a cycle."""
     max_depth = nodes = widest = leaves = 0
     on_path: set[int] = set()
@@ -69,33 +73,48 @@ def _walk(value: Any) -> tuple[int, int, int, int]:
     return max_depth, nodes, widest, leaves
 
 
+def _measure(value: Any) -> tuple[int, int, int, int]:
+    """(depth, nodes, width, leaves): in records for a record tree, in
+    containers and values for any other nest."""
+    if dataclasses.is_dataclass(value) and not isinstance(value, type) \
+            or isinstance(getattr(type(value), "model_fields", None), dict):
+        from ..schema.adaptors import adapt_row
+        from ..schema.structure import record_structure
+        language = adapt_row(type(value))
+        if language is not None and getattr(language, "schema", None) is not None:
+            return record_structure(language.schema, value)
+    return _walk(value)
+
+
 def depth(value: Any) -> int:
-    """Nesting levels: 0 for a scalar, 1 for a flat container."""
-    return _walk(value)[0]
+    """Nesting levels: records along the deepest path of a record tree,
+    else containers (0 for a scalar, 1 for a flat container)."""
+    return _measure(value)[0]
 
 
 def nodes(value: Any) -> int:
-    """Every value in the nest, containers and scalars, counted once
-    per place it appears."""
-    return _walk(value)[1]
+    """The records in a record tree, else every value and container,
+    counted once per place it appears."""
+    return _measure(value)[1]
 
 
-def children(value: Any) -> int:
-    """The most direct children any one container in the nest has; 0
-    for a scalar."""
-    return _walk(value)[2]
+def width(value: Any) -> int:
+    """The most children any one node has: child records in a record
+    tree, else the items or values of one container; 0 for a scalar."""
+    return _measure(value)[2]
 
 
 def leaves(value: Any) -> int:
-    """The values with no children: scalars and empty containers."""
-    return _walk(value)[3]
+    """The nodes with no children: records holding no other record, or
+    scalars and empty containers."""
+    return _measure(value)[3]
 
 
 VOCABULARY: dict[str, object] = {
-    "depth": depth, "nodes": nodes, "children": children, "leaves": leaves,
+    "depth": depth, "nodes": nodes, "width": width, "leaves": leaves,
 }
 
 for _name, _fn in VOCABULARY.items():
     _fn.__mathema_vocabulary__ = f"tree.{_name}@1"  # type: ignore[attr-defined]
 
-__all__ = ["VOCABULARY", "children", "children_of", "depth", "leaves", "nodes"]
+__all__ = ["VOCABULARY", "depth", "leaves", "nodes", "width"]

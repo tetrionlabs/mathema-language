@@ -3,7 +3,7 @@
 """The structure of a record tree, counted in records: a row language's
 `depth` is the number of records along the deepest path from the root
 (a record with no nested records has depth 1), `nodes` is the number of
-records, and `children` is the most records any one record holds
+records, and `width` is the most records any one record holds
 directly, through a field, a list or a map of them. Which values are
 records is read off the schema: a struct field or a reference to a
 record type is one, a map or a list is only a carrier, and scalars are
@@ -45,13 +45,14 @@ def _records_in(root: RowSchema, t: NeutralType, value: Any) -> list[tuple[Any, 
     return out
 
 
-def record_measures(schema: RowSchema, value: Any) -> tuple[int, int, int]:
-    """`(depth, nodes, children)` of a record of `schema`, in records.
+def record_structure(schema: RowSchema, value: Any) -> tuple[int, int, int, int]:
+    """`(depth, nodes, width, leaves)` of a record of `schema`, in
+    records: leaves are the records that hold no other record.
 
     Raises:
         ValueError: the value contains itself.
     """
-    max_depth = nodes = widest = 0
+    max_depth = nodes = widest = leaves = 0
     on_path: set[int] = set()
     stack: list[tuple[Any, Any, int, bool]] = [(schema.fields, value, 1, False)]
     while stack:
@@ -69,8 +70,18 @@ def record_measures(schema: RowSchema, value: Any) -> tuple[int, int, int]:
         for f in fields:
             kids.extend(_records_in(schema, f.type, _value_of(record, f.name)))
         widest = max(widest, len(kids))
+        leaves += not kids
         stack.extend((kf, kv, level + 1, False) for kf, kv in reversed(kids))
-    return max_depth, nodes, widest
+    return max_depth, nodes, widest, leaves
 
 
-__all__ = ["record_measures"]
+def record_measures(schema: RowSchema, value: Any) -> tuple[int, int, int]:
+    """`(depth, nodes, width)` of a record of `schema`, in records.
+
+    Raises:
+        ValueError: the value contains itself.
+    """
+    return record_structure(schema, value)[:3]
+
+
+__all__ = ["record_measures", "record_structure"]

@@ -8,7 +8,7 @@ built from mathema's `RefinedLanguage` kit.
   length `n` is one repeated simple character the language admits
   (`"a" * 80`), a built member a run of the language's own members cut
   to length.
-- `depth`, `nodes`, `children`: the structure of a nested member. On a
+- `depth`, `nodes`, `width`: the structure of a nested member. On a
   row language they count records (`schema.structure`): records along
   the deepest path, records in all, and the most records one record
   holds directly. On `L[json]` they count as `vocabulary.tree` does,
@@ -105,7 +105,7 @@ def length_bound(lo: int, hi: int | None) -> Any:
                                    "closed_lo": True, "closed_hi": True})
 
 
-_STRUCTURE_KEYS = {"depth": 0, "nodes": 1, "children": 2}
+_STRUCTURE_KEYS = {"depth": 0, "nodes": 1, "width": 2}
 
 
 def _denotes_json(language: Any) -> bool:
@@ -199,7 +199,7 @@ def _row_member(language: Any, key: str, n: int) -> Any:
     if n < 0 or base is None or not hasattr(base, "_spine"):
         return None
     measure = _structure_measure(language, key)
-    shapes = (base._wide,) if key == "children" else (base._spine, base._wide)
+    shapes = (base._wide,) if key == "width" else (base._spine, base._wide)
     for shape in shapes:
         size = 0 if shape == base._wide else 1
         while size <= n + 2:
@@ -218,7 +218,7 @@ def _row_member(language: Any, key: str, n: int) -> Any:
 def _json_object(key: str, n: int) -> str | None:
     """A JSON document made of objects whose `key` measure is exactly
     `n`: nested one key deep for `depth`, and one flat object for
-    `nodes` (itself and its values) and `children` (its keys)."""
+    `nodes` (itself and its values) and `width` (its keys)."""
     import json
 
     if key == "depth":
@@ -253,7 +253,7 @@ class _JsonStructureLanguage(RefinedLanguage):
 
 
 def structure(key: str) -> Any:
-    """The refinement for `key` in `depth`, `nodes`, `children`."""
+    """The refinement for `key` in `depth`, `nodes`, `width`."""
 
     def refine(language: Any, interval: Any) -> Any:
         measure = _structure_measure(language, key)
@@ -272,7 +272,7 @@ def structure(key: str) -> Any:
 
 depth = structure("depth")
 nodes = structure("nodes")
-children = structure("children")
+width = structure("width")
 
 
-__all__ = ["children", "depth", "length", "length_bound", "nodes"]
+__all__ = ["depth", "length", "length_bound", "nodes", "width"]

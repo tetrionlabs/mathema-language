@@ -24,7 +24,7 @@ NODE = "tests._recursive_shapes.Node"
 
 def _measure(key):
     schema = _language(f"L[{NODE}]").schema
-    return lambda v: record_measures(schema, v)[("depth", "nodes", "children").index(key)]
+    return lambda v: record_measures(schema, v)[("depth", "nodes", "width").index(key)]
 
 
 def depth(v):
@@ -35,7 +35,7 @@ def _language(text):
     return resolve_language(parse_binding(f"t in {text}")[1].pieces[0])
 
 
-@pytest.mark.parametrize("key,bound", [("depth", 3), ("depth", 9), ("children", 4),
+@pytest.mark.parametrize("key,bound", [("depth", 3), ("depth", 9), ("width", 4),
                                        ("nodes", 12)])
 def test_the_member_at_the_bound_is_a_hazard_and_one_past_is_outside(key, bound):
     lang = _language(f"L[{NODE}, {key} <= {bound}]")
@@ -54,7 +54,7 @@ def test_draws_climb_the_ladder_when_every_draw_resolves_afresh():
 
 
 @pytest.mark.parametrize("fn,text", [
-    (shapes.widest, f"for t in L[{NODE}, depth <= 8, children <= 4], f(t) <= 3"),
+    (shapes.widest, f"for t in L[{NODE}, depth <= 8, width <= 4], f(t) <= 3"),
     (shapes.height, f"for t in L[{NODE}, depth <= 4], f(t) <= 3"),
     (shapes.size, f"for t in L[{NODE}, nodes <= 30], f(t) <= 4"),
 ])

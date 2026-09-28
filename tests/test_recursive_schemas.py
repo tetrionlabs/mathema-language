@@ -6,7 +6,7 @@ dataclass, TypedDict or pydantic model, or a JSON Schema with a local
 are members by the ecosystem's own validator, nested values are the
 real class, and draws stay within the bounds the schema states or,
 where it states none, the sampling bounds (depth 8, nodes 256,
-children 16) the language publishes; a value far deeper than the
+width 16) the language publishes; a value far deeper than the
 recursion limit is checked, and a cycle is refused where it closes."""
 import random
 
@@ -47,7 +47,7 @@ def language(request):
 def test_a_recursive_schema_adapts_and_states_its_sampling_bounds(language):
     assert "ref" in repr(language.schema) or language.schema.definitions
     stated = language.to_json()["x-mathema"]["sampling"]
-    assert set(stated) >= {"depth", "nodes", "children"}
+    assert set(stated) >= {"depth", "nodes", "width"}
     assert stated["depth"] <= 8 and stated["nodes"] <= 256
 
 
@@ -81,10 +81,10 @@ def test_a_schema_stated_bound_is_the_language_s():
     lang = adapt_row(PNode)
     rng = random.Random(2)
     for _ in range(60):
-        assert tree.children(lang.sample(rng)) <= 3
+        assert tree.width(lang.sample(rng)) <= 3
     lang = adapt_row(shapes.TREE_SCHEMA)
     for _ in range(60):
-        assert tree.children(lang.sample(rng)["root"]) <= 3
+        assert tree.width(lang.sample(rng)["root"]) <= 3
 
 
 def test_a_value_far_deeper_than_the_recursion_limit_is_checked():

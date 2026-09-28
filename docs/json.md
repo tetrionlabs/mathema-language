@@ -47,7 +47,7 @@ brackets, counted over the document's values and containers:
 | `children` | the most items or keys one container holds | `[0, 0, 0]` |
 
 Each reads `<=`, `<`, `>=`, `>` or an interval, `in [1, 50]`, and they
-combine: `L[json, depth <= 6, children <= 100]`. The probe tries the
+combine: `L[json, depth <= 6, width <= 100]`. The probe tries the
 document at each bound, as an array and as an object, and one just past
 it:
 

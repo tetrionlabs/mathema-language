@@ -37,7 +37,7 @@ def test_the_deepest_and_widest_members_are_hazards():
     depths = [_depth(lang, h.value) for h in hazards]
     widths = [record_measures(lang.schema, h.value)[2] for h in hazards]
     assert lang.sampling["depth"] in depths, depths
-    assert lang.sampling["children"] in widths, widths
+    assert lang.sampling["width"] in widths, widths
     for h in hazards:
         assert lang.contains(h.value), h.note
 
