@@ -5,10 +5,12 @@ single records of the schema in one ecosystem."""
 from __future__ import annotations
 
 import functools
+import math
 import random
 import sys
+import threading
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, cast
 
 from .._surface import HazardValue, LanguageRef, Problem, domain_bound_from_json
 from . import generate as _gen
@@ -97,6 +99,17 @@ def _ladder(top: int) -> list[int]:
 #: the budget for a schema that does not refer to itself: wide enough
 #: never to cut a draw short
 _FLAT_BUDGET = {"depth": 64, "nodes": 1_000_000, "children": 1_000_000}
+
+
+#: marks a validator depth limit not measured yet
+_UNMEASURED = object()
+#: the stack a measuring thread asks for: a validator recursing to the
+#: interpreter's limit needs more C stack than a thread gets by default
+_MEASURING_STACK = 64 * 1024 * 1024
+#: frames spent before the second measurement of a validator's limit
+_PROBE_FRAMES = 100
+#: the caller's stack a stated validator limit leaves room for
+_CALLER_FRAMES = 250
 
 
 class RowLanguage:
@@ -487,24 +500,65 @@ class RowLanguage:
         # a spine past the interpreter's recursion limit, or at the
         # ecosystem validator's own limit where that is lower
         past = sys.getrecursionlimit() + 50
-        spine = self._spine(past)
-        if spine is not None:
-            if self.contains(spine):
-                out.append(HazardValue("length", spine,
+        if self._spine(past) is not None:
+            limit = self._validator_spine_limit()
+            if limit is None:
+                out.append(HazardValue("length", self._spine(past),
                                        f"a spine of {past} records, past the recursion limit"))
             else:
-                lo, hi = 1, past
-                while hi - lo > 1:
-                    mid = (lo + hi) // 2
-                    if self.contains(self._spine(mid)):
-                        lo = mid
-                    else:
-                        hi = mid
-                at_limit = self._spine(lo)
+                at_limit = self._spine(limit)
                 self.validator_depth_limit = tree_depth(at_limit)
                 out.append(HazardValue("length", at_limit,
-                                       f"a spine of {lo} records, at the validator's own depth limit"))
+                                       f"a spine of {limit} records, at the validator's own depth limit"))
         return out
+
+    def _validator_spine_limit(self) -> int | None:
+        """The records in the longest spine the ecosystem's validator
+        accepts from any ordinary call site, or None when it accepts one
+        past the interpreter's recursion limit. A validator that recurses
+        in Python stops at a depth that depends on how deep the caller's
+        stack already is, so the limit is measured once, on a fresh
+        thread whose stack starts empty, twice (the second time with
+        `_PROBE_FRAMES` already used, which gives the frames the
+        validator takes per level), and stated with room left for a
+        caller `_CALLER_FRAMES` deep: the same answer wherever the
+        language is used, and a spine that long validates from there."""
+        cached = self.__dict__.get("_spine_limit", _UNMEASURED)
+        if cached is not _UNMEASURED:
+            return cast("int | None", cached)
+        found: dict[str, int | None] = {}
+
+        past = sys.getrecursionlimit() + 50
+
+        def longest(frames: int) -> int:
+            if frames:
+                return longest(frames - 1)
+            lo, hi = 1, past
+            while hi - lo > 1:
+                mid = (lo + hi) // 2
+                if self.contains(self._spine(mid)):
+                    lo = mid
+                else:
+                    hi = mid
+            return lo
+
+        def measure() -> None:
+            if self.contains(self._spine(past)):
+                found["limit"] = None
+                return
+            clear = longest(0)
+            per_level = _PROBE_FRAMES / max(1, clear - longest(_PROBE_FRAMES))
+            found["limit"] = max(1, clear - math.ceil(_CALLER_FRAMES / per_level))
+
+        previous = threading.stack_size(_MEASURING_STACK)
+        try:
+            worker = threading.Thread(target=measure, name="mathema-language-depth-limit")
+            worker.start()
+        finally:
+            threading.stack_size(previous)
+        worker.join()
+        self.__dict__["_spine_limit"] = found.get("limit")
+        return found.get("limit")
 
     def to_json(self) -> dict[str, Any]:
         out = json_schema(self.schema)

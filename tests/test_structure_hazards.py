@@ -97,3 +97,17 @@ def test_a_recursive_function_crashes_on_the_deep_spine_and_the_record_says_why(
     (q,) = check_conjectures(shapes.size, [claim(
         "for t in L[tests._recursive_shapes.Node, depth <= 20], f(t) >= 1")])
     assert (q.verdict, q.route) == ("proven", "derive:induction"), (q.verdict, q.note)
+
+
+@pytest.mark.parametrize("extra_frames", [0, 40, 120])
+def test_the_stated_depth_limit_does_not_depend_on_the_caller_s_stack(extra_frames):
+    pytest.importorskip("jsonschema")
+
+    def at_depth(n, fn):
+        return fn() if n == 0 else at_depth(n - 1, fn)
+
+    lang = adapt_row(shapes.NODE_SCHEMA)
+    limit = at_depth(extra_frames, lambda: lang.to_json()["x-mathema"]["validator_depth_limit"])
+    fresh = adapt_row(shapes.NODE_SCHEMA).to_json()["x-mathema"]["validator_depth_limit"]
+    assert limit == fresh
+    assert max(_depth(lang, h.value) for h in at_depth(extra_frames, lang.hazards)) == limit
