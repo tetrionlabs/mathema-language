@@ -109,7 +109,8 @@ def _table_schema_of(obj: Any) -> TableSchema:
         extra.update(bounds.get(col.name, {}))
         auto = bool(col.primary_key and col.autoincrement in (True, "auto") and t.base == "int")
         has_default = col.default is not None or col.server_default is not None
-        fields.append(Field(col.name, t, nullable=bool(col.nullable) and not col.primary_key,
+        # an autoincrement key left None is one the database assigns on insert
+        fields.append(Field(col.name, t, nullable=(bool(col.nullable) and not col.primary_key) or auto,
                             required=not (auto or has_default or col.nullable),
                             unique=bool(col.unique), constraints=Constraints(**extra)))
     unique = tuple(tuple(c.name for c in constraint.columns)

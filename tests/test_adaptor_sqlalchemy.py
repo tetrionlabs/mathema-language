@@ -104,3 +104,11 @@ def test_a_claim_over_column_checks_is_decided():
 def test_a_failed_check_is_named_or_spelled_out_whole(message, predicate):
     from mathema_language.schema.ecosystems.sqlalchemy import _problem_from
     assert _problem_from(message, None).predicate == predicate
+
+
+def test_an_unsaved_row_whose_key_the_database_assigns_is_a_member():
+    from decimal import Decimal
+    lang = adapt_row(shapes.Order)
+    unsaved = shapes.Order(sku="ABC", quantity=1, unit_price=Decimal("2.50"))
+    assert unsaved.id is None
+    assert lang.contains(unsaved), lang.explain(unsaved)
