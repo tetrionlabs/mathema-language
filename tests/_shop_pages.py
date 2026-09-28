@@ -3,7 +3,8 @@
 """Checks shared by the README and the reference pages, whose examples
 are the shop in `examples/shop`: code a page shows is the shop's own,
 docstrings aside, and a claim a page states lands on the verdict it
-states."""
+states. A block whose fence carries a title (```python title="...")
+quotes code from another project, and is neither run nor compared."""
 import ast
 import importlib
 import pathlib
@@ -15,6 +16,7 @@ EXAMPLES = ROOT / "examples"
 _BLOCK = re.compile(r"(<!-- output -->\n)?```(python|text)\n(.*?)```", re.S)
 _VERDICT = re.compile(r"^\s+(proven|holds|falsified|unknown|skipped)(?:\s{2,}(.*))?$")
 _ROW = re.compile(r"^\| `([^`]+)` \| `(.+?)` \| (\w+) \|", re.M)
+_CALL = re.compile(r"\b([A-Za-z_]\w*)\(")
 
 
 def shop_module(name):
@@ -73,8 +75,9 @@ def definition_problems(text, modules):
 
 
 def claim_blocks(text):
-    """`(function, claim, verdict, witness)` for every claim a text block
-    states after an `f = name` line."""
+    """`(function, claim, verdict, witness)` for every claim a text
+    block states, the function being the one the last `f = name` line
+    named (None before any)."""
     out, fn = [], None
     for kind, body, is_output in blocks(text):
         if kind != "text" or is_output:
@@ -83,10 +86,25 @@ def claim_blocks(text):
         for i, line in enumerate(lines):
             if line.startswith("f = "):
                 fn = line[4:].strip()
-            elif line.startswith("for ") and i + 1 < len(lines) and _VERDICT.match(lines[i + 1]):
+            elif line.startswith(("for ", "let ")) and i + 1 < len(lines) \
+                    and _VERDICT.match(lines[i + 1]):
                 m = _VERDICT.match(lines[i + 1])
                 out.append((fn, line, m.group(1), m.group(2)))
     return out
+
+
+def claimed_function(claim, scope, named=None):
+    """The function a claim is about: the one an `f = name` line
+    `named` when the claim calls `f` or no function of `scope`, else the
+    first function of `scope` it calls."""
+    if named is not None and re.search(r"\bf\(", claim):
+        return scope[named]
+    for name in _CALL.findall(claim):
+        if callable(scope.get(name)):
+            return scope[name]
+    if named is not None:
+        return scope[named]
+    raise LookupError(f"no function of the page is called in {claim!r}")
 
 
 def claim_rows(text):

@@ -17,6 +17,7 @@ from mathema.conjecture import check_conjectures, claim  # noqa: E402
 from tests._shop_pages import (  # noqa: E402
     ROOT,
     claim_blocks,
+    claimed_function,
     definition_problems,
     shop_module,
     witness_matches,
@@ -36,7 +37,8 @@ def test_every_definition_shown_is_the_shop_s():
 
 @pytest.mark.parametrize("fn,text,verdict,witness", claim_blocks(README), ids=lambda v: str(v)[:40])
 def test_every_claim_lands_on_its_verdict(fn, text, verdict, witness):
-    target = next(getattr(m, fn) for m in _shop() if hasattr(m, fn))
+    scope = {k: v for m in reversed(_shop()) for k, v in vars(m).items()}
+    target = claimed_function(text, scope, fn)
     (p,) = check_conjectures(target, [claim(text)])
     assert p.verdict == verdict, (text, p.verdict, p.note)
     if witness:

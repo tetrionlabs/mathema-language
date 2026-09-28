@@ -28,6 +28,7 @@ from tests._shop_pages import (  # noqa: E402
     blocks,
     claim_blocks,
     claim_rows,
+    claimed_function,
     definition_problems,
     is_shown_code,
     shop_module,
@@ -120,7 +121,8 @@ def test_a_shop_page_shows_the_shop_and_its_claims_land(page, capsys):
         (p,) = check_conjectures(scope[fn], [claim(law, route="best")])
         assert p.verdict == verdict, (page.name, law, p.verdict, p.note, p.counterexample)
     for fn, law, verdict, witness in claim_blocks(text):
-        (p,) = check_conjectures(scope[fn], [claim(law)])
+        target = claimed_function(law, scope, fn)
+        (p,) = check_conjectures(target, [claim(law)])
         assert p.verdict == verdict, (page.name, law, p.verdict, p.note)
         if witness:
             assert witness_matches(witness, p.counterexample or ""), (witness, p.counterexample)
