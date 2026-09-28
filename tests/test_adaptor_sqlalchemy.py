@@ -93,3 +93,14 @@ def test_a_claim_over_column_checks_is_decided():
     (p,) = check_conjectures(shapes.order_total, [claim(
         "for order in L[tests._sqlalchemy_shapes.Order], f(order) >= 0")])
     assert p.verdict in ("proven", "holds"), (p.verdict, p.note)
+
+
+@pytest.mark.parametrize("message,predicate", [
+    ("CHECK constraint failed: sku_long_enough", "check sku_long_enough"),
+    ("CHECK constraint failed: length(sku) >= 3", "check length(sku) >= 3"),
+    ("(sqlite3.IntegrityError) CHECK constraint failed: length(sku) >= 3\n[SQL: INSERT INTO orders]",
+     "check length(sku) >= 3"),
+])
+def test_a_failed_check_is_named_or_spelled_out_whole(message, predicate):
+    from mathema_language.schema.ecosystems.sqlalchemy import _problem_from
+    assert _problem_from(message, None).predicate == predicate

@@ -18,7 +18,7 @@ from ..model import RowSchema, TableSchema
 
 _UNIQUE = re.compile(r"UNIQUE constraint failed: (.+)")
 _NOT_NULL = re.compile(r"NOT NULL constraint failed: \w+\.(\w+)")
-_CHECK = re.compile(r"CHECK constraint failed: (\w+)")
+_CHECK = re.compile(r"CHECK constraint failed: ([^\n]+?)\s*(?:\n|$)")
 
 
 def _problem_from(message: str, value: Any) -> Problem:
