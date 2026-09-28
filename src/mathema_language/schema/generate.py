@@ -260,21 +260,31 @@ def draw(rng: random.Random, f: Field) -> Any:
 
 def simpler(f: Field, current: Any) -> list[Any]:
     """Values of the field between its simplest member and `current`,
-    nearest the simplest first: the simplest itself, then for a number
-    the midpoint and, for an integer, one less than `current`. Each
-    still has to be checked against the field."""
+    nearest the simplest first: the simplest itself; for a number the
+    midpoint and one step toward it; for a string the same length in
+    the plainest character, half of it, and one character less. A field
+    already at its simplest offers nothing new. Each value still has to
+    be checked against the field."""
     simple = simplest(f)
     out: list[Any] = [simple]
-    if isinstance(current, bool) or isinstance(simple, bool):
+    if _same(current, simple) or isinstance(current, bool) or isinstance(simple, bool):
         return out
+    steps: list[Any] = []
     if isinstance(current, int) and isinstance(simple, int):
-        for v in (simple + (current - simple) // 2, current - 1 if current > simple else current + 1):
-            if v != current and v not in out:
-                out.append(v)
+        steps = [simple + (current - simple) // 2, current - 1 if current > simple else current + 1]
     elif isinstance(current, float) and isinstance(simple, (int, float)) and current == current:
-        mid = simple + (current - simple) / 2
-        if mid != current:
-            out.append(mid)
+        steps = [simple + (current - simple) / 2]
+    elif isinstance(current, decimal.Decimal) and isinstance(simple, (int, decimal.Decimal)) \
+            and current.is_finite():
+        mid = decimal.Decimal(simple) + (current - decimal.Decimal(simple)) / 2
+        exponent = current.as_tuple().exponent
+        steps = [mid.quantize(current) if isinstance(exponent, int) and exponent < 0
+                 else mid.to_integral_value()]
+    elif isinstance(current, str) and isinstance(simple, str) and current:
+        steps = ["a" * len(current), current[: len(current) // 2], current[:-1]]
+    for v in steps:
+        if not _same(v, current) and not any(_same(v, seen) for seen in out):
+            out.append(v)
     return out
 
 
