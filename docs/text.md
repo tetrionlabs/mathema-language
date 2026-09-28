@@ -89,7 +89,7 @@ def username_key(name: str) -> str:
 
 ```text
 f = username_key
-let nfkc = mathema_language.vocabulary.text.nfkc, for name in L[unicode], f(nfkc(name)) == f(name)
+let nfkc = mathema_language.text.nfkc, for name in L[unicode], f(nfkc(name)) == f(name)
     falsified   ('℀'): 'a/c' vs '℀'
 ```
 
@@ -255,7 +255,7 @@ enforce.
 | it never crashes on user text | `for s in L[unicode], is_arbitrary_input_safe(s)` |
 | it writes any text without an encoding error | `for s in L[unicode], is_encoding_safe(s)` |
 | its output fits the column the input fits | `for s in L[unicode, len <= 32], len(f(s)) <= 32` |
-| it gives the same answer for every spelling | `let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[unicode], f(nfkc(s)) == f(s)` |
+| it gives the same answer for every spelling | `let nfkc = mathema_language.text.nfkc, for s in L[unicode], f(nfkc(s)) == f(s)` |
 | it never emits a character | `for s in L[unicode], "<" not in f(s)` |
 | its output stays in a language | `for s in L[unicode], f(s) in L[printable]` |
 | applying it twice changes nothing | `for s in L[unicode], f(f(s)) == f(s)` |

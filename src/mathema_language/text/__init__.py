@@ -1,11 +1,28 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The text languages: alphabets, predicate languages and the hazard
-sub-alphabets, each a `Language` mathema resolves by the name in
-`LANGUAGES`."""
+"""The text languages (alphabets, formats, and the alphabets of
+characters code usually gets wrong), each a `Language` mathema resolves
+by the name in `LANGUAGES`, and the text vocabulary for claims:
+`let nfkc = mathema_language.text.nfkc`."""
 from typing import Any
 
 from .._priority import STRUCTURAL, priority
+from ..vocabulary.text import (
+    casefold,
+    count,
+    endswith,
+    lower,
+    nfc,
+    nfc_len,
+    nfd,
+    nfkc,
+    nfkd,
+    splitlines,
+    startswith,
+    strip,
+    upper,
+    utf8_len,
+)
 from ._kit import TextLanguage
 from .alphabets import (
     ALNUM,
@@ -51,7 +68,8 @@ __all__ = ["adapt", "ALNUM", "ALPHA", "ASCII", "BASE64", "CONTROL", "COMBINING",
            "INVISIBLE", "HEX", "IDENTIFIER", "IPV4", "IPV6", "ISO_DATE",
            "ISO_DATETIME", "JSON", "LANGUAGES", "LATIN1", "COMPATIBILITY",
            "ASTRAL", "PRINTABLE", "SHELL_SAFE", "SLUG", "SURROGATE", "UNICODE_ALNUM", "UNICODE_ALPHA",
-           "TEXT_HAZARDS", "TextLanguage", "UNICODE", "UUID"]
+           "TEXT_HAZARDS", "TextLanguage", "UNICODE", "UUID",
+           "casefold", "count", "endswith", "lower", "nfc", "nfc_len", "nfd", "nfkc", "nfkd", "splitlines", "startswith", "strip", "upper", "utf8_len"]
 
 
 @priority(STRUCTURAL)

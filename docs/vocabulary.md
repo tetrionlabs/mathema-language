@@ -3,7 +3,7 @@
 <!-- shop: text -->
 
 Functions for use inside a claim, bound with `let` and called like any
-other: `let nfkc = mathema_language.vocabulary.text.nfkc, for s in
+other: `let nfkc = mathema_language.text.nfkc, for s in
 L[unicode], f(nfkc(s)) == f(s)`. Each carries a stable identifier
 (`text.nfkc@1`) that the record keeps, so a claim means the same thing
 when another tool reads it.
@@ -26,7 +26,7 @@ In `mathema_language.vocabulary.text`.
 
 ```text
 f = username_key
-let nfkc = mathema_language.vocabulary.text.nfkc, for name in L[unicode], f(nfkc(name)) == f(name)
+let nfkc = mathema_language.text.nfkc, for name in L[unicode], f(nfkc(name)) == f(name)
     falsified   ('℀'): 'a/c' vs '℀'
 ```
 

@@ -57,6 +57,6 @@ def test_a_byte_cut_is_caught_splitting_a_character():
 
 def test_the_safe_cut_holds_within_its_byte_budget():
     (p,) = check_conjectures(cut_safely, [claim(
-        "let n = mathema_language.vocabulary.text.utf8_len, "
+        "let n = mathema_language.text.utf8_len, "
         "for s in L[printable], n(f(s)) <= 24")])
     assert p.verdict == "holds", (p.verdict, p.note, p.counterexample)

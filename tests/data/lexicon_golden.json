@@ -265,9 +265,9 @@
   "ascii": "for s in L[surrogate]|missing, is_encoding_safe(s)"
  },
  "language_compatibility_key": {
-  "input": "let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[compatibility] \\ {\"\"}, f(nfkc(s)) == f(s)",
-  "unicode": "let nfkc = mathema_language.vocabulary.text.nfkc, ∀ s ∈ L[compatibility] \\ {\"\"}|missing, f(nfkc(s)) = f(s)",
-  "ascii": "let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[compatibility] \\ {\"\"}|missing, f(nfkc(s)) = f(s)"
+  "input": "let nfkc = mathema_language.text.nfkc, for s in L[compatibility] \\ {\"\"}, f(nfkc(s)) == f(s)",
+  "unicode": "let nfkc = mathema_language.text.nfkc, ∀ s ∈ L[compatibility] \\ {\"\"}|missing, f(nfkc(s)) = f(s)",
+  "ascii": "let nfkc = mathema_language.text.nfkc, for s in L[compatibility] \\ {\"\"}|missing, f(nfkc(s)) = f(s)"
  },
  "language_astral_utf16": {
   "input": "for s in L[astral] \\ {\"\"}, f(s) == 2 * len(s)",
@@ -285,9 +285,9 @@
   "ascii": "for s in L[ascii]|missing, excluded_outside_domain(s)"
  },
  "vocabulary_tree_depth": {
-  "input": "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5], depth(t) == f(t)",
-  "unicode": "let depth = mathema_language.vocabulary.tree.depth, ∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = f(t)",
-  "ascii": "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = f(t)"
+  "input": "let depth = mathema_language.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5], depth(t) == f(t)",
+  "unicode": "let depth = mathema_language.tree.depth, ∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = f(t)",
+  "ascii": "let depth = mathema_language.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = f(t)"
  },
  "adaptor_text_annotation": {
   "input": "len(f(title)) <= 60",

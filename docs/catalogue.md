@@ -111,7 +111,7 @@ def label(s: Annotated[str, MaxLen(80)]) -> str:
 | `collapse_spaces` | `for s in L[ascii], f(s) in L[ascii]` | holds | Closure: ASCII in, ASCII out. |
 | `collapse_spaces` | `for s in L[ascii], f(s) in L[ascii]` | holds | The same closure written as membership, which is the spelling to reach for when the target is not the input's own language. |
 | `collapse_spaces` | `for s in L[unicode], "  " not in f(s)` | holds | No two spaces survive in a row, which is the whole job of the function stated as a containment. |
-| `collapse_spaces` | `let n = mathema_language.vocabulary.text.nfc, for s in L[unicode], n(f(s)) == f(n(s))` | holds | Commutes with NFC, because composition never creates or removes whitespace. |
+| `collapse_spaces` | `let n = mathema_language.text.nfc, for s in L[unicode], n(f(s)) == f(n(s))` | holds | Commutes with NFC, because composition never creates or removes whitespace. |
 | `collapse_spaces` | `for s in L[unicode], f(s) == s` | falsified | Not the identity; the first whitespace hazard is the witness. |
 | `shout` | `for s in L[ascii], len(f(s)) == len(s)` | holds | Over ASCII, upper-casing is one character to one character. |
 | `shout` | `for s in L[unicode], len(f(s)) == len(s)` | falsified | `'ΐ'` (U+0390) upper-cases to three code points, and `'ß'` to two; a length-preserving assumption about case mapping is the bug this row exists to catch. |

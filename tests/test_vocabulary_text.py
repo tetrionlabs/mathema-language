@@ -46,7 +46,7 @@ def test_a_let_bound_vocabulary_function_adjudicates(tmp_path):
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     (r,) = check_conjectures(mod.collapse, [claim(
-        "let n = mathema_language.vocabulary.text.nfc, for text in L[unicode], "
+        "let n = mathema_language.text.nfc, for text in L[unicode], "
         "n(f(text)) == f(n(text))", route="probe")])
     assert r.verdict == "holds", (r.verdict, r.note, r.counterexample)
     assert r.grammar == "mathema/language"

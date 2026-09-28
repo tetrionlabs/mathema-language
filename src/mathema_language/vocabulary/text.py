@@ -2,7 +2,7 @@
 # Copyright 2026 Tetrion Ltd
 """Text operations for claims, bound with `let`:
 
-    let n = mathema_language.vocabulary.text.nfc, for text in L[unicode], f(n(text)) == f(text)
+    let n = mathema_language.text.nfc, for text in L[unicode], f(n(text)) == f(text)
 
 Each is a plain module-level function with a neutral id in
 `__mathema_vocabulary__` (`text.nfc@1`), the name another runtime's

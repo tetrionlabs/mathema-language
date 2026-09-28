@@ -122,12 +122,12 @@ LEXICON: dict[str, str] = {
     "language_combining_stripped": 'for s in L[combining], f(s) == ""',
     "language_surrogate_encoding": 'for s in L[surrogate], is_encoding_safe(s)',
     "language_compatibility_key":
-        'let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[compatibility] \\ {""}, f(nfkc(s)) == f(s)',
+        'let nfkc = mathema_language.text.nfkc, for s in L[compatibility] \\ {""}, f(nfkc(s)) == f(s)',
     "language_astral_utf16": 'for s in L[astral] \\ {""}, f(s) == 2 * len(s)',
     "family_excluded_outside_domain": 'for s in L[uuid], excluded_outside_domain(s)',
     "family_excluded_outside_domain_accepts": 'for s in L[ascii], excluded_outside_domain(s)',
     "vocabulary_tree_depth":
-        "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5], depth(t) == f(t)",
+        "let depth = mathema_language.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5], depth(t) == f(t)",
     "adaptor_text_annotation": 'len(f(title)) <= 60',
     "adaptor_pydantic_proven":
         'for form in L[mathema_language.lexicon_models.forms.SignupForm], 0 <= f(form) <= 5',
