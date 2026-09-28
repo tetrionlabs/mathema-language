@@ -72,6 +72,39 @@ EXPECTED = {
     "structure_children_one_past": ("falsified", "4 vs 3"),
     "structure_nodes_bound": "holds",
     "structure_json_depth": "holds",
+    "language_printable_output": "holds",
+    "language_alpha_closure": ("falsified", 'is not in L[alpha]'),
+    "language_identifier_closure": "holds",
+    "language_uuid_idempotent": "holds",
+    "language_uuid_spelling": ("falsified", "'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'"),
+    "language_iso_date_idempotent": "holds",
+    "language_iso_datetime_idempotent": "holds",
+    "language_ipv4_closure": "holds",
+    "language_ipv6_closure": ("falsified", "'::.0' is not in L[ipv6]"),
+    "language_base64_round_trip": "holds",
+    "language_hex_spelling": ("falsified", "'aa' vs 'aA'"),
+    "language_shell_safe_argument": "holds",
+    "language_shell_unsafe_argument": ("falsified", "['rm'] vs ['rm', '']"),
+    "language_c0_header_injection": ("falsified", 'is in f(s)'),
+    "language_format_invisible": ("falsified", 'False vs True'),
+    "language_combining_stripped": ("falsified", "vs ''"),
+    "language_surrogate_encoding": ("falsified", 'raised UnicodeEncodeError'),
+    "language_nfkc_folding_key": ("falsified", "'fi' vs 'ﬁ'"),
+    "language_non_bmp_utf16": "holds",
+    "family_excluded_outside_domain": "holds",
+    "family_excluded_outside_domain_accepts": ("falsified", '(outside L[ascii] at [0]: ascii alphabet)'),
+    "vocabulary_tree_depth": "holds",
+    "adaptor_text_annotation": "holds",
+    "adaptor_pydantic_proven": "proven",
+    "adaptor_pydantic_falsified": ("falsified", '5 vs 4'),
+    "adaptor_sqlalchemy_proven": "proven",
+    "adaptor_sqlalchemy_falsified": ("falsified", 'vs 10000'),
+    "adaptor_django_proven": "proven",
+    "adaptor_django_falsified": ("falsified", '0.2 vs 0.5'),
+    "adaptor_jsonschema_proven": "proven",
+    "adaptor_jsonschema_falsified": ("falsified", 'raised KeyError'),
+    "adaptor_typeddict_proven": "proven",
+    "adaptor_typeddict_falsified": ("falsified", 'vs 10'),
     "family_length_safe": "holds",
     "family_encoding_safe": ("falsified", "raised UnicodeEncodeError"),
     "family_arbitrary_input": ("falsified", "s = '' (inside L[unicode]) raised IndexError"),
@@ -89,7 +122,9 @@ def test_the_lexicon_passes_every_check_mathema_s_own_does():
 @pytest.mark.parametrize("key", list(lexicon.LEXICON))
 def test_every_row_is_in_the_language_dialect_and_its_domain_round_trips(key):
     cj = claim(lexicon.LEXICON[key])
-    assert cj.grammar == "mathema/language"
+    # a row that writes no domain shows one inferred from the function's
+    # annotation, and is in the dialect only once the function is known
+    assert cj.grammar == "mathema/language" or not cj.domain
     for bound in cj.domain.values():
         assert domain_bound_from_json(domain_bound_to_json(bound)) == bound
 
@@ -105,6 +140,11 @@ def test_installed_the_rows_join_mathema_s_lexicon():
 PROVEN_ROUTES = {
     "row_lift_sign": "derive",
     "row_length_field": "derive",
+    "adaptor_pydantic_proven": "derive",
+    "adaptor_sqlalchemy_proven": "derive",
+    "adaptor_django_proven": "derive",
+    "adaptor_jsonschema_proven": "derive",
+    "adaptor_typeddict_proven": "derive",
     "structure_induction_constant": "derive:induction",
     "structure_induction_equation": "derive:induction",
 }

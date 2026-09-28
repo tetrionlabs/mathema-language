@@ -169,6 +169,171 @@
   "unicode": "∀ s ∈ L[json, depth <= 6]|missing, f(f(s)) = f(s)",
   "ascii": "for s in L[json, depth <= 6]|missing, f(f(s)) = f(s)"
  },
+ "language_printable_output": {
+  "input": "for s in L[unicode], f(s) in L[printable]",
+  "unicode": "let x = printable, ∀ s ∈ L[unicode]|missing, f(s) ∈ L[printable]",
+  "ascii": "for s in L[unicode]|missing, f(s) in L[printable]"
+ },
+ "language_alpha_closure": {
+  "input": "for s in L[alpha] \\ {\"\"}, f(s) in L[alpha]",
+  "unicode": "let α = alpha, ∀ s ∈ L[alpha] \\ {\"\"}|missing, f(s) ∈ L[alpha]",
+  "ascii": "for s in L[alpha] \\ {\"\"}|missing, f(s) in L[alpha]"
+ },
+ "language_identifier_closure": {
+  "input": "for s in L[identifier], f(s) in L[identifier]",
+  "unicode": "let x = identifier, ∀ s ∈ L[identifier]|missing, f(s) ∈ L[identifier]",
+  "ascii": "for s in L[identifier]|missing, f(s) in L[identifier]"
+ },
+ "language_uuid_idempotent": {
+  "input": "for s in L[uuid], f(f(s)) == f(s)",
+  "unicode": "∀ s ∈ L[uuid]|missing, f(f(s)) = f(s)",
+  "ascii": "for s in L[uuid]|missing, f(f(s)) = f(s)"
+ },
+ "language_uuid_spelling": {
+  "input": "for s in L[uuid], f(s) == s",
+  "unicode": "∀ s ∈ L[uuid]|missing, f(s) = s",
+  "ascii": "for s in L[uuid]|missing, f(s) = s"
+ },
+ "language_iso_date_idempotent": {
+  "input": "for s in L[iso_date], f(f(s)) == f(s)",
+  "unicode": "∀ s ∈ L[iso_date]|missing, f(f(s)) = f(s)",
+  "ascii": "for s in L[iso_date]|missing, f(f(s)) = f(s)"
+ },
+ "language_iso_datetime_idempotent": {
+  "input": "for s in L[iso_datetime], f(f(s)) == f(s)",
+  "unicode": "∀ s ∈ L[iso_datetime]|missing, f(f(s)) = f(s)",
+  "ascii": "for s in L[iso_datetime]|missing, f(f(s)) = f(s)"
+ },
+ "language_ipv4_closure": {
+  "input": "for s in L[ipv4], f(s) in L[ipv4]",
+  "unicode": "∀ s ∈ L[ipv4]|missing, f(s) ∈ L[ipv4]",
+  "ascii": "for s in L[ipv4]|missing, f(s) in L[ipv4]"
+ },
+ "language_ipv6_closure": {
+  "input": "for s in L[ipv6], f(s) in L[ipv6]",
+  "unicode": "∀ s ∈ L[ipv6]|missing, f(s) ∈ L[ipv6]",
+  "ascii": "for s in L[ipv6]|missing, f(s) in L[ipv6]"
+ },
+ "language_base64_round_trip": {
+  "input": "for s in L[base64], f(s) == s",
+  "unicode": "∀ s ∈ L[base64]|missing, f(s) = s",
+  "ascii": "for s in L[base64]|missing, f(s) = s"
+ },
+ "language_hex_spelling": {
+  "input": "for s in L[hex], f(s) == s",
+  "unicode": "∀ s ∈ L[hex]|missing, f(s) = s",
+  "ascii": "for s in L[hex]|missing, f(s) = s"
+ },
+ "language_shell_safe_argument": {
+  "input": "for s in L[shell_safe], f(s) == [\"rm\", s]",
+  "unicode": "∀ s ∈ L[shell_safe]|missing, f(s) = ['rm', s]",
+  "ascii": "for s in L[shell_safe]|missing, f(s) = ['rm', s]"
+ },
+ "language_shell_unsafe_argument": {
+  "input": "for s in L[printable], f(s) == [\"rm\", s]",
+  "unicode": "∀ s ∈ L[printable]|missing, f(s) = ['rm', s]",
+  "ascii": "for s in L[printable]|missing, f(s) = ['rm', s]"
+ },
+ "language_c0_header_injection": {
+  "input": "for s in L[c0], \"\\n\" not in f(s)",
+  "unicode": "∀ s ∈ L[c0]|missing, '\\n' ∉ f(s)",
+  "ascii": "for s in L[c0]|missing, '\\n' not in f(s)"
+ },
+ "language_format_invisible": {
+  "input": "for s in L[format] \\ {\"\"}, f(s) == True",
+  "unicode": "∀ s ∈ L[format] \\ {\"\"}|missing, f(s) = True",
+  "ascii": "for s in L[format] \\ {\"\"}|missing, f(s) = True"
+ },
+ "language_combining_stripped": {
+  "input": "for s in L[combining], f(s) == \"\"",
+  "unicode": "∀ s ∈ L[combining]|missing, f(s) = ''",
+  "ascii": "for s in L[combining]|missing, f(s) = ''"
+ },
+ "language_surrogate_encoding": {
+  "input": "for s in L[surrogate], is_encoding_safe(s)",
+  "unicode": "∀ s ∈ L[surrogate]|missing, s is encoding safe",
+  "ascii": "for s in L[surrogate]|missing, is_encoding_safe(s)"
+ },
+ "language_nfkc_folding_key": {
+  "input": "let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[nfkc_folding] \\ {\"\"}, f(nfkc(s)) == f(s)",
+  "unicode": "let nfkc = mathema_language.vocabulary.text.nfkc, ∀ s ∈ L[nfkc_folding] \\ {\"\"}|missing, f(nfkc(s)) = f(s)",
+  "ascii": "let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[nfkc_folding] \\ {\"\"}|missing, f(nfkc(s)) = f(s)"
+ },
+ "language_non_bmp_utf16": {
+  "input": "for s in L[non_bmp] \\ {\"\"}, f(s) == 2 * len(s)",
+  "unicode": "∀ s ∈ L[non_bmp] \\ {\"\"}|missing, f(s) = 2*len(s)",
+  "ascii": "for s in L[non_bmp] \\ {\"\"}|missing, f(s) = 2*len(s)"
+ },
+ "family_excluded_outside_domain": {
+  "input": "for s in L[uuid], excluded_outside_domain(s)",
+  "unicode": "∀ s ∈ L[uuid]|missing, s excluded outside domain",
+  "ascii": "for s in L[uuid]|missing, excluded_outside_domain(s)"
+ },
+ "family_excluded_outside_domain_accepts": {
+  "input": "for s in L[ascii], excluded_outside_domain(s)",
+  "unicode": "∀ s ∈ L[ascii]|missing, s excluded outside domain",
+  "ascii": "for s in L[ascii]|missing, excluded_outside_domain(s)"
+ },
+ "vocabulary_tree_depth": {
+  "input": "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5], depth(t) == 2 * f(t)",
+  "unicode": "let depth = mathema_language.vocabulary.tree.depth, ∀ t ∈ L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = 2*f(t)",
+  "ascii": "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5]|missing, depth(t) = 2*f(t)"
+ },
+ "adaptor_text_annotation": {
+  "input": "len(f(title)) <= 60",
+  "unicode": "dim(f(title), 0) ≤ 60",
+  "ascii": "dim(f(title), 0) <= 60"
+ },
+ "adaptor_pydantic_proven": {
+  "input": "for form in L[mathema_language.lexicon_models.forms.SignupForm], 0 <= f(form) <= 5",
+  "unicode": "∀ form ∈ L[mathema_language.lexicon_models.forms.SignupForm]|missing, 0 ≤ f(form) ≤ 5",
+  "ascii": "for form in L[mathema_language.lexicon_models.forms.SignupForm]|missing, 0 <= f(form) <= 5"
+ },
+ "adaptor_pydantic_falsified": {
+  "input": "for form in L[mathema_language.lexicon_models.forms.SignupForm], f(form) <= 4",
+  "unicode": "∀ form ∈ L[mathema_language.lexicon_models.forms.SignupForm]|missing, f(form) ≤ 4",
+  "ascii": "for form in L[mathema_language.lexicon_models.forms.SignupForm]|missing, f(form) <= 4"
+ },
+ "adaptor_sqlalchemy_proven": {
+  "input": "for order in L[mathema_language.lexicon_models.db.Order], f(order) >= 0",
+  "unicode": "∀ order ∈ L[mathema_language.lexicon_models.db.Order]|missing, f(order) ≥ 0",
+  "ascii": "for order in L[mathema_language.lexicon_models.db.Order]|missing, f(order) >= 0"
+ },
+ "adaptor_sqlalchemy_falsified": {
+  "input": "for order in L[mathema_language.lexicon_models.db.Order], f(order) <= 10000",
+  "unicode": "∀ order ∈ L[mathema_language.lexicon_models.db.Order]|missing, f(order) ≤ 10000",
+  "ascii": "for order in L[mathema_language.lexicon_models.db.Order]|missing, f(order) <= 10000"
+ },
+ "adaptor_django_proven": {
+  "input": "for review in L[mathema_language.lexicon_models.reviews.Review], 0 < f(review) <= 1",
+  "unicode": "∀ review ∈ L[mathema_language.lexicon_models.reviews.Review]|missing, 0 < f(review) ≤ 1",
+  "ascii": "for review in L[mathema_language.lexicon_models.reviews.Review]|missing, 0 < f(review) <= 1"
+ },
+ "adaptor_django_falsified": {
+  "input": "for review in L[mathema_language.lexicon_models.reviews.Review], f(review) >= 0.5",
+  "unicode": "∀ review ∈ L[mathema_language.lexicon_models.reviews.Review]|missing, f(review) ≥ 0.500000000000000",
+  "ascii": "for review in L[mathema_language.lexicon_models.reviews.Review]|missing, f(review) >= 0.500000000000000"
+ },
+ "adaptor_jsonschema_proven": {
+  "input": "for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT], f(event) >= 30",
+  "unicode": "∀ event ∈ L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) ≥ 30",
+  "ascii": "for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) >= 30"
+ },
+ "adaptor_jsonschema_falsified": {
+  "input": "for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT], f(event) in {\"billing\", \"alerts\"}",
+  "unicode": "∀ event ∈ L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) ∈ {\"billing\", \"alerts\"}",
+  "ascii": "for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) in {\"billing\", \"alerts\"}"
+ },
+ "adaptor_typeddict_proven": {
+  "input": "for hit in L[mathema_language.lexicon_models.search.SearchHit], f(hit) >= 0",
+  "unicode": "∀ hit ∈ L[mathema_language.lexicon_models.search.SearchHit]|missing, f(hit) ≥ 0",
+  "ascii": "for hit in L[mathema_language.lexicon_models.search.SearchHit]|missing, f(hit) >= 0"
+ },
+ "adaptor_typeddict_falsified": {
+  "input": "for hit in L[mathema_language.lexicon_models.search.SearchHit], f(hit) <= 10",
+  "unicode": "∀ hit ∈ L[mathema_language.lexicon_models.search.SearchHit]|missing, f(hit) ≤ 10",
+  "ascii": "for hit in L[mathema_language.lexicon_models.search.SearchHit]|missing, f(hit) <= 10"
+ },
  "family_length_safe": {
   "input": "for s in L[slug], is_length_safe(s)",
   "unicode": "∀ s ∈ L[slug]|missing, s is length safe",

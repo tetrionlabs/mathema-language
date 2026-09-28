@@ -14,7 +14,7 @@ import html
 import json
 import re
 from dataclasses import dataclass, field
-from typing import Annotated
+from typing import Annotated, Any
 
 try:
     from annotated_types import Ge, Le, MaxLen
@@ -101,6 +101,52 @@ LEXICON: dict[str, str] = {
     "structure_children_one_past": "for t in L[mathema_language.lexicon.Branch, depth <= 5, children <= 4], f(t) <= 3",
     "structure_nodes_bound": "for t in L[mathema_language.lexicon.Branch, nodes <= 50], f(t) <= 50",
     "structure_json_depth": "for s in L[json, depth <= 6], f(f(s)) == f(s)",
+    # every language, adaptor and family the package registers
+    "language_printable_output": 'for s in L[unicode], f(s) in L[printable]',
+    "language_alpha_closure": 'for s in L[alpha] \\ {""}, f(s) in L[alpha]',
+    "language_identifier_closure": 'for s in L[identifier], f(s) in L[identifier]',
+    "language_uuid_idempotent": 'for s in L[uuid], f(f(s)) == f(s)',
+    "language_uuid_spelling": 'for s in L[uuid], f(s) == s',
+    "language_iso_date_idempotent": 'for s in L[iso_date], f(f(s)) == f(s)',
+    "language_iso_datetime_idempotent": 'for s in L[iso_datetime], f(f(s)) == f(s)',
+    "language_ipv4_closure": 'for s in L[ipv4], f(s) in L[ipv4]',
+    "language_ipv6_closure": 'for s in L[ipv6], f(s) in L[ipv6]',
+    "language_base64_round_trip": 'for s in L[base64], f(s) == s',
+    "language_hex_spelling": 'for s in L[hex], f(s) == s',
+    "language_shell_safe_argument": 'for s in L[shell_safe], f(s) == ["rm", s]',
+    "language_shell_unsafe_argument": 'for s in L[printable], f(s) == ["rm", s]',
+    "language_c0_header_injection": 'for s in L[c0], "\\n" not in f(s)',
+    "language_format_invisible": 'for s in L[format] \\ {""}, f(s) == True',
+    "language_combining_stripped": 'for s in L[combining], f(s) == ""',
+    "language_surrogate_encoding": 'for s in L[surrogate], is_encoding_safe(s)',
+    "language_nfkc_folding_key":
+        'let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[nfkc_folding] \\ {""}, f(nfkc(s)) == f(s)',
+    "language_non_bmp_utf16": 'for s in L[non_bmp] \\ {""}, f(s) == 2 * len(s)',
+    "family_excluded_outside_domain": 'for s in L[uuid], excluded_outside_domain(s)',
+    "family_excluded_outside_domain_accepts": 'for s in L[ascii], excluded_outside_domain(s)',
+    "vocabulary_tree_depth":
+        "let depth = mathema_language.vocabulary.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5], depth(t) == 2 * f(t)",
+    "adaptor_text_annotation": 'len(f(title)) <= 60',
+    "adaptor_pydantic_proven":
+        'for form in L[mathema_language.lexicon_models.forms.SignupForm], 0 <= f(form) <= 5',
+    "adaptor_pydantic_falsified":
+        'for form in L[mathema_language.lexicon_models.forms.SignupForm], f(form) <= 4',
+    "adaptor_sqlalchemy_proven":
+        'for order in L[mathema_language.lexicon_models.db.Order], f(order) >= 0',
+    "adaptor_sqlalchemy_falsified":
+        'for order in L[mathema_language.lexicon_models.db.Order], f(order) <= 10000',
+    "adaptor_django_proven":
+        'for review in L[mathema_language.lexicon_models.reviews.Review], 0 < f(review) <= 1',
+    "adaptor_django_falsified":
+        'for review in L[mathema_language.lexicon_models.reviews.Review], f(review) >= 0.5',
+    "adaptor_jsonschema_proven":
+        'for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT], f(event) >= 30',
+    "adaptor_jsonschema_falsified":
+        'for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT], f(event) in {"billing", "alerts"}',
+    "adaptor_typeddict_proven":
+        'for hit in L[mathema_language.lexicon_models.search.SearchHit], f(hit) >= 0',
+    "adaptor_typeddict_falsified":
+        'for hit in L[mathema_language.lexicon_models.search.SearchHit], f(hit) <= 10',
     "family_length_safe": "for s in L[slug], is_length_safe(s)",
     "family_encoding_safe": "for s in L[unicode], is_encoding_safe(s)",
     "family_arbitrary_input": "for s in L[unicode], is_arbitrary_input_safe(s)",
@@ -260,6 +306,138 @@ def canonical_json(s: str) -> str:
     return json.dumps(json.loads(s), sort_keys=True)
 
 
+def log_line(s: str) -> str:
+    """A message made safe to write to a log file."""
+    return "".join(c for c in s if c.isprintable())
+
+
+def capitalise_word(s: str) -> str:
+    """A word with its first letter upper-cased."""
+    return s[0].upper() + s[1:]
+
+
+def attribute_name(s: str) -> str:
+    """A form label turned into an attribute name."""
+    return s.strip().replace(" ", "_").lower()
+
+
+def normalise_order_id(s: str) -> str:
+    """An order id as the database stores it."""
+    import uuid
+    return str(uuid.UUID(s))
+
+
+def parse_order_id(s: str) -> object:
+    """The order id in a URL, or a ValueError when it is not one."""
+    import uuid
+    return uuid.UUID(s)
+
+
+def normalise_date(s: str) -> str:
+    """A date as it is stored."""
+    import datetime
+    return datetime.date.fromisoformat(s).isoformat()
+
+
+def normalise_timestamp(s: str) -> str:
+    """An event time as it is stored."""
+    import datetime
+    return datetime.datetime.fromisoformat(s).isoformat()
+
+
+def anonymise_ip(s: str) -> str:
+    """An address with its last part zeroed, written for IPv4."""
+    return ".".join(s.split(".")[:3] + ["0"])
+
+
+def reencode_token(s: str) -> str:
+    """A base64 token decoded and encoded again."""
+    import base64
+    return base64.b64encode(base64.b64decode(s)).decode("ascii")
+
+
+def normalise_colour(s: str) -> str:
+    """Hex bytes as a theme file stores them."""
+    return bytes.fromhex(s).hex()
+
+
+def delete_command(s: str) -> list[str]:
+    """The arguments of a delete command built without quoting."""
+    import shlex
+    return shlex.split(f"rm {s}")
+
+
+def note_header(s: str) -> str:
+    """An HTTP header carrying a free-text note."""
+    return "X-Note: " + s
+
+
+def is_blank(s: str) -> bool:
+    """Whether a name has nothing visible in it, by strip."""
+    return not s.strip()
+
+
+def strip_accents(s: str) -> str:
+    """The text with its combining marks removed."""
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", s) if not unicodedata.combining(c))
+
+
+def to_bytes(s: str) -> bytes:
+    """The text in UTF-8."""
+    return s.encode("utf-8")
+
+
+def username_key(s: str) -> str:
+    """The key an account is stored under, never normalised."""
+    return s.strip().lower()
+
+
+def js_length(s: str) -> int:
+    """The length JavaScript reports for the text."""
+    return len(s.encode("utf-16-le")) // 2
+
+
+def shout(s: str) -> str:
+    """Upper case, whatever comes in."""
+    return s.upper()
+
+
+def short_title(title: Annotated[str, MaxLen(60)]) -> str:
+    """The title, cut to the sixty characters it is declared to fit."""
+    return title[:60]
+
+
+def years_until_adult(form: object) -> int:
+    """How long until a signup may see adult content."""
+    return max(0, 18 - form.age)  # type: ignore[attr-defined, no-any-return]
+
+
+def order_total(order: object) -> object:
+    """What the customer pays for an order."""
+    return order.quantity * order.unit_price  # type: ignore[attr-defined]
+
+
+def review_weight(review: object) -> float:
+    """How much a review counts toward the product's score."""
+    return float(review.rating) / 5  # type: ignore[attr-defined]
+
+
+def processing_fee(event: dict[str, Any]) -> float:
+    """The provider's fee on a charge, in cents: 2.9% plus 30."""
+    return float(event["amount"] * 0.029 + 30)
+
+
+def queue_for(event: dict[str, Any]) -> str:
+    """The queue a charge event is routed to; the refund queue is missing."""
+    return {"charge.succeeded": "billing", "charge.failed": "alerts"}[event["type"]]
+
+
+def rank(hit: dict[str, Any]) -> float:
+    """Where a search hit sorts: relevance first, popularity after."""
+    return float(hit["score"] * 10 + hit["clicks"] / 1000)
+
+
 #: the lexicon's table of contents, every key in exactly one section;
 #: installed, mathema reads these as `language/<section>`
 SECTIONS: dict[str, tuple[str, ...]] = {
@@ -280,7 +458,11 @@ SECTIONS: dict[str, tuple[str, ...]] = {
                   "structure_depth_bound", "structure_depth_bound_tight",
                   "structure_children_bound", "structure_children_one_past",
                   "structure_nodes_bound", "structure_json_depth"),
-    "families": ("family_length_safe", "family_encoding_safe", "family_arbitrary_input",
+    "languages": ("language_printable_output", "language_alpha_closure", "language_identifier_closure", "language_uuid_idempotent", "language_uuid_spelling", "language_iso_date_idempotent", "language_iso_datetime_idempotent", "language_ipv4_closure", "language_ipv6_closure", "language_base64_round_trip", "language_hex_spelling", "language_shell_safe_argument", "language_shell_unsafe_argument", "language_c0_header_injection", "language_format_invisible", "language_combining_stripped", "language_surrogate_encoding", "language_nfkc_folding_key", "language_non_bmp_utf16"),
+    "adaptors": ("adaptor_text_annotation", "adaptor_pydantic_proven", "adaptor_pydantic_falsified", "adaptor_sqlalchemy_proven", "adaptor_sqlalchemy_falsified", "adaptor_django_proven", "adaptor_django_falsified", "adaptor_jsonschema_proven", "adaptor_jsonschema_falsified", "adaptor_typeddict_proven", "adaptor_typeddict_falsified"),
+    "vocabulary": ("vocabulary_tree_depth",),
+    "families": ("family_excluded_outside_domain", "family_excluded_outside_domain_accepts",
+                 "family_length_safe", "family_encoding_safe", "family_arbitrary_input",
                  "family_output_in_language", "family_output_leaves_language"),
 }
 
@@ -320,6 +502,39 @@ TAGS: dict[str, tuple[str, ...]] = {
     "structure_children_one_past": ("one child too many", "widest node"),
     "structure_nodes_bound": ("node count", "tree size bound"),
     "structure_json_depth": ("nested json", "canonical json", "sort keys"),
+    "language_printable_output": ('printable', 'log line'),
+    "language_alpha_closure": ('letters', 'capitalise'),
+    "language_identifier_closure": ('identifier', 'attribute name'),
+    "language_uuid_idempotent": ('uuid', 'normalise id'),
+    "language_uuid_spelling": ('uuid spelling', 'hyphenated'),
+    "language_iso_date_idempotent": ('iso date', 'date format'),
+    "language_iso_datetime_idempotent": ('iso datetime', 'timestamp'),
+    "language_ipv4_closure": ('ipv4', 'anonymise ip'),
+    "language_ipv6_closure": ('ipv6', 'ipv4 only'),
+    "language_base64_round_trip": ('base64', 'token'),
+    "language_hex_spelling": ('hex', 'colour'),
+    "language_shell_safe_argument": ('shell', 'command line'),
+    "language_shell_unsafe_argument": ('shell injection', 'unquoted'),
+    "language_c0_header_injection": ('control characters', 'header injection'),
+    "language_format_invisible": ('zero width', 'invisible name'),
+    "language_combining_stripped": ('combining marks', 'strip accents'),
+    "language_surrogate_encoding": ('lone surrogate', 'utf-8'),
+    "language_nfkc_folding_key": ('nfkc', 'account takeover'),
+    "language_non_bmp_utf16": ('emoji', 'javascript length'),
+    "family_excluded_outside_domain": ('reject invalid', 'parser'),
+    "family_excluded_outside_domain_accepts": ('accepts invalid', 'no validation'),
+    "vocabulary_tree_depth": ('nesting depth', 'tree'),
+    "adaptor_text_annotation": ('annotated max length', 'inferred language'),
+    "adaptor_pydantic_proven": ('pydantic', 'model'),
+    "adaptor_pydantic_falsified": ('pydantic bound', 'form'),
+    "adaptor_sqlalchemy_proven": ('sqlalchemy', 'check constraint'),
+    "adaptor_sqlalchemy_falsified": ('sqlalchemy', 'table'),
+    "adaptor_django_proven": ('django', 'validators'),
+    "adaptor_django_falsified": ('django', 'model'),
+    "adaptor_jsonschema_proven": ('json schema', 'minimum'),
+    "adaptor_jsonschema_falsified": ('json schema', 'webhook'),
+    "adaptor_typeddict_proven": ('typeddict', 'annotated'),
+    "adaptor_typeddict_falsified": ('typeddict', 'unbounded'),
     "family_length_safe": ("long input", "backtracking", "regex dos"),
     "family_encoding_safe": ("encode", "unicodeencodeerror"),
     "family_arbitrary_input": ("fuzz", "crash", "empty string"),
@@ -352,10 +567,36 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "tree_size": (tree_size, ["structure_induction_constant", "structure_induction_unbounded",
                               "structure_induction_base_case", "structure_nodes_bound"]),
     "tree_twice": (tree_twice, ["structure_induction_equation"]),
-    "tree_height": (tree_height, ["structure_depth_bound", "structure_depth_bound_tight"]),
+    "tree_height": (tree_height, ["structure_depth_bound", "structure_depth_bound_tight",
+                                  "vocabulary_tree_depth"]),
     "widest": (widest, ["structure_children_bound", "structure_children_one_past"]),
     "canonical_json": (canonical_json, ["structure_json_depth"]),
     "loads": (loads, ["language_retraction"]),
+    "log_line": (log_line, ['language_printable_output']),
+    "capitalise_word": (capitalise_word, ['language_alpha_closure']),
+    "attribute_name": (attribute_name, ['language_identifier_closure']),
+    "normalise_order_id": (normalise_order_id, ['language_uuid_idempotent', 'language_uuid_spelling']),
+    "normalise_date": (normalise_date, ['language_iso_date_idempotent']),
+    "normalise_timestamp": (normalise_timestamp, ['language_iso_datetime_idempotent']),
+    "anonymise_ip": (anonymise_ip, ['language_ipv4_closure', 'language_ipv6_closure']),
+    "reencode_token": (reencode_token, ['language_base64_round_trip']),
+    "normalise_colour": (normalise_colour, ['language_hex_spelling']),
+    "delete_command": (delete_command, ['language_shell_safe_argument', 'language_shell_unsafe_argument']),
+    "note_header": (note_header, ['language_c0_header_injection']),
+    "is_blank": (is_blank, ['language_format_invisible']),
+    "strip_accents": (strip_accents, ['language_combining_stripped']),
+    "to_bytes": (to_bytes, ['language_surrogate_encoding']),
+    "username_key": (username_key, ['language_nfkc_folding_key']),
+    "js_length": (js_length, ['language_non_bmp_utf16']),
+    "parse_order_id": (parse_order_id, ['family_excluded_outside_domain']),
+    "shout": (shout, ['family_excluded_outside_domain_accepts']),
+    "short_title": (short_title, ['adaptor_text_annotation']),
+    "years_until_adult": (years_until_adult, ['adaptor_pydantic_proven', 'adaptor_pydantic_falsified']),
+    "order_total": (order_total, ['adaptor_sqlalchemy_proven', 'adaptor_sqlalchemy_falsified']),
+    "review_weight": (review_weight, ['adaptor_django_proven', 'adaptor_django_falsified']),
+    "processing_fee": (processing_fee, ['adaptor_jsonschema_proven']),
+    "queue_for": (queue_for, ['adaptor_jsonschema_falsified']),
+    "rank": (rank, ['adaptor_typeddict_proven', 'adaptor_typeddict_falsified']),
 }
 
 __all__ = ["EXAMPLE_FUNCTIONS", "LEXICON", "SECTIONS", "TAGS", "Address", "Branch", "Line",
