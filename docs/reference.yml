@@ -2,19 +2,29 @@
 # imports them under /language/reference/. A nested list is a section.
 section: Strings, records and schemas
 nav:
-  - Languages: index.md
-  - Text: text.md
-  - Formats and identifiers: formats.md
-  - JSON: json.md
-  - Records and schemas: records.md
-  - Trees: trees.md
-  - Adaptors:
-      - Writing an adaptor: adaptors.md
-      - Dataclasses: adaptor-dataclass.md
-      - TypedDicts: adaptor-typeddict.md
-      - pydantic: adaptor-pydantic.md
-      - JSON Schema: adaptor-jsonschema.md
-      - SQLAlchemy: adaptor-sqlalchemy.md
-      - Django: adaptor-django.md
-      - Text annotations: adaptor-text.md
+  - Quick start: index.md
+  - Strings:
+      - Text: text.md
+      - Formats and identifiers: formats.md
+      - JSON: json.md
+  - Records and schemas:
+      - Records and schemas: records.md
+      - Trees: trees.md
+  - Reference:
+      - Languages: languages.md
+      - Refinements: refinements.md
+      - Relations and paths: paths.md
+      - Claim families: families.md
+      - Vocabulary: vocabulary.md
+      - Adaptors:
+          - Writing an adaptor: adaptors.md
+          - Dataclasses: adaptor-dataclass.md
+          - TypedDicts: adaptor-typeddict.md
+          - pydantic: adaptor-pydantic.md
+          - JSON Schema: adaptor-jsonschema.md
+          - SQLAlchemy: adaptor-sqlalchemy.md
+          - Django: adaptor-django.md
+          - Text annotations: adaptor-text.md
+      - Writing a language: writing-a-language.md
+      - Using a language from Python: python-api.md
   - What to claim: catalogue.md
