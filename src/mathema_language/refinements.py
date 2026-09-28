@@ -22,7 +22,7 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from ._surface import RefinedLanguage, domain_bound_from_json
+from ._surface import HazardValue, RefinedLanguage, domain_bound_from_json
 
 _SIMPLE = ("a", "0", "x", "A", " ")
 
@@ -63,8 +63,39 @@ def length(language: Any, interval: Any) -> Any:
 
     lo, hi = _range(interval)
     schema = {"minLength": lo, **({"maxLength": hi} if hi is not None else {})}
-    return RefinedLanguage(language, "len", interval, measure=len, plain=plain, build=build,
+    return _LengthLanguage(language, "len", interval, measure=len, plain=plain, build=build,
                            schema=schema, hazard_kind="length")
+
+
+def _changes_length(s: str) -> bool:
+    """Whether case mapping or a Unicode normal form changes the length
+    of `s`."""
+    import unicodedata
+    forms = (s.upper(), s.lower(), s.casefold(),
+             *(unicodedata.normalize(f, s) for f in ("NFC", "NFD", "NFKC", "NFKD")))
+    return any(len(t) != len(s) for t in forms)
+
+
+class _LengthLanguage(RefinedLanguage):
+    """A length-bounded language whose hazards also hold each base
+    hazard that changes length under case mapping or normalisation,
+    repeated up to the upper bound: the input that grows the most."""
+
+    def hazards(self) -> tuple[Any, ...]:
+        out = list(super().hazards())
+        if self.hi is None:
+            return tuple(out)
+        seen = [h.value for h in out]
+        for h in self.base.hazards():
+            v = h.value
+            if not isinstance(v, str) or not v or len(v) > self.hi or not _changes_length(v):
+                continue
+            filled = v * (self.hi // len(v))
+            if filled not in seen and self.contains(filled):
+                seen.append(filled)
+                out.append(HazardValue("length", filled,
+                                       f"{h.note}, repeated to len {len(filled)}"))
+        return tuple(out)
 
 
 def length_bound(lo: int, hi: int | None) -> Any:
