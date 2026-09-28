@@ -276,8 +276,8 @@ def prove(language: Any, param: str, lhs: str, relation: str, rhs: str,
             meta={"mathema.derive_route": "induction"})
     return ProofResult(
         "proven",
-        sketch=(f"by structural induction over {edge}: the base case (no children) and the step "
-                f"(k >= 1 children, the claim assumed of each) both hold, and depth <= {depth_bound} "
+        sketch=(f"by structural induction over {edge}: the base case (no {edge}) and the step "
+                f"(k >= 1 {edge}, the claim assumed of each) both hold, and depth <= {depth_bound} "
                 "keeps the recursion under the interpreter's limit"),
         quantifier=f"∀ {param} in the language, by induction over {edge}",
         meta={"mathema.derive_route": "induction"})
@@ -350,7 +350,7 @@ def _induct(reader: _Reader, claim: Any, relation: str, shifts: dict[Any, Any]) 
     base = sympy.expand(node.subs(base_subs).subs(shifts))
     step = sympy.expand(node.subs(step_subs).subs(shifts))
     if not _holds(base, target):
-        return f"the base case (no children) does not prove: {base} {target} 0"
+        return f"the base case (no {reader.edge}) does not prove: {base} {target} 0"
     if not _holds(step, target):
         return f"the step does not prove: {step} {target} 0"
     return None
