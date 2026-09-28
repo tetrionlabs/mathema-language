@@ -29,7 +29,7 @@ def display_name(username: str) -> str:
 ```text
 f = display_name
 for username in L[unicode, len <= 32], len(f(username)) <= 32
-    falsified   ('aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ'): 33 vs 32
+    falsified   username='aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ': 33 vs 32
 ```
 
 `L[unicode, len <= 32]` is every string of at most 32 code points.
@@ -71,7 +71,7 @@ for comment in L[shop.threads.Comment, depth <= 50], f(comment) >= 1
     proven
 
 for comment in L[shop.threads.Comment], f(comment) >= 1
-    falsified   (<Comment nested 2100 levels deep (1050 Comment records)>): raised RecursionError
+    falsified   comment=<Comment tree 1050 records deep>: raised RecursionError
 ```
 
 The first is proven by structural induction. The second is the same

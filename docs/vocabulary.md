@@ -10,7 +10,7 @@ when another tool reads it.
 
 ## Text
 
-In `mathema_language.vocabulary.text`.
+In `mathema_language.text`.
 
 | Function | Returns |
 |---|---|
@@ -27,19 +27,19 @@ In `mathema_language.vocabulary.text`.
 ```text
 f = username_key
 let nfkc = mathema_language.text.nfkc, for name in L[unicode], f(nfkc(name)) == f(name)
-    falsified   ('℀'): 'a/c' vs '℀'
+    falsified   name='℀': 'a/c' vs '℀'
 ```
 
 ## Trees
 
-In `mathema_language.vocabulary.tree`, over any nested dict, list, tuple
-or record. With no schema to read they count every container, so a
-record holding a list of children is two levels, where a refinement on a
-record language counts one.
+In `mathema_language.tree`, over any nested dict, list, tuple or
+record. On a tree of records they count records, as the refinements
+inside `L[...]` do; on plain dicts and lists they count containers and
+values.
 
 | Function | Returns |
 |---|---|
-| `depth(v)` | nesting levels, 0 for a scalar |
-| `nodes(v)` | every value and container |
-| `children(v)` | the most direct children one container has |
-| `leaves(v)` | the values with no children |
+| `depth(v)` | records along the deepest path, else containers; 0 for a scalar |
+| `nodes(v)` | the records, else every value and container |
+| `width(v)` | the most children any one node has |
+| `leaves(v)` | the nodes with no children |

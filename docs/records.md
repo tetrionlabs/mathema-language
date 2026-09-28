@@ -52,7 +52,7 @@ for order in L[shop.db.Order], f(order) >= 0
     proven
 
 for order in L[shop.db.Order], f(order) <= 10000
-    falsified   (Order(id=0, sku='aaa', quantity=1, unit_price=Decimal('10742.34'))): Decimal('10742.34') vs 10000
+    falsified   order=Order(id=0, sku='aaa', quantity=1, unit_price=Decimal('10742.34')): Decimal('10742.34') vs 10000
 ```
 
 The table's CHECK constraints bound the quantity and the price from
@@ -88,7 +88,7 @@ def queue_for(event: dict) -> str:
 ```text
 f = queue_for
 for event in L[shop.webhooks.CHARGE_EVENT], f(event) in {"billing", "alerts"}
-    falsified   ({'type': 'charge.refunded', 'amount': 0}): raised KeyError
+    falsified   event={'type': 'charge.refunded', 'amount': 0}: raised KeyError
 ```
 
 ## Paths into a record
@@ -120,7 +120,7 @@ def first_quantity(checkout: Checkout) -> int:
 ```text
 f = needs_postcode
 for checkout in L[shop.forms.Checkout], f(checkout) == False
-    falsified   (Checkout(cart=Cart(items=[]), postcode=None)): True vs False
+    falsified   checkout=Checkout(cart=Cart(items=[]), postcode=None): True vs False
 
 for checkout in L[shop.forms.Checkout], checkout.postcode in L[alnum] \ {missing}, f(checkout) == False
     holds
@@ -133,7 +133,7 @@ for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7
     holds
 
 for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7], f(checkout) == 7
-    falsified   (Checkout(cart=Cart(items=[]), postcode='')): 0 vs 7
+    falsified   checkout=Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
 ```
 
 The last is falsified by an empty basket: `items[0]` is past the end of

@@ -52,7 +52,7 @@ def display_name(username: str) -> str:
 ```text
 f = display_name
 for username in L[unicode, len <= 32], len(f(username)) <= 32
-    falsified   ('aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ'): 33 vs 32
+    falsified   username='aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ': 33 vs 32
 ```
 
 `ﬁ` is one code point and upper-cases to the two letters `FI`. A
@@ -77,7 +77,7 @@ Two strings a reader sees as the same can be different code points,
 and a function that stores or compares names has to decide whether they
 are the same. The text vocabulary (`nfc`, `nfd`, `nfkc`, `nfkd`,
 `casefold`, `lower`, `upper` and more, in
-`mathema_language.vocabulary.text`) is bound with `let` and used inside
+`mathema_language.text`) is bound with `let` and used inside
 the claim:
 
 ```python
@@ -90,7 +90,7 @@ def username_key(name: str) -> str:
 ```text
 f = username_key
 let nfkc = mathema_language.text.nfkc, for name in L[unicode], f(nfkc(name)) == f(name)
-    falsified   ('℀'): 'a/c' vs '℀'
+    falsified   name='℀': 'a/c' vs '℀'
 ```
 
 `℀` normalises to the three characters `a/c`, and `username_key` never
@@ -107,7 +107,7 @@ def is_blank(name: str) -> bool:
 ```text
 f = is_blank
 for name in L[invisible] \ {""}, f(name) == True
-    falsified   ('\u200b'): False vs True
+    falsified   name='\u200b': False vs True
 ```
 
 A name made of a zero-width space is not blank to `strip`, and shows
@@ -134,7 +134,7 @@ def to_bytes(text: str) -> bytes:
 ```text
 f = header_value
 for value in L[latin-1], f(value) == value
-    falsified   ('\xa0'): raised UnicodeEncodeError
+    falsified   value='\xa0': raised UnicodeEncodeError
 
 for value in L[ascii], f(value) == value
     holds
@@ -162,7 +162,7 @@ def js_length(text: str) -> int:
 ```text
 f = js_length
 for text in L[printable], f(text) == len(text)
-    falsified   ('😀'): 2 vs 1
+    falsified   text='😀': 2 vs 1
 
 for text in L[astral] \ {""}, f(text) == 2 * len(text)
     holds
@@ -195,7 +195,7 @@ for name in L[unicode], is_arbitrary_input_safe(name)
 
 f = parse_quantity
 for text in L[unicode], f(text) >= 0
-    falsified   ('²'): raised ValueError
+    falsified   text='²': raised ValueError
 
 for text in L[digit], f(text) >= 0
     holds
@@ -237,7 +237,7 @@ for message in L[unicode], f(message) in L[printable]
 
 f = note_header
 for note in L[unicode], "\n" not in f(note)
-    falsified   ('\n'): '\n' is in f(note)
+    falsified   note='\n': '\n' is in f(note)
 
 for note in L[printable], "\n" not in f(note)
     holds

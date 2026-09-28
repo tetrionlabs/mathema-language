@@ -44,7 +44,7 @@ brackets, counted over the document's values and containers:
 |---|---|---|
 | `depth` | containers along the deepest path | `[[[]]]` |
 | `nodes` | every value and container | `{"a": 0, "b": 0}` |
-| `children` | the most items or keys one container holds | `[0, 0, 0]` |
+| `width` | the most items or keys one container holds | `[0, 0, 0]` |
 
 Each reads `<=`, `<`, `>=`, `>` or an interval, `in [1, 50]`, and they
 combine: `L[json, depth <= 6, width <= 100]`. The probe tries the
@@ -54,7 +54,7 @@ it:
 ```text
 f = settings_keys
 for text in L[json, nodes <= 20], f(text) <= 9
-    falsified   ('{" ":0,"1":0,"a":0,"k":0,"3":0,"":0,"5":0,"6":0,"7":0,"8":0}'): 10 vs 9
+    falsified   text='{" ":0,"1":0,"a":0,"k":0,"3":0,"":0,"5":0,"6":0,"7":0,"8":0}': 10 vs 9
 
 for text in L[json, nodes <= 20], f(text) <= 19
     holds
@@ -75,7 +75,7 @@ def resave(text: str) -> str:
 ```text
 f = resave
 let loads = json.loads, for text in L[json, depth <= 100], loads(f(text)) == loads(text)
-    falsified   ('NaN'): loads returned nan
+    falsified   text='NaN': loads returned nan
 ```
 
 A bare `NaN` parses to a float NaN, and a NaN is no value and equal to

@@ -40,12 +40,12 @@ def thread_depth(comment: Comment) -> int:
     return 1 + max((thread_depth(r) for r in comment.replies), default=0)
 ```
 
-## Depth, nodes and children
+## Depth, nodes and width
 
 Three refinements bound a tree inside the brackets. On a record tree
 they count records: `depth` is the number of records along the deepest
 path (a comment with no replies has depth 1), `nodes` is the number of
-records, and `children` is the most records any one record holds
+records, and `width` is the most records any one record holds
 directly. On `L[json]`, where every container is a value, they count
 containers and values instead (`[[[]]]` has depth 3). Each reads `<=`,
 `<`, `>=`, `>` or an interval, and they combine:
@@ -59,13 +59,13 @@ for doc in L[json, depth <= 6, width <= 50], ...
 A bound the schema states itself (`maxItems` on a list, pydantic's
 `max_length`) is the language's own. Where nothing bounds a tree the
 language stays unbounded, and random members are drawn within stated
-sampling bounds (depth 8, 256 nodes, 16 children), which the record
+sampling bounds (depth 8, 256 nodes, width 16), which the record
 names as sampling choices rather than facts about the language. For
-claims about nesting, `depth(v)`, `nodes(v)`, `children(v)` and
-`leaves(v)` from `mathema_language.vocabulary.tree` take any nested
-dict, list, tuple or record, bound with `let`; having no schema to
-read, they count every container, so a comment with an empty list of
-replies has depth 2 there.
+claims about nesting, `depth(v)`, `nodes(v)`, `width(v)` and
+`leaves(v)` from `mathema_language.tree` take any nested dict, list,
+tuple or record, bound with `let`, and measure it the way the
+refinements do: records on a tree of records, containers and values on
+plain dicts and lists.
 
 ## What the probe visits
 
@@ -87,7 +87,7 @@ to print is summarised by its type and depth.
 ```text
 f = thread_size
 for comment in L[shop.threads.Comment], f(comment) >= 1
-    falsified   (<Comment nested 2100 levels deep (1050 Comment records)>): raised RecursionError
+    falsified   comment=<Comment tree 1050 records deep>: raised RecursionError
 ```
 
 A reply chain a thousand deep exhausts Python's recursion, and the
@@ -139,7 +139,7 @@ against the claim:
 ```text
 f = thread_size
 for comment in L[shop.threads.Comment, depth <= 20], f(comment) >= 2
-    falsified   (Comment(author='', body='', replies=[])): 1 vs 2
+    falsified   comment=Comment(author='', body='', replies=[]): 1 vs 2
 
 for comment in L[shop.threads.Comment, depth <= 20], f(comment) >= thread_depth(comment)
     holds
