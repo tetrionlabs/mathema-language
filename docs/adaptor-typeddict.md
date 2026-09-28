@@ -45,19 +45,25 @@ def rank(hit: SearchHit) -> float:
 | `rank` | `for hit in L[shop.search.SearchHit], f(hit) >= 0` | proven | The lift reads both keys' bounds off the annotations, through the subscripts the body uses. |
 | `rank` | `for hit in L[shop.search.SearchHit], f(hit) <= 10` | falsified | Nothing bounds the clicks from above. |
 
-## A non-member
+## Enforcing the schema
+
+A function that guards a boundary should refuse a record its schema
+rejects. `excluded_outside_domain` feeds it records just outside the
+language, and the witness names the value and why it is outside, in
+the library's own words. This function trusts its input, so a record
+the schema rejects goes straight through:
 
 ```python
-from mathema_language.schema.adaptors import adapt_row
-
-language = adapt_row(SearchHit)
-for problem in language.explain({"title": "mugs", "score": 1.5, "note": "x"}):
-    print(repr(problem.path), "|", problem.predicate)
+def result_title(hit: SearchHit) -> str:
+    """The title shown for a result."""
+    return hit["title"]
 ```
 
-<!-- output -->
 ```text
-'.score' | <= 1.0
-'.clicks' | present
-'.note' | a column of the schema
+f = result_title
+for hit in L[shop.search.SearchHit], excluded_outside_domain(hit)
+    falsified   hit = {'title': '', 'score': '1', 'clicks': 0} (outside L[shop.search.SearchHit] at .score: float)
 ```
+
+The same claim over the function that loads the record, from a request
+or a database, is the one that should hold.

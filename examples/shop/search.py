@@ -17,3 +17,8 @@ class SearchHit(TypedDict):
 def rank(hit: SearchHit) -> float:
     """Where the hit sorts: relevance first, popularity after."""
     return hit["score"] * 10 + hit["clicks"] / 1000
+
+
+def result_title(hit: SearchHit) -> str:
+    """The title shown for a result."""
+    return hit["title"]

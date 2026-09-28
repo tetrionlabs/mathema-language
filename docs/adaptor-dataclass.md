@@ -52,18 +52,25 @@ def postage(parcel: Parcel) -> float:
 | `postage` | `for parcel in L[shop.shipping.Parcel], 3.5 <= f(parcel) <= 39.5` | proven | The lift reads the weight's bounds off the annotation, nought to thirty kilos. |
 | `postage` | `for parcel in L[shop.shipping.Parcel], f(parcel) <= 30` | falsified | A thirty-kilo parcel costs 39.50. |
 
-## A non-member
+## Enforcing the schema
+
+A function that guards a boundary should refuse a record its schema
+rejects. `excluded_outside_domain` feeds it records just outside the
+language, and the witness names the value and why it is outside, in
+the library's own words. This function trusts its input, so a record
+the schema rejects goes straight through:
 
 ```python
-from mathema_language.schema.adaptors import adapt_row
-
-language = adapt_row(Parcel)
-for problem in language.explain(Parcel(postcode="SW1A 1AAXX", weight_kg=31.0)):
-    print(repr(problem.path), "|", problem.predicate)
+def address_label(parcel: Parcel) -> str:
+    """The postcode printed on the parcel's label."""
+    return parcel.postcode.upper()
 ```
 
-<!-- output -->
 ```text
-'.postcode' | len <= 8
-'.weight_kg' | <= 30.0
+f = address_label
+for parcel in L[shop.shipping.Parcel], excluded_outside_domain(parcel)
+    falsified   parcel = Parcel(postcode='', weight_kg=-1.0) (outside L[shop.shipping.Parcel] at .weight_kg: >= 0.0)
 ```
+
+The same claim over the function that loads the record, from a request
+or a database, is the one that should hold.

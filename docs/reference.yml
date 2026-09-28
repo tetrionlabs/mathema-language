@@ -6,8 +6,8 @@ nav:
   - Text: text.md
   - Formats and identifiers: formats.md
   - JSON: json.md
-  - Rows: rows.md
-  - Recursive structures: recursive.md
+  - Records and schemas: records.md
+  - Trees: trees.md
   - Adaptors:
       - Writing an adaptor: adaptors.md
       - Dataclasses: adaptor-dataclass.md

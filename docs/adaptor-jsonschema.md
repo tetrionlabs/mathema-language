@@ -63,19 +63,19 @@ def processing_fee(event: dict) -> float:
 | `processing_fee` | `for event in L[shop.webhooks.CHARGE_EVENT], f(event) >= 30` | proven | The lift reads the amount's minimum off the schema. |
 | `queue_for` | `for event in L[shop.webhooks.CHARGE_EVENT], f(event) in {"billing", "alerts"}` | falsified | A `charge.refunded` event has no queue, and the router raises KeyError. |
 
-## A non-member
+## Enforcing the schema
 
-```python
-from mathema_language.schema.adaptors import adapt_row
+A function that guards a boundary should refuse a record its schema
+rejects. `excluded_outside_domain` feeds it records just outside the
+language, and the witness names the value and why it is outside, in
+the library's own words. This function trusts its input, so a record
+the schema rejects goes straight through:
 
-language = adapt_row(CHARGE_EVENT)
-for problem in language.explain({"type": "charge.disputed", "amount": -5, "note": "x"}):
-    print(repr(problem.path), "|", problem.predicate)
-```
-
-<!-- output -->
 ```text
-'.type' | 'charge.disputed' is not one of ['charge.succeeded', 'charge.failed', 'charge.refunded']
-'.amount' | -5 is less than the minimum of 0
-'' | Additional properties are not allowed ('note' was unexpected)
+f = queue_for
+for event in L[shop.webhooks.CHARGE_EVENT], excluded_outside_domain(event)
+    falsified   event = {'type': 'charge.succeeded', 'amount': None} (outside L[shop.webhooks.CHARGE_EVENT] at .amount: None is not of type 'integer')
 ```
+
+The same claim over the function that loads the record, from a request
+or a database, is the one that should hold.

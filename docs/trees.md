@@ -1,4 +1,4 @@
-# Recursive structures
+# Trees
 
 <!-- shop: threads -->
 

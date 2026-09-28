@@ -19,6 +19,7 @@ from tests._shop_pages import (  # noqa: E402
     claim_blocks,
     definition_problems,
     shop_module,
+    witness_matches,
 )
 
 README = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -39,4 +40,4 @@ def test_every_claim_lands_on_its_verdict(fn, text, verdict, witness):
     (p,) = check_conjectures(target, [claim(text)])
     assert p.verdict == verdict, (text, p.verdict, p.note)
     if witness:
-        assert (p.counterexample or "").startswith(witness), (witness, p.counterexample)
+        assert witness_matches(witness, p.counterexample or ""), (witness, p.counterexample)

@@ -34,3 +34,8 @@ class Review(models.Model):
 def weight(review: Review) -> float:
     """How much the review counts toward the product's score."""
     return review.rating / 5
+
+
+def stars(review: Review) -> str:
+    """The rating drawn as stars."""
+    return "*" * review.rating

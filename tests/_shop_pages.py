@@ -92,3 +92,19 @@ def claim_blocks(text):
 def claim_rows(text):
     """`(function, claim, verdict)` for every claim row of a table."""
     return _ROW.findall(text)
+
+
+def witness_matches(shown: str, reported: str) -> bool:
+    """Whether a witness a page shows is the one mathema reports: the
+    shown text is the start of the reported one, where `…` stands for a
+    stretch left out, each shown part appearing in order."""
+    parts = shown.split("…")
+    if not reported.startswith(parts[0]):
+        return False
+    at = len(parts[0])
+    for part in parts[1:]:
+        found = reported.find(part, at)
+        if found < 0:
+            return False
+        at = found + len(part)
+    return True

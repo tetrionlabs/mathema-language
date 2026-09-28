@@ -76,23 +76,25 @@ def weight(review: Review) -> float:
 | `weight` | `for review in L[shop.reviews.Review], 0 < f(review) <= 1` | proven | The lift reads the rating's bounds off the validators, one to five stars. |
 | `weight` | `for review in L[shop.reviews.Review], f(review) >= 0.5` | falsified | A one-star review counts for a fifth. |
 
-## A non-member
+## Enforcing the schema
 
-The first review breaks a bound the neutral model read; the second
-passes it and is refused by `full_clean`, on the validator the neutral
-model could not read.
+A function that guards a boundary should refuse a record its schema
+rejects. `excluded_outside_domain` feeds it records just outside the
+language, and the witness names the value and why it is outside, in
+the library's own words. This function trusts its input, so a record
+the schema rejects goes straight through:
 
 ```python
-from mathema_language.schema.adaptors import adapt_row
-
-language = adapt_row(Review)
-for bad in (Review(body="great", rating=6), Review(body="see https://example.com", rating=4)):
-    for problem in language.explain(bad):
-        print(repr(problem.path), "|", problem.predicate)
+def stars(review: Review) -> str:
+    """The rating drawn as stars."""
+    return "*" * review.rating
 ```
 
-<!-- output -->
 ```text
-'.rating' | <= 5
-'.body' | links are not allowed in a review
+f = stars
+for review in L[shop.reviews.Review], excluded_outside_domain(review)
+    falsified   review = Review(id=0, body='aaaa…aaaa', rating=1) (outside L[shop.reviews.Review] at .body: len <= 2000)
 ```
+
+The same claim over the function that loads the record, from a request
+or a database, is the one that should hold.

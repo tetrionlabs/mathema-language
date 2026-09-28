@@ -46,19 +46,25 @@ def short_title(title: Annotated[str, MaxLen(60)]) -> str:
 | `display_name` | `len(f(username)) == len(username)` | falsified | Inferred `L[unicode]`, and `'ﬁ'` upper-cases to two code points. |
 | `short_title` | `f(title) == title` | holds | Inferred `L[unicode, len <= 60]`, inside which the cut changes nothing. |
 
-## A non-member
+## Enforcing the schema
 
-A text language explains a non-member by the first character it
-refuses, at its index.
+A function that guards a boundary should refuse a record its schema
+rejects. `excluded_outside_domain` feeds it records just outside the
+language, and the witness names the value and why it is outside, in
+the library's own words. This function trusts its input, so a record
+the schema rejects goes straight through:
 
 ```python
-from mathema_language.text import ASCII
-
-for problem in ASCII.explain("café"):
-    print(repr(problem.path), "|", problem.predicate)
+def display_name(username: str) -> str:
+    """The username as shown in the header, upper-cased."""
+    return username.upper()
 ```
 
-<!-- output -->
 ```text
-'[3]' | ascii alphabet
+f = display_name
+for username in L[ascii], excluded_outside_domain(username)
+    falsified   username = '\ufeff' (outside L[ascii] at [0]: ascii alphabet)
 ```
+
+The same claim over the function that loads the record, from a request
+or a database, is the one that should hold.

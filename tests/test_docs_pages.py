@@ -31,6 +31,7 @@ from tests._shop_pages import (  # noqa: E402
     definition_problems,
     is_shown_code,
     shop_module,
+    witness_matches,
 )
 
 DOCS = pathlib.Path(__file__).resolve().parents[1] / "docs"
@@ -122,4 +123,4 @@ def test_a_shop_page_shows_the_shop_and_its_claims_land(page, capsys):
         (p,) = check_conjectures(scope[fn], [claim(law)])
         assert p.verdict == verdict, (page.name, law, p.verdict, p.note)
         if witness:
-            assert (p.counterexample or "").startswith(witness), (witness, p.counterexample)
+            assert witness_matches(witness, p.counterexample or ""), (witness, p.counterexample)

@@ -50,19 +50,25 @@ def years_until_adult(form: SignupForm) -> int:
 | `years_until_adult` | `for form in L[shop.forms.SignupForm], 0 <= f(form) <= 5` | proven | The lift reads the age's bounds off the model's fields, so the wait is between none and five years. |
 | `years_until_adult` | `for form in L[shop.forms.SignupForm], f(form) <= 4` | falsified | A thirteen-year-old waits five years. |
 
-## A non-member
+## Enforcing the schema
+
+A function that guards a boundary should refuse a record its schema
+rejects. `excluded_outside_domain` feeds it records just outside the
+language, and the witness names the value and why it is outside, in
+the library's own words. This function trusts its input, so a record
+the schema rejects goes straight through:
 
 ```python
-from mathema_language.schema.adaptors import adapt_row
-
-language = adapt_row(SignupForm)
-bad = SignupForm.model_construct(username="ab", age=12)
-for problem in language.explain(bad):
-    print(repr(problem.path), "|", problem.predicate)
+def welcome_message(form: SignupForm) -> str:
+    """The first line of the welcome email."""
+    return f"Welcome, {form.username}!"
 ```
 
-<!-- output -->
 ```text
-'.username' | String should have at least 3 characters
-'.age' | Input should be greater than or equal to 13
+f = welcome_message
+for form in L[shop.forms.SignupForm], excluded_outside_domain(form)
+    falsified   form = SignupForm(username='aaa', age=12) (outside L[shop.forms.SignupForm] at .age: Input should be greater than or equal to 13)
 ```
+
+The same claim over the function that loads the record, from a request
+or a database, is the one that should hold.

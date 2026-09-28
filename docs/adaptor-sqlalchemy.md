@@ -61,26 +61,25 @@ def order_total(order: Order) -> Decimal:
 | `order_total` | `for order in L[shop.db.Order], f(order) >= 0` | proven | The lift reads both bounds off the CHECK constraints, a quantity of at least one times a price of at least zero. |
 | `order_total` | `for order in L[shop.db.Order], f(order) <= 10000` | falsified | Nothing bounds the price from above. |
 
-## A non-member
+## Enforcing the schema
 
-The first order breaks a bound the neutral model read; the second
-passes it and is refused by the database, on the CHECK the neutral
-model could not read.
+A function that guards a boundary should refuse a record its schema
+rejects. `excluded_outside_domain` feeds it records just outside the
+language, and the witness names the value and why it is outside, in
+the library's own words. This function trusts its input, so a record
+the schema rejects goes straight through:
 
 ```python
-from decimal import Decimal
-
-from mathema_language.schema.adaptors import adapt_row
-
-language = adapt_row(Order)
-for bad in (Order(id=1, sku="ABC", quantity=0, unit_price=Decimal("2.50")),
-            Order(id=1, sku="AB", quantity=1, unit_price=Decimal("2.50"))):
-    for problem in language.explain(bad):
-        print(repr(problem.path), "|", problem.predicate)
+def receipt_line(order: Order) -> str:
+    """The line an order prints on the receipt."""
+    return f"{order.quantity} x {order.sku}"
 ```
 
-<!-- output -->
 ```text
-'.quantity' | >= 1
-'' | check length(sku) >= 3
+f = receipt_line
+for order in L[shop.db.Order], excluded_outside_domain(order)
+    falsified   order = Order(id=2147483648, sku='', quantity=1, unit_price=Decimal('0')) (outside L[shop.db.Order] at .id: int32)
 ```
+
+The same claim over the function that loads the record, from a request
+or a database, is the one that should hold.

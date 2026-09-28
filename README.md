@@ -244,7 +244,7 @@ and the conformance checks a new one's tests can call.
 - [What to claim](docs/catalogue.md): the claims worth writing for a
   parser, renderer, normaliser, validator, escaper or consumer, each
   with a real function and the verdict the test suite holds it to.
-- [Rows](docs/rows.md), [recursive structures](docs/recursive.md), and a
+- [Records and schemas](docs/records.md), [trees](docs/trees.md), and a
   page for each adaptor in [the reference](docs/index.md).
 - Your own language: any object satisfying
   `mathema.languages.Language`, registered with `register_language`,

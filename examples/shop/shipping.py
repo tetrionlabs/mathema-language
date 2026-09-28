@@ -18,3 +18,8 @@ class Parcel:
 def postage(parcel: Parcel) -> float:
     """What it costs to send the parcel: a base rate plus a rate per kilo."""
     return 3.5 + 1.2 * parcel.weight_kg
+
+
+def address_label(parcel: Parcel) -> str:
+    """The postcode printed on the parcel's label."""
+    return parcel.postcode.upper()

@@ -25,3 +25,8 @@ class Order(Base):
 def order_total(order: Order) -> Decimal:
     """What the customer pays for the order."""
     return order.quantity * order.unit_price
+
+
+def receipt_line(order: Order) -> str:
+    """The line an order prints on the receipt."""
+    return f"{order.quantity} x {order.sku}"
