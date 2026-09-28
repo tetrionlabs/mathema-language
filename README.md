@@ -171,16 +171,16 @@ for t in L[myapp.Branch], f(t) >= 1
 
 The first is proven by structural induction: true for a leaf, and true
 for a node whenever it is true of each child. It reaches claims about
-folds over the children, such as a tree's size, its height or the sum
-of a field, and says why when a claim is outside that class. The second
-is the same function over trees of any depth, and there the mathematics
-is still right while the implementation is not, because Python's recursion stops at about a
-thousand frames. The probe builds that tree, and the witness is
-summarised because it is too deep to print. Hazards on these axes come
-first as they do for text (the empty tree, the deepest and widest the
-bounds allow, and the tree one past each bound), draws climb in depth
-instead of clustering shallow, and a failing tree is shrunk to the
-smallest one that still fails.
+folds over the children, such as a tree's size, its height or the sum of
+a field, and says why when a claim is outside that class. The second is
+the same function over trees of any depth, and there the mathematics is
+still right while the implementation is not, because Python's recursion
+stops at about a thousand frames. The probe builds that tree, and the
+witness is summarised because it is too deep to print. Hazards on these
+axes come first as they do for text (the empty tree, the deepest and
+widest the bounds allow, and the tree one past each bound), draws climb
+in depth instead of clustering shallow, and a failing tree is shrunk to
+the smallest one that still fails.
 
 ## Where next
 
