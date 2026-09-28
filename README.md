@@ -69,11 +69,19 @@ for body in L[unicode], "<" not in f(body)
 
 f = normalise_config
 for text in L[json], f(f(text)) == f(text)
+    falsified
+
+for text in L[json, depth <= 100], f(f(text)) == f(text)
     holds
 ```
 
 A title with no ASCII letter or digit in it slugifies to the empty
-string, which is not a slug, so the post gets no URL. Each language is
+string, which is not a slug, so the post gets no URL. The config file
+is subtler: Python's JSON parser accepts documents nested almost ten
+thousand deep, but writing one back out recurses once per level and
+stops at Python's recursion limit, so a document nested a thousand deep
+loads and then cannot be saved. Bounding the depth the service accepts
+makes the claim hold. Each language is
 decided by Python's own reading of it, never a regular expression
 standing in for a parser:
 

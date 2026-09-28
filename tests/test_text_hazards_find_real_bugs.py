@@ -15,3 +15,16 @@ def test_a_digit_int_refuses_falsifies_a_guarded_parse():
     (p,) = check_conjectures(bugs.parse_quantity, [claim(
         "for text in L[unicode], f(text) >= 0")])
     assert p.verdict == "falsified" and "'²'" in p.counterexample, (p.verdict, p.counterexample)
+
+
+def test_json_nested_past_the_recursion_limit_is_tried():
+    import sys
+
+    from mathema.languages import resolve_language
+
+    from mathema_language.text.json_structure import scan
+    language = resolve_language("json")
+    deepest = max(scan(h.value)[0] for h in language.hazards() if language.contains(h.value))
+    assert deepest > sys.getrecursionlimit(), deepest
+    (p,) = check_conjectures(bugs.json_keys, [claim("for text in L[json], f(text) >= 0")])
+    assert p.verdict == "falsified" and "RecursionError" in p.counterexample, (p.verdict, p.note)

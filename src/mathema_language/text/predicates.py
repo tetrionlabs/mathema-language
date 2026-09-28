@@ -17,6 +17,7 @@ import random
 import re
 import shlex
 import string
+import sys
 import uuid
 
 from .._surface import HazardValue
@@ -179,6 +180,11 @@ IDENTIFIER = TextLanguage(
                    HazardValue("text", "\u00e9t\u00e9", "letters outside ascii"),
                    HazardValue("text", "\u2160", "a Roman numeral letter, an identifier NFKC folds to I")))
 
+#: a nesting depth past the interpreter's recursion limit and well inside
+#: what `json.loads` accepts, where a recursive walk of the parsed value
+#: fails
+_PAST = sys.getrecursionlimit() + 50
+
 #: what `json.loads` accepts
 JSON = TextLanguage(
     "json", level="predicate", accepts=_is_json, generate=_generate_json,
@@ -186,7 +192,13 @@ JSON = TextLanguage(
     extra_hazards=(HazardValue("text", "1e309", "a number past the largest double, which loads as inf"),
                    HazardValue("text", "NaN", "the non-standard NaN literal loads accepts"),
                    HazardValue("text", "\"\\ud800\"", "an escaped lone surrogate"),
-                   HazardValue("text", "[" * 50 + "]" * 50, "fifty nested arrays")))
+                   HazardValue("text", "[" * 50 + "]" * 50, "fifty nested arrays"),
+                   HazardValue("length", "[" * _PAST + "]" * _PAST,
+                               f"arrays nested {_PAST} deep, past the recursion limit, which "
+                               "loads accepts"),
+                   HazardValue("length", '{"a":' * _PAST + "0" + "}" * _PAST,
+                               f"objects nested {_PAST} deep, past the recursion limit, which "
+                               "loads accepts")))
 
 #: what `uuid.UUID` accepts: hyphenated, bare, braced and urn forms
 UUID = TextLanguage(
