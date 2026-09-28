@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
 """The SQLAlchemy shapes the row-language tests run over."""
+from decimal import Decimal
+
 import sqlalchemy as sa
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -37,3 +39,19 @@ class Line(Base):
     sku: Mapped[int] = mapped_column(sa.ForeignKey("skus.code"))
     batch: Mapped[int] = mapped_column(sa.Integer)
     qty: Mapped[int] = mapped_column(sa.Integer)
+
+
+class Order(Base):
+    """An order row whose CHECK constraints sit on the columns, the way
+    `mapped_column(sa.CheckConstraint(...))` writes them."""
+    __tablename__ = "orders_by_column"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sku: Mapped[str] = mapped_column(sa.String(12))
+    quantity: Mapped[int] = mapped_column(sa.CheckConstraint("quantity BETWEEN 1 AND 100"))
+    unit_price: Mapped[Decimal] = mapped_column(sa.Numeric(10, 2),
+                                                sa.CheckConstraint("unit_price >= 0"))
+
+
+def order_total(order: Order) -> Decimal:
+    """What the customer pays for the order."""
+    return order.quantity * order.unit_price

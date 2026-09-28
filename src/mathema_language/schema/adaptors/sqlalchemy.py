@@ -43,10 +43,12 @@ def _number(text: str) -> float | int:
 
 def _check_bounds(table: Any) -> dict[str, dict[str, Any]]:
     """Per column, the bounds its CHECK constraints spell as plain
-    comparisons or BETWEEN; anything else is left to the database."""
+    comparisons or BETWEEN, whether written on the table or on the
+    column itself; anything else is left to the database."""
     sa = _sa()
     out: dict[str, dict[str, Any]] = {}
-    for constraint in table.constraints:
+    on_columns = [c for col in table.columns for c in col.constraints]
+    for constraint in [*table.constraints, *on_columns]:
         if not isinstance(constraint, sa.CheckConstraint):
             continue
         text = str(constraint.sqltext)
