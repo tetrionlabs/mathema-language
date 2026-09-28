@@ -106,7 +106,7 @@ speclib = "speclib.mathema:adapt"
 ## Testing it
 
 `mathema_language.conformance` holds the checks the package's own
-adaptors pass. `row_adaptor_problems(obj)` lists every way the language
+adaptors pass. `record_adaptor_problems(obj)` lists every way the language
 of `obj` falls short, and is empty when there is none: the registry
 returns it through this adaptor, the language satisfies mathema's protocol, every
 hazard and fifty random members are members by the ecosystem's own
@@ -119,9 +119,9 @@ In the library's own tests, with the adaptor installed, leave the
 registry check on; here the adaptor is not installed, so it is off:
 
 ```python
-from mathema_language.conformance import foreign_object_problems, row_adaptor_problems
+from mathema_language.conformance import foreign_object_problems, record_adaptor_problems
 
-print(row_adaptor_problems(Line, adapt=adapt, registered=False))
+print(record_adaptor_problems(Line, adapt=adapt, registered=False))
 print(foreign_object_problems(adapt))
 ```
 

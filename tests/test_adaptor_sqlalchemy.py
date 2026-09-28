@@ -13,7 +13,7 @@ sa = pytest.importorskip("sqlalchemy")
 
 from mathema_language.conformance import (  # noqa: E402
     foreign_object_problems,
-    row_adaptor_problems,
+    record_adaptor_problems,
 )
 from mathema_language.schema.adaptors import adapt_row  # noqa: E402
 from mathema_language.schema.adaptors.sqlalchemy import adapt  # noqa: E402
@@ -22,7 +22,7 @@ from tests import _sqlalchemy_shapes as shapes  # noqa: E402
 
 @pytest.mark.parametrize("obj", [shapes.ORDERS_TABLE, shapes.Line], ids=["table", "mapped class"])
 def test_passes_the_conformance_checks(obj):
-    assert row_adaptor_problems(obj, adapt=adapt) == []
+    assert record_adaptor_problems(obj, adapt=adapt) == []
     language = adapt(obj)
     assert type(language.ecosystem).__name__ == "SqlAlchemyEcosystem"
 

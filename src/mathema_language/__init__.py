@@ -5,9 +5,8 @@
 A claim quantifies a parameter over a language with `L[<name>]`, the
 way it quantifies a number over `R` or `[0, 1]`. mathema itself parses,
 renders and records the domain and resolves no name; this package
-supplies the names: the alphabets and predicate languages of text, the
-hazard families over text, and the schema languages whose members are
-rows. Everything registers through mathema's entry-point groups, so
+supplies the names: the languages of text and formats, the built-in
+claims over text, and the languages of records a schema describes. Everything registers through mathema's entry-point groups, so
 installing the package is the whole configuration.
 """
 from ._surface import EXTENSION_API_VERSION

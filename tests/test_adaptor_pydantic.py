@@ -9,14 +9,14 @@ pydantic = pytest.importorskip("pydantic")
 
 from mathema_language.conformance import (  # noqa: E402
     foreign_object_problems,
-    row_adaptor_problems,
+    record_adaptor_problems,
 )
 from mathema_language.schema.adaptors.pydantic import adapt  # noqa: E402
 from tests._pydantic_shapes import OrderModel  # noqa: E402
 
 
 def test_passes_the_conformance_checks():
-    assert row_adaptor_problems(OrderModel, adapt=adapt) == []
+    assert record_adaptor_problems(OrderModel, adapt=adapt) == []
     language = adapt(OrderModel)
     assert type(language.ecosystem).__name__ == "PydanticEcosystem"
 

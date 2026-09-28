@@ -59,22 +59,22 @@
   "unicode": "∀ s ∈ L[unicode]|missing, '&' ∉ f(s)",
   "ascii": "for s in L[unicode]|missing, '&' not in f(s)"
  },
- "row_lift_sign": {
+ "record_lift_sign": {
   "input": "for line in L[mathema_language.lexicon.Line], f(line) >= 0",
   "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≥ 0",
   "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) >= 0"
  },
- "row_unbounded_field": {
+ "record_unbounded_field": {
   "input": "for line in L[mathema_language.lexicon.Line], f(line) <= 100",
   "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≤ 100",
   "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) <= 100"
  },
- "row_length_field": {
+ "record_length_field": {
   "input": "for line in L[mathema_language.lexicon.Line], f(line) <= 10",
   "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≤ 10",
   "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) <= 10"
  },
- "row_length_field_tight": {
+ "record_length_field_tight": {
   "input": "for line in L[mathema_language.lexicon.Line], f(line) <= 9",
   "unicode": "∀ line ∈ L[mathema_language.lexicon.Line]|missing, f(line) ≤ 9",
   "ascii": "for line in L[mathema_language.lexicon.Line]|missing, f(line) <= 9"

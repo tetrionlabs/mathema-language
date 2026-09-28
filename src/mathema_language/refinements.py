@@ -126,8 +126,8 @@ def _structure_measure(language: Any, key: str) -> Any:
     if getattr(language, "kind", None) in ("string",):
         raise ValueError(
             f"{key} measures the structure of a nested value; L[{language.name}] "
-            "is plain text. Refine a language of nested values: L[json], or a row "
-            "or schema language")
+            "is plain text. Refine a language of nested values: L[json], or a "
+            "record language such as L[myapp.Comment]")
     base = _row_base(language)
     if base is not None:
         from .schema.structure import record_measures

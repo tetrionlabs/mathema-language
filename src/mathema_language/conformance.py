@@ -4,7 +4,7 @@
 call with one of its schema objects. The package's own adaptors pass
 them in this package's tests.
 
-`row_adaptor_problems(obj)` lists every way the record language of
+`record_adaptor_problems(obj)` lists every way the record language of
 `obj` falls short, empty when there is none. It checks that an adaptor in the registry returns a language for `obj`
 (or that the `adapt` given does, and the registry agrees unless
 `registered=False`), that the language satisfies mathema's `Language`
@@ -72,7 +72,7 @@ def _fields_problems(language: Any) -> list[str]:
     return out
 
 
-def row_adaptor_problems(obj: Any, *, adapt: Callable[[Any], Any] | None = None,
+def record_adaptor_problems(obj: Any, *, adapt: Callable[[Any], Any] | None = None,
                          registered: bool = True, samples: int = 50,
                          outside_draws: int = 20, seed: int = 0) -> list[str]:
     """Every way the row language of `obj` fails the adaptor contract,
@@ -84,7 +84,7 @@ def row_adaptor_problems(obj: Any, *, adapt: Callable[[Any], Any] | None = None,
     from_registry = adapt_row(obj) if check_registry else None
     language = adapt(obj) if adapt is not None else from_registry
     if language is None:
-        return [f"no adaptor returns a row language for {obj!r}"]
+        return [f"no adaptor returns a record language for {obj!r}"]
     out = [f"Language protocol: {p}" for p in language_problems(language)]
     if getattr(language, "kind", None) != "row":
         out.append(f"kind is {getattr(language, 'kind', None)!r}, not 'row'")
@@ -167,4 +167,4 @@ def foreign_object_problems(adapt: Callable[[Any], Any], *, own_package: str | N
     return out
 
 
-__all__ = ["FOREIGN", "foreign_object_problems", "row_adaptor_problems"]
+__all__ = ["FOREIGN", "foreign_object_problems", "record_adaptor_problems"]

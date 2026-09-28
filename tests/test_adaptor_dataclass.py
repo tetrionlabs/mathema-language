@@ -9,7 +9,10 @@ from typing import Annotated
 import pytest
 from annotated_types import Ge, Le, MaxLen
 
-from mathema_language.conformance import foreign_object_problems, row_adaptor_problems
+from mathema_language.conformance import (
+    foreign_object_problems,
+    record_adaptor_problems,
+)
 from mathema_language.schema.adaptors.dataclass import adapt
 
 
@@ -22,7 +25,7 @@ class Line:
 
 
 def test_passes_the_conformance_checks():
-    assert row_adaptor_problems(Line, adapt=adapt) == []
+    assert record_adaptor_problems(Line, adapt=adapt) == []
     language = adapt(Line)
     assert type(language.ecosystem).__name__ == "AttributeEcosystem"
 

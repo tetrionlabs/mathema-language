@@ -30,8 +30,8 @@ def test_without_jsonschema_a_schema_is_refused_with_the_extra(monkeypatch):
 
 def test_passes_the_conformance_checks():
     pytest.importorskip("jsonschema")
-    from mathema_language.conformance import row_adaptor_problems
-    assert row_adaptor_problems(ORDER_SCHEMA, adapt=adapt) == []
+    from mathema_language.conformance import record_adaptor_problems
+    assert record_adaptor_problems(ORDER_SCHEMA, adapt=adapt) == []
     language = adapt(ORDER_SCHEMA)
     assert type(language.ecosystem).__name__ == "JsonSchemaEcosystem"
 

@@ -50,10 +50,10 @@ EXPECTED = {
     "language_closure_rendered": "holds",
     "language_token_absent": "holds",
     "language_token_present": ("falsified", "('>'): '&' is in f(s)"),
-    "row_lift_sign": "proven",
-    "row_unbounded_field": ("falsified", "vs 100"),
-    "row_length_field": "proven",
-    "row_length_field_tight": ("falsified", "10 vs 9"),
+    "record_lift_sign": "proven",
+    "record_unbounded_field": ("falsified", "vs 100"),
+    "record_length_field": "proven",
+    "record_length_field_tight": ("falsified", "10 vs 9"),
     "path_every_element": "holds",
     "path_every_element_unbound": ("falsified", "vs 3"),
     "path_nested_present": "holds",
@@ -140,8 +140,8 @@ def test_installed_the_rows_join_mathema_s_lexicon():
 
 #: the route each proven row is proven on
 PROVEN_ROUTES = {
-    "row_lift_sign": "derive",
-    "row_length_field": "derive",
+    "record_lift_sign": "derive",
+    "record_length_field": "derive",
     "adaptor_pydantic_proven": "derive",
     "adaptor_sqlalchemy_proven": "derive",
     "adaptor_django_proven": "derive",

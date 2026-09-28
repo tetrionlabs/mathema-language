@@ -67,13 +67,13 @@ LEXICON: dict[str, str] = {
     # containment that fails: the escape character itself
     "language_token_present": 'for s in L[unicode], "&" not in f(s)',
     # a row language: the lift reads the fields' bounds and proves
-    "row_lift_sign": "for line in L[mathema_language.lexicon.Line], f(line) >= 0",
+    "record_lift_sign": "for line in L[mathema_language.lexicon.Line], f(line) >= 0",
     # a field with no upper bound
-    "row_unbounded_field": "for line in L[mathema_language.lexicon.Line], f(line) <= 100",
+    "record_unbounded_field": "for line in L[mathema_language.lexicon.Line], f(line) <= 100",
     # a text field read through len is a bounded whole number
-    "row_length_field": "for line in L[mathema_language.lexicon.Line], f(line) <= 10",
+    "record_length_field": "for line in L[mathema_language.lexicon.Line], f(line) <= 10",
     # one under that bound, a valid record is the witness
-    "row_length_field_tight": "for line in L[mathema_language.lexicon.Line], f(line) <= 9",
+    "record_length_field_tight": "for line in L[mathema_language.lexicon.Line], f(line) <= 9",
     # the hazard families over a language
     # paths: bindings that reach into a member through fields and
     # indices, a path past the end or through a missing field reaching
@@ -450,8 +450,8 @@ SECTIONS: dict[str, tuple[str, ...]] = {
     "length": ("language_length_bound_identity", "language_length_bound_one_past"),
     "membership": ("closure_ascii_in_ascii_out", "closure_ascii_leaves", "in_target_language", "language_closure_rendered",
                    "language_token_absent", "language_token_present"),
-    "rows": ("row_lift_sign", "row_unbounded_field", "row_length_field",
-             "row_length_field_tight"),
+    "records": ("record_lift_sign", "record_unbounded_field", "record_length_field",
+             "record_length_field_tight"),
     "paths": ("path_every_element", "path_every_element_unbound", "path_nested_present",
               "path_nested_missing", "path_nested_length", "path_nested_length_tight",
               "path_index_present", "path_index_missing"),
@@ -482,10 +482,10 @@ TAGS: dict[str, tuple[str, ...]] = {
     "language_closure_rendered": ("renderer output", "digits only"),
     "language_token_absent": ("never emits", "token absent", "escape angle brackets"),
     "language_token_present": ("escape character", "ampersand"),
-    "row_lift_sign": ("row", "record", "schema", "dataclass"),
-    "row_unbounded_field": ("unbounded field", "no upper bound"),
-    "row_length_field": ("field length", "maxlen"),
-    "row_length_field_tight": ("longest valid value", "column width"),
+    "record_lift_sign": ("record", "row", "schema", "dataclass"),
+    "record_unbounded_field": ("unbounded field", "no upper bound"),
+    "record_length_field": ("field length", "maxlen"),
+    "record_length_field_tight": ("longest valid value", "column width"),
     "path_every_element": ("every element", "each line", "star path"),
     "path_every_element_unbound": ("nested quantity", "line quantity"),
     "path_nested_present": ("nested field", "required path", "postal code"),
@@ -559,8 +559,8 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "slugify": (slugify, ["in_target_language"]),
     "render_count": (render_count, ["language_closure_rendered"]),
     "escape_html": (escape_html, ["language_token_absent", "language_token_present"]),
-    "line_total": (line_total, ["row_lift_sign", "row_unbounded_field"]),
-    "line_width": (line_width, ["row_length_field", "row_length_field_tight"]),
+    "line_total": (line_total, ["record_lift_sign", "record_unbounded_field"]),
+    "line_width": (line_width, ["record_length_field", "record_length_field_tight"]),
     "is_slug": (is_slug, ["family_length_safe"]),
     "first": (first, ["family_arbitrary_input"]),
     "accent": (accent, ["closure_ascii_leaves"]),

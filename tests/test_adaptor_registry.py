@@ -19,7 +19,7 @@ pytest.importorskip("mathema")
 
 import mathema.languages as languages  # noqa: E402
 
-from mathema_language.conformance import row_adaptor_problems  # noqa: E402
+from mathema_language.conformance import record_adaptor_problems  # noqa: E402
 from mathema_language.schema import PlainEcosystem, RowLanguage  # noqa: E402
 from mathema_language.schema.adaptors import adapt_row  # noqa: E402
 from mathema_language.schema.model import Field, NeutralType, RowSchema  # noqa: E402
@@ -84,6 +84,6 @@ def test_an_adaptor_from_another_package_is_found_and_passes_the_checks(monkeypa
     languages._loaded_adaptors.cache_clear()
     try:
         assert adapt_row(Marker).name == "Marker"
-        assert row_adaptor_problems(Marker, adapt=third_party_adapt) == []
+        assert record_adaptor_problems(Marker, adapt=third_party_adapt) == []
     finally:
         languages._loaded_adaptors.cache_clear()

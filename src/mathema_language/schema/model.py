@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The neutral schema model: the types, constraints, fields, keys and
-row-count bounds every ecosystem's schema is read into, so that one
+"""The neutral schema model: the types, constraints and fields every
+ecosystem's schema is read into, so that one
 generator, one checker and one explain grammar serve them all.
 Everything here is a frozen dataclass; `None` is null in a neutral
 record and NaN is a distinct float value."""
@@ -163,10 +163,10 @@ class Field:
 
 @dataclass(frozen=True)
 class RowSchema:
-    """One record type: its fields in order, whether a row may carry
-    columns the schema does not name (`column_policy` `"exact"` or
-    `"open"`), and opaque row checks, each a predicate over the whole
-    row that membership requires and generation satisfies by
+    """One record type: its fields in order, whether a record may carry
+    fields the schema does not name (`column_policy` `"exact"` or
+    `"open"`), and opaque record checks, each a predicate over the whole
+    record that membership requires and generation satisfies by
     rejection. `definitions` names every record type a `ref` field may
     point at, the schema itself included when it refers to itself."""
     name: str
