@@ -34,12 +34,12 @@ a claim can quantify over exactly them.
 
 | Language | Members | Why it matters |
 |---|---|---|
-| `L[c0]` | the C0 control characters and the space | newlines and NULs that end a header or a record |
-| `L[format]` | zero-width, byte-order and bidirectional marks | text that shows nothing or reorders itself |
+| `L[control]` | the C0 control characters and the space | newlines and NULs that end a header or a record |
+| `L[invisible]` | zero-width, byte-order and bidirectional marks | text that shows nothing or reorders itself |
 | `L[combining]` | combining marks | accents stacked on a letter, more code points than a reader sees |
 | `L[surrogate]` | lone surrogates | a `str` Python holds and no encoding can write |
-| `L[nfkc_folding]` | characters NFKC maps to something else | ligatures, fullwidth letters, `℀` |
-| `L[non_bmp]` | characters past the basic multilingual plane | emoji, two UTF-16 units each |
+| `L[compatibility]` | characters NFKC maps to something else | ligatures, fullwidth letters, `℀` |
+| `L[astral]` | characters past the basic multilingual plane | emoji, two UTF-16 units each |
 
 ## Formats
 

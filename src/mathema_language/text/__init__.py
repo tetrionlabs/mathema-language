@@ -11,16 +11,18 @@ from .alphabets import (
     ALNUM,
     ALPHA,
     ASCII,
-    C0,
+    ASTRAL,
     COMBINING,
+    COMPATIBILITY,
+    CONTROL,
     DIGIT,
-    FORMAT,
+    INVISIBLE,
     LATIN1,
-    NFKC_FOLDING,
-    NON_BMP,
     PRINTABLE,
     SURROGATE,
     UNICODE,
+    UNICODE_ALNUM,
+    UNICODE_ALPHA,
 )
 from .hazards import TEXT_HAZARDS
 from .predicates import (
@@ -40,15 +42,15 @@ from .predicates import (
 #: every text language this package registers, by the name a claim writes
 LANGUAGES: dict[str, TextLanguage] = {
     language.name: language for language in (
-        UNICODE, ASCII, LATIN1, PRINTABLE, DIGIT, ALPHA, ALNUM,
+        UNICODE, ASCII, LATIN1, PRINTABLE, DIGIT, ALPHA, ALNUM, UNICODE_ALPHA, UNICODE_ALNUM,
         IDENTIFIER, JSON, UUID, ISO_DATE, ISO_DATETIME, IPV4, IPV6,
         BASE64, HEX, SLUG, SHELL_SAFE,
-        C0, FORMAT, COMBINING, SURROGATE, NFKC_FOLDING, NON_BMP)}
+        CONTROL, INVISIBLE, COMBINING, SURROGATE, COMPATIBILITY, ASTRAL)}
 
-__all__ = ["adapt", "ALNUM", "ALPHA", "ASCII", "BASE64", "C0", "COMBINING", "DIGIT",
-           "FORMAT", "HEX", "IDENTIFIER", "IPV4", "IPV6", "ISO_DATE",
-           "ISO_DATETIME", "JSON", "LANGUAGES", "LATIN1", "NFKC_FOLDING",
-           "NON_BMP", "PRINTABLE", "SHELL_SAFE", "SLUG", "SURROGATE",
+__all__ = ["adapt", "ALNUM", "ALPHA", "ASCII", "BASE64", "CONTROL", "COMBINING", "DIGIT",
+           "INVISIBLE", "HEX", "IDENTIFIER", "IPV4", "IPV6", "ISO_DATE",
+           "ISO_DATETIME", "JSON", "LANGUAGES", "LATIN1", "COMPATIBILITY",
+           "ASTRAL", "PRINTABLE", "SHELL_SAFE", "SLUG", "SURROGATE", "UNICODE_ALNUM", "UNICODE_ALPHA",
            "TEXT_HAZARDS", "TextLanguage", "UNICODE", "UUID"]
 
 

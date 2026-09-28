@@ -179,6 +179,16 @@
   "unicode": "let α = alpha, ∀ s ∈ L[alpha] \\ {\"\"}|missing, f(s) ∈ L[alpha]",
   "ascii": "for s in L[alpha] \\ {\"\"}|missing, f(s) in L[alpha]"
  },
+ "language_unicode_alpha_closure": {
+  "input": "for s in L[unicode_alpha] \\ {\"\"}, f(s) in L[unicode_alpha]",
+  "unicode": "let x = unicode_alpha, ∀ s ∈ L[unicode_alpha] \\ {\"\"}|missing, f(s) ∈ L[unicode_alpha]",
+  "ascii": "for s in L[unicode_alpha] \\ {\"\"}|missing, f(s) in L[unicode_alpha]"
+ },
+ "language_unicode_alnum_length": {
+  "input": "for s in L[unicode_alnum], len(f(s)) <= len(s)",
+  "unicode": "∀ s ∈ L[unicode_alnum]|missing, len(f(s)) ≤ len(s)",
+  "ascii": "for s in L[unicode_alnum]|missing, len(f(s)) <= len(s)"
+ },
  "language_identifier_closure": {
   "input": "for s in L[identifier], f(s) in L[identifier]",
   "unicode": "let x = identifier, ∀ s ∈ L[identifier]|missing, f(s) ∈ L[identifier]",
@@ -234,15 +244,15 @@
   "unicode": "∀ s ∈ L[printable]|missing, f(s) = ['rm', s]",
   "ascii": "for s in L[printable]|missing, f(s) = ['rm', s]"
  },
- "language_c0_header_injection": {
-  "input": "for s in L[c0], \"\\n\" not in f(s)",
-  "unicode": "∀ s ∈ L[c0]|missing, '\\n' ∉ f(s)",
-  "ascii": "for s in L[c0]|missing, '\\n' not in f(s)"
+ "language_control_header_injection": {
+  "input": "for s in L[control], \"\\n\" not in f(s)",
+  "unicode": "∀ s ∈ L[control]|missing, '\\n' ∉ f(s)",
+  "ascii": "for s in L[control]|missing, '\\n' not in f(s)"
  },
- "language_format_invisible": {
-  "input": "for s in L[format] \\ {\"\"}, f(s) == True",
-  "unicode": "∀ s ∈ L[format] \\ {\"\"}|missing, f(s) = True",
-  "ascii": "for s in L[format] \\ {\"\"}|missing, f(s) = True"
+ "language_invisible_blank": {
+  "input": "for s in L[invisible] \\ {\"\"}, f(s) == True",
+  "unicode": "∀ s ∈ L[invisible] \\ {\"\"}|missing, f(s) = True",
+  "ascii": "for s in L[invisible] \\ {\"\"}|missing, f(s) = True"
  },
  "language_combining_stripped": {
   "input": "for s in L[combining], f(s) == \"\"",
@@ -254,15 +264,15 @@
   "unicode": "∀ s ∈ L[surrogate]|missing, s is encoding safe",
   "ascii": "for s in L[surrogate]|missing, is_encoding_safe(s)"
  },
- "language_nfkc_folding_key": {
-  "input": "let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[nfkc_folding] \\ {\"\"}, f(nfkc(s)) == f(s)",
-  "unicode": "let nfkc = mathema_language.vocabulary.text.nfkc, ∀ s ∈ L[nfkc_folding] \\ {\"\"}|missing, f(nfkc(s)) = f(s)",
-  "ascii": "let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[nfkc_folding] \\ {\"\"}|missing, f(nfkc(s)) = f(s)"
+ "language_compatibility_key": {
+  "input": "let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[compatibility] \\ {\"\"}, f(nfkc(s)) == f(s)",
+  "unicode": "let nfkc = mathema_language.vocabulary.text.nfkc, ∀ s ∈ L[compatibility] \\ {\"\"}|missing, f(nfkc(s)) = f(s)",
+  "ascii": "let nfkc = mathema_language.vocabulary.text.nfkc, for s in L[compatibility] \\ {\"\"}|missing, f(nfkc(s)) = f(s)"
  },
- "language_non_bmp_utf16": {
-  "input": "for s in L[non_bmp] \\ {\"\"}, f(s) == 2 * len(s)",
-  "unicode": "∀ s ∈ L[non_bmp] \\ {\"\"}|missing, f(s) = 2*len(s)",
-  "ascii": "for s in L[non_bmp] \\ {\"\"}|missing, f(s) = 2*len(s)"
+ "language_astral_utf16": {
+  "input": "for s in L[astral] \\ {\"\"}, f(s) == 2 * len(s)",
+  "unicode": "∀ s ∈ L[astral] \\ {\"\"}|missing, f(s) = 2*len(s)",
+  "ascii": "for s in L[astral] \\ {\"\"}|missing, f(s) = 2*len(s)"
  },
  "family_excluded_outside_domain": {
   "input": "for s in L[uuid], excluded_outside_domain(s)",

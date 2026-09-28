@@ -23,12 +23,12 @@ The examples on this page are the shop's text helpers, from
 | `L[ascii]` | strings over the 128 ASCII code points | protocols and formats that are ASCII by definition |
 | `L[latin-1]` | strings the latin-1 codec encodes | legacy encodings, HTTP header values |
 | `L[printable]` | what `str.isprintable` accepts | text meant to be shown or logged |
-| `L[c0]` | the control characters and the space | where a newline or NUL is the danger |
-| `L[format]` | zero-width, byte-order and bidirectional marks | text that looks empty or reorders itself |
+| `L[control]` | the control characters and the space | where a newline or NUL is the danger |
+| `L[invisible]` | zero-width, byte-order and bidirectional marks | text that looks empty or reorders itself |
 | `L[combining]` | combining marks | accents stacked on a letter |
 | `L[surrogate]` | lone surrogates | code points no encoding can write |
-| `L[nfkc_folding]` | characters NFKC normalises to something else | ligatures, fullwidth forms, `℀` |
-| `L[non_bmp]` | characters past the basic multilingual plane | emoji and rarer scripts |
+| `L[compatibility]` | characters NFKC normalises to something else | ligatures, fullwidth forms, `℀` |
+| `L[astral]` | characters past the basic multilingual plane | emoji and rarer scripts |
 
 Every one of them includes the empty string, the way a character class
 repeated any number of times does; `L[unicode] \ {""}` leaves it out.
@@ -94,7 +94,7 @@ let nfkc = mathema_language.vocabulary.text.nfkc, for name in L[unicode], f(nfkc
 ```
 
 `℀` normalises to the three characters `a/c`, and `username_key` never
-normalises, so the two register as different accounts. `L[format]` is
+normalises, so the two register as different accounts. `L[invisible]` is
 the language of characters that are there but show nothing, which is
 where a check for an empty name goes wrong:
 
@@ -106,7 +106,7 @@ def is_blank(name: str) -> bool:
 
 ```text
 f = is_blank
-for name in L[format] \ {""}, f(name) == True
+for name in L[invisible] \ {""}, f(name) == True
     falsified   ('\u200b'): False vs True
 ```
 
@@ -164,7 +164,7 @@ f = js_length
 for text in L[printable], f(text) == len(text)
     falsified   ('😀'): 2 vs 1
 
-for text in L[non_bmp] \ {""}, f(text) == 2 * len(text)
+for text in L[astral] \ {""}, f(text) == 2 * len(text)
     holds
 ```
 

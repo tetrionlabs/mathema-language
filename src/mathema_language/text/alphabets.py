@@ -113,28 +113,42 @@ DIGIT = TextLanguage(
     "digit", char_ok=_is_digit, pool=string.digits, simplest="0",
     outside_pool="a -.\u0663", schema={"pattern": "^[0-9]*$"})
 
-#: every string of letters, `str.isalpha` character by character
+#: every string of ASCII letters
 ALPHA = TextLanguage(
-    "alpha", char_ok=_is_alpha, pool=_LETTERS,
+    "alpha", char_ok=lambda c: c in string.ascii_letters, pool=string.ascii_letters,
+    outside_pool="1 -_\u00e9", schema={"pattern": "^[A-Za-z]*$"})
+
+#: every string of ASCII letters and digits
+ALNUM = TextLanguage(
+    "alnum", char_ok=lambda c: c in string.ascii_letters or c in string.digits,
+    pool=string.ascii_letters + string.digits, outside_pool=" -_.\u00e9",
+    schema={"pattern": "^[A-Za-z0-9]*$"})
+
+#: every string of letters in any script, `str.isalpha` character by
+#: character
+UNICODE_ALPHA = TextLanguage(
+    "unicode_alpha", char_ok=_is_alpha, pool=_LETTERS,
     categories=_LETTER_CATEGORIES, planes=(0, 0, 1), outside_pool="1 -_")
 
-#: every string of letters and digits, `str.isalnum` character by character
-ALNUM = TextLanguage(
-    "alnum", char_ok=_is_alnum, pool=_LETTERS + string.digits,
+#: every string of letters and digits in any script, `str.isalnum`
+#: character by character
+UNICODE_ALNUM = TextLanguage(
+    "unicode_alnum", char_ok=_is_alnum, pool=_LETTERS + string.digits,
     categories=(*_LETTER_CATEGORIES, *_NUMBER_CATEGORIES), planes=(0, 0, 1),
     outside_pool=" -_.")
 
-# the hazard sub-alphabets
+# the alphabets of characters code usually gets wrong
 
-#: the C0 control code points and the space, 0x00 to 0x20
-C0 = TextLanguage(
-    "c0", char_ok=_is_c0, pool="".join(chr(c) for c in range(0x21)),
+#: the control characters and the space, 0x00 to 0x20: newlines, NUL
+CONTROL = TextLanguage(
+    "control", char_ok=_is_c0, pool="".join(chr(c) for c in range(0x21)),
     simplest="\x00", outside_pool="a1")
 
-#: the format characters (category Cf): zero-width joiners and spaces,
-#: the byte-order mark, the bidirectional controls, the tag characters
-FORMAT = TextLanguage(
-    "format", char_ok=_is_format, pool="\u200b\u200d\u2060\ufeff\u202e\u202a\u061c",
+#: characters that show nothing (Unicode category Cf): zero-width
+#: joiners and spaces, the byte-order mark, the bidirectional controls,
+#: the tag characters
+INVISIBLE = TextLanguage(
+    "invisible", char_ok=_is_format, pool="\u200b\u200d\u2060\ufeff\u202e\u202a\u061c",
     categories=("Cf",), planes=(0, 0, 14), simplest="\u200b", outside_pool="a")
 
 #: the combining marks (categories Mn, Mc, Me)
@@ -151,18 +165,19 @@ SURROGATE = TextLanguage(
 
 #: the characters whose NFKC form differs from themselves: ligatures,
 #: fullwidth forms, superscripts, circled numbers, compatibility ideographs
-NFKC_FOLDING = TextLanguage(
-    "nfkc_folding", char_ok=_folds_under_nfkc,
+COMPATIBILITY = TextLanguage(
+    "compatibility", char_ok=_folds_under_nfkc,
     pool="\ufb01\u2100\uff03\u00b2\u2460\u3392\ufe13\u01c6\u2160\u33a1",
     simplest="\ufb01", outside_pool="a1")
 
-#: the characters past the basic multilingual plane
-NON_BMP = TextLanguage(
-    "non_bmp", char_ok=_is_non_bmp,
+#: the characters past U+FFFF, the astral planes: most emoji, rarer
+#: scripts, two UTF-16 units each
+ASTRAL = TextLanguage(
+    "astral", char_ok=_is_non_bmp,
     pool="\U0001f642\U0001d120\U00010000\U0001f4a9\U00020000\U0001f3f4",
     categories=(*_LETTER_CATEGORIES, *_SYMBOL_CATEGORIES, *_NUMBER_CATEGORIES),
     planes=(1, 1, 2, 15, 16), simplest="\U00010000", outside_pool="a")
 
-__all__ = ["ALNUM", "ALPHA", "ASCII", "C0", "COMBINING", "DIGIT", "FORMAT",
-           "LATIN1", "NFKC_FOLDING", "NON_BMP", "PRINTABLE", "SURROGATE",
-           "UNICODE"]
+__all__ = ["ALNUM", "ALPHA", "ASCII", "ASTRAL", "COMBINING", "COMPATIBILITY", "CONTROL",
+           "DIGIT", "INVISIBLE", "LATIN1", "PRINTABLE", "SURROGATE", "UNICODE",
+           "UNICODE_ALNUM", "UNICODE_ALPHA"]

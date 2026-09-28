@@ -14,20 +14,22 @@ from mathema_language.text.alphabets import (
     ALNUM,
     ALPHA,
     ASCII,
-    C0,
+    ASTRAL,
     COMBINING,
+    COMPATIBILITY,
+    CONTROL,
     DIGIT,
-    FORMAT,
+    INVISIBLE,
     LATIN1,
-    NFKC_FOLDING,
-    NON_BMP,
     PRINTABLE,
     SURROGATE,
     UNICODE,
+    UNICODE_ALNUM,
+    UNICODE_ALPHA,
 )
 
-ALPHABETS = [UNICODE, ASCII, LATIN1, PRINTABLE, DIGIT, ALPHA, ALNUM,
-             C0, FORMAT, COMBINING, SURROGATE, NFKC_FOLDING, NON_BMP]
+ALPHABETS = [UNICODE, ASCII, LATIN1, PRINTABLE, DIGIT, ALPHA, ALNUM, UNICODE_ALPHA, UNICODE_ALNUM,
+             CONTROL, INVISIBLE, COMBINING, SURROGATE, COMPATIBILITY, ASTRAL]
 
 
 @pytest.mark.parametrize("language", list(LANGUAGES.values()), ids=lambda lang: lang.name)
@@ -96,12 +98,12 @@ def test_digit_is_the_ten_ascii_digits():
 
 
 def test_the_hazard_sub_alphabets_are_what_they_say():
-    assert C0.contains("\x00\x1f ") and not C0.contains("a")
-    assert FORMAT.contains("\u200b\ufeff\u202e") and not FORMAT.contains("a")
+    assert CONTROL.contains("\x00\x1f ") and not CONTROL.contains("a")
+    assert INVISIBLE.contains("\u200b\ufeff\u202e") and not INVISIBLE.contains("a")
     assert COMBINING.contains("\u0301\u0308") and not COMBINING.contains("e")
     assert SURROGATE.contains("\ud800\udfff") and not SURROGATE.contains("a")
-    assert NFKC_FOLDING.contains("\ufb01\u2100") and not NFKC_FOLDING.contains("a")
-    assert NON_BMP.contains("\U0001f642") and not NON_BMP.contains("\uffff")
+    assert COMPATIBILITY.contains("\ufb01\u2100") and not COMPATIBILITY.contains("a")
+    assert ASTRAL.contains("\U0001f642") and not ASTRAL.contains("\uffff")
 
 
 def test_explain_names_the_offending_character():
