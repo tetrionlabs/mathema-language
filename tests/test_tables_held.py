@@ -30,7 +30,7 @@ def test_the_adaptors_export_no_table_reader():
 
 def test_the_held_table_code_is_still_importable_internally():
     from mathema_language.schema._tables import FrameLanguage, TableEcosystem, frame_of
-    assert callable(frame_of) and FrameLanguage.kind == "frame"
+    assert callable(frame_of) and FrameLanguage.kind == "table"
     assert "_build_frame" in dir(TableEcosystem)
 
 

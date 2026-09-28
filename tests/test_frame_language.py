@@ -44,7 +44,7 @@ ORDERS = frame_of(Order, primary_key="id", row_count=(1, 6))
 
 def test_the_language_passes_the_conformance_checks():
     assert language_problems(ORDERS) == []
-    assert ORDERS.kind == "frame" and ORDERS.level == "schema"
+    assert ORDERS.kind == "table" and ORDERS.level == "schema"
     assert ORDERS.name == "Order_frame" and ORDERS.fields() is None
     assert ORDERS.to_json()["x-mathema"] == {"primary_key": ["id"]}
 
@@ -110,7 +110,7 @@ def test_frame_of_bound_to_a_module_name_resolves_in_a_claim():
         assert p.verdict == "holds", (p.verdict, p.note, p.counterexample)
         assert p.grammar == "mathema/language"
         described = p.meta["mathema.language"]["orders"][0]
-        assert described["source"] == "object" and described["kind"] == "frame"
+        assert described["source"] == "object" and described["kind"] == "table"
         (q,) = check_conjectures(revenue, [claim(
             "for orders in L[orders_schemas.ORDERS], f(orders) <= 100", route="probe")])
         assert q.verdict == "falsified", (q.verdict, q.note)

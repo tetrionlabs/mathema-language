@@ -48,7 +48,7 @@ class FrameLanguage:
     checked when the parent tables are supplied to `validate_frame`
     and generated from a fresh parent otherwise."""
 
-    kind = "frame"
+    kind = "table"
     level = "schema"
 
     def __init__(self, table: TableSchema, ecosystem: TableEcosystem,
