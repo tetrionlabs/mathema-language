@@ -258,6 +258,26 @@ def draw(rng: random.Random, f: Field) -> Any:
     return value
 
 
+def simpler(f: Field, current: Any) -> list[Any]:
+    """Values of the field between its simplest member and `current`,
+    nearest the simplest first: the simplest itself, then for a number
+    the midpoint and, for an integer, one less than `current`. Each
+    still has to be checked against the field."""
+    simple = simplest(f)
+    out: list[Any] = [simple]
+    if isinstance(current, bool) or isinstance(simple, bool):
+        return out
+    if isinstance(current, int) and isinstance(simple, int):
+        for v in (simple + (current - simple) // 2, current - 1 if current > simple else current + 1):
+            if v != current and v not in out:
+                out.append(v)
+    elif isinstance(current, float) and isinstance(simple, (int, float)) and current == current:
+        mid = simple + (current - simple) / 2
+        if mid != current:
+            out.append(mid)
+    return out
+
+
 def simplest(f: Field) -> Any:
     """The member shrinking substitutes first: the lowest bound or
     zero, the empty text, the first level, the epoch, an empty list;

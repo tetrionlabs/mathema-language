@@ -259,9 +259,45 @@ class RowLanguage:
         return None
 
     @_within_budget
+    def _record_type(self, t: Any) -> tuple[Any, Any] | None:
+        """`(fields, construct)` of a struct or referenced record type,
+        or None for any other type."""
+        if t.base == "struct":
+            return t.fields or (), t.construct
+        if t.base == "ref" and t.ref is not None:
+            try:
+                target = self.schema.definition(t.ref)
+            except KeyError:
+                return None
+            return target.fields, target.construct or t.construct
+        return None
+
+    @_within_budget
+    def _simpler_records(self, record: tuple[Any, Any], element: Any) -> list[Any]:
+        """`element`, a record of the given type, with each of its fields
+        in turn moved to its simplest member."""
+        fields, construct = record
+        present = {g.name: _read(element, g.name)[1] for g in fields if _read(element, g.name)[0]}
+        out = []
+        for g in fields:
+            if g.name not in present:
+                continue
+            for simple in _gen.simpler(g, present[g.name]):
+                if _gen._same(present[g.name], simple):
+                    continue
+                values = {**present, g.name: simple}
+                try:
+                    out.append(construct(**values) if construct is not None else values)
+                except Exception:
+                    continue
+        return out
+
     def shrink(self, value: Any) -> Iterable[Any]:
-        """Records with one field moved to its simplest member, each
-        a member itself."""
+        """Records one step simpler, each a member itself: a subtree
+        hoisted into the root's place, a list element dropped, a record
+        in a list with one of its own fields made simpler, or one field
+        moved toward its simplest member (the simplest itself, then for
+        a number the midpoint and one step)."""
         if not self.contains(value):
             return ()
         out: list[Any] = []
@@ -289,21 +325,38 @@ class RowLanguage:
                     if self.contains(row):
                         out.append(row)
         for f in self.schema.fields:
+            current = present_values.get(f.name)
+            item = f.type.item if f.type.base == "list" else None
+            record = self._record_type(item) if item is not None else None
+            if record is None or not isinstance(current, list):
+                continue
+            # a record in the list with one of its own fields simplified
+            for i, element in enumerate(current[:8]):
+                for smaller in self._simpler_records(record, element):
+                    values = dict(present_values)
+                    values[f.name] = [*current[:i], smaller, *current[i + 1:]]
+                    try:
+                        row = self._build(values)
+                    except Exception:
+                        continue
+                    if self.contains(row):
+                        out.append(row)
+        for f in self.schema.fields:
             present, current = _read(value, f.name)
             if not present:
                 continue
-            simple = _gen.simplest(f)
-            if _gen._same(current, simple):
-                continue
-            values = {g.name: _read(value, g.name)[1] for g in self.schema.fields
-                      if _read(value, g.name)[0]}
-            values[f.name] = simple
-            try:
-                row = self._build(values)
-            except Exception:
-                continue
-            if self.contains(row):
-                out.append(row)
+            for simple in _gen.simpler(f, current):
+                if _gen._same(current, simple):
+                    continue
+                values = {g.name: _read(value, g.name)[1] for g in self.schema.fields
+                          if _read(value, g.name)[0]}
+                values[f.name] = simple
+                try:
+                    row = self._build(values)
+                except Exception:
+                    continue
+                if self.contains(row):
+                    out.append(row)
         return out
 
     def fields(self) -> dict[str, Any] | None:
