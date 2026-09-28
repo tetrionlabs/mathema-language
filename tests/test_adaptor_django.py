@@ -9,15 +9,16 @@ import pytest
 pytest.importorskip("django")
 
 from mathema_language.conformance import (  # noqa: E402
-    assert_row_adaptor,
     foreign_object_problems,
+    row_adaptor_problems,
 )
 from mathema_language.schema.adaptors.django import adapt  # noqa: E402
 from tests import _django_shapes as shapes  # noqa: E402
 
 
 def test_passes_the_conformance_checks():
-    language = assert_row_adaptor(shapes.OrderModelDj, adapt=adapt)
+    assert row_adaptor_problems(shapes.OrderModelDj, adapt=adapt) == []
+    language = adapt(shapes.OrderModelDj)
     assert type(language.ecosystem).__name__ == "DjangoEcosystem"
 
 

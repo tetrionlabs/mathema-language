@@ -4,9 +4,8 @@
 call with one of its schema objects. The package's own adaptors pass
 them in this package's tests.
 
-`row_adaptor_problems(obj)` lists every way the row language of `obj`
-falls short, and `assert_row_adaptor(obj)` raises with that list. It
-checks that an adaptor in the registry returns a language for `obj`
+`row_adaptor_problems(obj)` lists every way the record language of
+`obj` falls short, empty when there is none. It checks that an adaptor in the registry returns a language for `obj`
 (or that the `adapt` given does, and the registry agrees unless
 `registered=False`), that the language satisfies mathema's `Language`
 protocol and has kind `row`, that every hazard and `samples` random
@@ -31,7 +30,7 @@ from ._surface import LanguageRef, domain_bound_from_json, language_problems
 from .schema.adaptors import adapt_row
 
 #: an explanation path: fields and items, composed
-PATH = re.compile(r"^(\.[A-Za-z_][A-Za-z0-9_]*|\[\d+\])*$")
+_PATH = re.compile(r"^(\.[A-Za-z_][A-Za-z0-9_]*|\[\d+\])*$")
 
 _BOUND_TYPES = (
     type(domain_bound_from_json({"lo": 0.0, "hi": 1.0, "closed_lo": True, "closed_hi": True})),
@@ -128,7 +127,7 @@ def row_adaptor_problems(obj: Any, *, adapt: Callable[[Any], Any] | None = None,
         if not explained:
             out.append(f"outside value {bad!r} has no explanation")
         for problem in explained:
-            if not PATH.match(problem.path):
+            if not _PATH.match(problem.path):
                 out.append(f"explanation path {problem.path!r} does not follow the path grammar")
     for value in members[:5]:
         for smaller in language.shrink(value):
@@ -136,17 +135,6 @@ def row_adaptor_problems(obj: Any, *, adapt: Callable[[Any], Any] | None = None,
                 out.append(f"shrinking {value!r} left the language: {smaller!r}")
     out.extend(_fields_problems(language))
     return out
-
-
-def assert_row_adaptor(obj: Any, **kwargs: Any) -> Any:
-    """`row_adaptor_problems(obj, **kwargs)` as an assertion: raises
-    `AssertionError` listing every problem, else returns the row
-    language."""
-    problems = row_adaptor_problems(obj, **kwargs)
-    if problems:
-        raise AssertionError("row adaptor does not conform:\n  " + "\n  ".join(problems))
-    adapt = kwargs.get("adapt")
-    return adapt(obj) if adapt is not None else adapt_row(obj)
 
 
 #: objects no row adaptor should claim
@@ -179,4 +167,4 @@ def foreign_object_problems(adapt: Callable[[Any], Any], *, own_package: str | N
     return out
 
 
-__all__ = ["FOREIGN", "PATH", "assert_row_adaptor", "foreign_object_problems", "row_adaptor_problems"]
+__all__ = ["FOREIGN", "foreign_object_problems", "row_adaptor_problems"]

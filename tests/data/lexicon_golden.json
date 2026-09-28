@@ -295,54 +295,54 @@
   "ascii": "dim(f(title), 0) <= 60"
  },
  "adaptor_pydantic_proven": {
-  "input": "for form in L[mathema_language.lexicon_models.forms.SignupForm], 0 <= f(form) <= 5",
-  "unicode": "∀ form ∈ L[mathema_language.lexicon_models.forms.SignupForm]|missing, 0 ≤ f(form) ≤ 5",
-  "ascii": "for form in L[mathema_language.lexicon_models.forms.SignupForm]|missing, 0 <= f(form) <= 5"
+  "input": "for form in L[mathema_language._lexicon_models.forms.SignupForm], 0 <= f(form) <= 5",
+  "unicode": "∀ form ∈ L[mathema_language._lexicon_models.forms.SignupForm]|missing, 0 ≤ f(form) ≤ 5",
+  "ascii": "for form in L[mathema_language._lexicon_models.forms.SignupForm]|missing, 0 <= f(form) <= 5"
  },
  "adaptor_pydantic_falsified": {
-  "input": "for form in L[mathema_language.lexicon_models.forms.SignupForm], f(form) <= 4",
-  "unicode": "∀ form ∈ L[mathema_language.lexicon_models.forms.SignupForm]|missing, f(form) ≤ 4",
-  "ascii": "for form in L[mathema_language.lexicon_models.forms.SignupForm]|missing, f(form) <= 4"
+  "input": "for form in L[mathema_language._lexicon_models.forms.SignupForm], f(form) <= 4",
+  "unicode": "∀ form ∈ L[mathema_language._lexicon_models.forms.SignupForm]|missing, f(form) ≤ 4",
+  "ascii": "for form in L[mathema_language._lexicon_models.forms.SignupForm]|missing, f(form) <= 4"
  },
  "adaptor_sqlalchemy_proven": {
-  "input": "for order in L[mathema_language.lexicon_models.db.Order], f(order) >= 0",
-  "unicode": "∀ order ∈ L[mathema_language.lexicon_models.db.Order]|missing, f(order) ≥ 0",
-  "ascii": "for order in L[mathema_language.lexicon_models.db.Order]|missing, f(order) >= 0"
+  "input": "for order in L[mathema_language._lexicon_models.db.Order], f(order) >= 0",
+  "unicode": "∀ order ∈ L[mathema_language._lexicon_models.db.Order]|missing, f(order) ≥ 0",
+  "ascii": "for order in L[mathema_language._lexicon_models.db.Order]|missing, f(order) >= 0"
  },
  "adaptor_sqlalchemy_falsified": {
-  "input": "for order in L[mathema_language.lexicon_models.db.Order], f(order) <= 10000",
-  "unicode": "∀ order ∈ L[mathema_language.lexicon_models.db.Order]|missing, f(order) ≤ 10000",
-  "ascii": "for order in L[mathema_language.lexicon_models.db.Order]|missing, f(order) <= 10000"
+  "input": "for order in L[mathema_language._lexicon_models.db.Order], f(order) <= 10000",
+  "unicode": "∀ order ∈ L[mathema_language._lexicon_models.db.Order]|missing, f(order) ≤ 10000",
+  "ascii": "for order in L[mathema_language._lexicon_models.db.Order]|missing, f(order) <= 10000"
  },
  "adaptor_django_proven": {
-  "input": "for review in L[mathema_language.lexicon_models.reviews.Review], 0 < f(review) <= 1",
-  "unicode": "∀ review ∈ L[mathema_language.lexicon_models.reviews.Review]|missing, 0 < f(review) ≤ 1",
-  "ascii": "for review in L[mathema_language.lexicon_models.reviews.Review]|missing, 0 < f(review) <= 1"
+  "input": "for review in L[mathema_language._lexicon_models.reviews.Review], 0 < f(review) <= 1",
+  "unicode": "∀ review ∈ L[mathema_language._lexicon_models.reviews.Review]|missing, 0 < f(review) ≤ 1",
+  "ascii": "for review in L[mathema_language._lexicon_models.reviews.Review]|missing, 0 < f(review) <= 1"
  },
  "adaptor_django_falsified": {
-  "input": "for review in L[mathema_language.lexicon_models.reviews.Review], f(review) >= 0.5",
-  "unicode": "∀ review ∈ L[mathema_language.lexicon_models.reviews.Review]|missing, f(review) ≥ 0.500000000000000",
-  "ascii": "for review in L[mathema_language.lexicon_models.reviews.Review]|missing, f(review) >= 0.500000000000000"
+  "input": "for review in L[mathema_language._lexicon_models.reviews.Review], f(review) >= 0.5",
+  "unicode": "∀ review ∈ L[mathema_language._lexicon_models.reviews.Review]|missing, f(review) ≥ 0.500000000000000",
+  "ascii": "for review in L[mathema_language._lexicon_models.reviews.Review]|missing, f(review) >= 0.500000000000000"
  },
  "adaptor_jsonschema_proven": {
-  "input": "for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT], f(event) >= 30",
-  "unicode": "∀ event ∈ L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) ≥ 30",
-  "ascii": "for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) >= 30"
+  "input": "for event in L[mathema_language._lexicon_models.webhooks.CHARGE_EVENT], f(event) >= 30",
+  "unicode": "∀ event ∈ L[mathema_language._lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) ≥ 30",
+  "ascii": "for event in L[mathema_language._lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) >= 30"
  },
  "adaptor_jsonschema_falsified": {
-  "input": "for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT], f(event) in {\"billing\", \"alerts\"}",
-  "unicode": "∀ event ∈ L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) ∈ {\"billing\", \"alerts\"}",
-  "ascii": "for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) in {\"billing\", \"alerts\"}"
+  "input": "for event in L[mathema_language._lexicon_models.webhooks.CHARGE_EVENT], f(event) in {\"billing\", \"alerts\"}",
+  "unicode": "∀ event ∈ L[mathema_language._lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) ∈ {\"billing\", \"alerts\"}",
+  "ascii": "for event in L[mathema_language._lexicon_models.webhooks.CHARGE_EVENT]|missing, f(event) in {\"billing\", \"alerts\"}"
  },
  "adaptor_typeddict_proven": {
-  "input": "for hit in L[mathema_language.lexicon_models.search.SearchHit], f(hit) >= 0",
-  "unicode": "∀ hit ∈ L[mathema_language.lexicon_models.search.SearchHit]|missing, f(hit) ≥ 0",
-  "ascii": "for hit in L[mathema_language.lexicon_models.search.SearchHit]|missing, f(hit) >= 0"
+  "input": "for hit in L[mathema_language._lexicon_models.search.SearchHit], f(hit) >= 0",
+  "unicode": "∀ hit ∈ L[mathema_language._lexicon_models.search.SearchHit]|missing, f(hit) ≥ 0",
+  "ascii": "for hit in L[mathema_language._lexicon_models.search.SearchHit]|missing, f(hit) >= 0"
  },
  "adaptor_typeddict_falsified": {
-  "input": "for hit in L[mathema_language.lexicon_models.search.SearchHit], f(hit) <= 10",
-  "unicode": "∀ hit ∈ L[mathema_language.lexicon_models.search.SearchHit]|missing, f(hit) ≤ 10",
-  "ascii": "for hit in L[mathema_language.lexicon_models.search.SearchHit]|missing, f(hit) <= 10"
+  "input": "for hit in L[mathema_language._lexicon_models.search.SearchHit], f(hit) <= 10",
+  "unicode": "∀ hit ∈ L[mathema_language._lexicon_models.search.SearchHit]|missing, f(hit) ≤ 10",
+  "ascii": "for hit in L[mathema_language._lexicon_models.search.SearchHit]|missing, f(hit) <= 10"
  },
  "family_length_safe": {
   "input": "for s in L[slug], is_length_safe(s)",

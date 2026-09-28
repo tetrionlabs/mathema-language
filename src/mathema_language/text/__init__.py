@@ -6,7 +6,7 @@ by the name in `LANGUAGES`, and the text vocabulary for claims:
 `let nfkc = mathema_language.text.nfkc`."""
 from typing import Any
 
-from .._priority import STRUCTURAL, priority
+from ..adaptor_priority import STRUCTURAL, priority
 from ..vocabulary.text import (
     casefold,
     count,

@@ -63,7 +63,7 @@ def test_no_ecosystem_is_imported_at_module_level():
     # the test below holds the lexicon to that
     offenders = []
     for path in _modules():
-        if "lexicon_models" in path.parts:
+        if "_lexicon_models" in path.parts:
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in _module_level(tree):

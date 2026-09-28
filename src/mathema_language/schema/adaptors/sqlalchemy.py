@@ -10,7 +10,7 @@ import re
 import sys
 from typing import Any
 
-from ..._priority import LIBRARY, priority
+from ...adaptor_priority import LIBRARY, priority
 from ..ecosystems.sqlalchemy import SqlAlchemyEcosystem
 from ..languages import RowLanguage
 from ..model import Constraints, Field, NeutralType, RowSchema

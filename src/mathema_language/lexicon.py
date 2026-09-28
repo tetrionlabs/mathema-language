@@ -130,25 +130,25 @@ LEXICON: dict[str, str] = {
         "let depth = mathema_language.tree.depth, for t in L[mathema_language.lexicon.Branch, depth <= 5], depth(t) == f(t)",
     "adaptor_text_annotation": 'len(f(title)) <= 60',
     "adaptor_pydantic_proven":
-        'for form in L[mathema_language.lexicon_models.forms.SignupForm], 0 <= f(form) <= 5',
+        'for form in L[mathema_language._lexicon_models.forms.SignupForm], 0 <= f(form) <= 5',
     "adaptor_pydantic_falsified":
-        'for form in L[mathema_language.lexicon_models.forms.SignupForm], f(form) <= 4',
+        'for form in L[mathema_language._lexicon_models.forms.SignupForm], f(form) <= 4',
     "adaptor_sqlalchemy_proven":
-        'for order in L[mathema_language.lexicon_models.db.Order], f(order) >= 0',
+        'for order in L[mathema_language._lexicon_models.db.Order], f(order) >= 0',
     "adaptor_sqlalchemy_falsified":
-        'for order in L[mathema_language.lexicon_models.db.Order], f(order) <= 10000',
+        'for order in L[mathema_language._lexicon_models.db.Order], f(order) <= 10000',
     "adaptor_django_proven":
-        'for review in L[mathema_language.lexicon_models.reviews.Review], 0 < f(review) <= 1',
+        'for review in L[mathema_language._lexicon_models.reviews.Review], 0 < f(review) <= 1',
     "adaptor_django_falsified":
-        'for review in L[mathema_language.lexicon_models.reviews.Review], f(review) >= 0.5',
+        'for review in L[mathema_language._lexicon_models.reviews.Review], f(review) >= 0.5',
     "adaptor_jsonschema_proven":
-        'for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT], f(event) >= 30',
+        'for event in L[mathema_language._lexicon_models.webhooks.CHARGE_EVENT], f(event) >= 30',
     "adaptor_jsonschema_falsified":
-        'for event in L[mathema_language.lexicon_models.webhooks.CHARGE_EVENT], f(event) in {"billing", "alerts"}',
+        'for event in L[mathema_language._lexicon_models.webhooks.CHARGE_EVENT], f(event) in {"billing", "alerts"}',
     "adaptor_typeddict_proven":
-        'for hit in L[mathema_language.lexicon_models.search.SearchHit], f(hit) >= 0',
+        'for hit in L[mathema_language._lexicon_models.search.SearchHit], f(hit) >= 0',
     "adaptor_typeddict_falsified":
-        'for hit in L[mathema_language.lexicon_models.search.SearchHit], f(hit) <= 10',
+        'for hit in L[mathema_language._lexicon_models.search.SearchHit], f(hit) <= 10',
     "family_length_safe": "for s in L[slug], is_length_safe(s)",
     "family_encoding_safe": "for s in L[unicode], is_encoding_safe(s)",
     "family_arbitrary_input": "for s in L[unicode], is_arbitrary_input_safe(s)",

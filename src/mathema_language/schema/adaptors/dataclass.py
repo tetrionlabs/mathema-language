@@ -10,7 +10,7 @@ from __future__ import annotations
 import dataclasses
 from typing import Any
 
-from ..._priority import STRUCTURAL, priority
+from ...adaptor_priority import STRUCTURAL, priority
 from ..ecosystems.plain import AttributeEcosystem
 from ..languages import RowLanguage
 from ..model import RowSchema

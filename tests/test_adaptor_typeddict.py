@@ -7,7 +7,7 @@ from typing import Annotated, TypedDict
 
 from annotated_types import Ge, Le, MaxLen
 
-from mathema_language.conformance import assert_row_adaptor, foreign_object_problems
+from mathema_language.conformance import foreign_object_problems, row_adaptor_problems
 from mathema_language.schema.adaptors.typeddict import adapt
 
 
@@ -18,7 +18,8 @@ class LineDict(TypedDict):
 
 
 def test_passes_the_conformance_checks():
-    language = assert_row_adaptor(LineDict, adapt=adapt)
+    assert row_adaptor_problems(LineDict, adapt=adapt) == []
+    language = adapt(LineDict)
     assert type(language.ecosystem).__name__ == "PlainEcosystem"
 
 

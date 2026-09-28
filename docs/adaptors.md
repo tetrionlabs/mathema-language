@@ -26,10 +26,10 @@ raising with a message that says what to do instead.
 
 ## Which adaptor is asked first
 
-mathema asks the adaptors in an explicit order: an adaptor may carry
-`__mathema_adaptor_priority__`, an int, and a higher one is asked first,
-ties going to the entry-point name. The package uses three bands, and an
-adaptor from another package should use the same ones:
+mathema asks the adaptors in an explicit order: a higher priority is
+asked first, ties going to the entry-point name. The package uses three
+bands, and an adaptor from another package marks itself with the same
+ones, `@priority(LIBRARY)` from `mathema_language.adaptor_priority`:
 
 | Priority | For | Here |
 |---|---|---|
@@ -63,6 +63,7 @@ mapping of field names to types:
 ```python
 import sys
 
+from mathema_language.adaptor_priority import LIBRARY, priority
 from mathema_language.schema import (Constraints, Field, NeutralType,
                                      AttributeEcosystem, RowLanguage, RowSchema)
 
@@ -84,17 +85,15 @@ class Line(Spec):
 _BASES = {int: "int", float: "float", str: "string"}
 
 
+@priority(LIBRARY)
 def adapt(obj):
-    """The row language of a `Spec` subclass, or None."""
+    """The record language of a `Spec` subclass, or None."""
     base = getattr(sys.modules.get(__name__), "Spec", None)
     if base is None or not (isinstance(obj, type) and issubclass(obj, base) and obj is not base):
         return None
     fields = tuple(Field(name, NeutralType(_BASES[kind]), constraints=Constraints(min=lo, max=hi))
                    for name, (kind, lo, hi) in obj.SPEC.items())
     return RowLanguage(RowSchema(obj.__name__, fields), AttributeEcosystem(obj), obj.__name__)
-
-
-adapt.__mathema_adaptor_priority__ = 100
 ```
 
 It registers in the library's own `pyproject.toml`:
@@ -115,7 +114,7 @@ validator, `outside` never draws a member and explains itself in the
 path grammar, every shrink stays inside, and `fields()` has the shape
 the derive lift reads. `foreign_object_problems(adapt)` checks the other half:
 `None` for objects that are not the library's, with nothing imported
-along the way. `assert_row_adaptor(obj)` is the first as an assertion.
+along the way. A test asserts that each list is empty.
 In the library's own tests, with the adaptor installed, leave the
 registry check on; here the adaptor is not installed, so it is off:
 

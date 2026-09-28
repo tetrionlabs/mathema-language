@@ -11,7 +11,7 @@ import contextvars
 import importlib.util
 from typing import Any
 
-from ..._priority import DOCUMENT, priority
+from ...adaptor_priority import DOCUMENT, priority
 from ..ecosystems.jsonschema import JsonSchemaEcosystem
 from ..languages import RowLanguage
 from ..model import NO_DEFAULT, Constraints, Field, NeutralType, RowSchema

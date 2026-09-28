@@ -9,7 +9,7 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-from ..._priority import LIBRARY, priority
+from ...adaptor_priority import LIBRARY, priority
 from ..ecosystems.django import DjangoEcosystem
 from ..languages import RowLanguage
 from ..model import Constraints, Field, NeutralType, RowSchema
