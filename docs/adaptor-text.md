@@ -2,7 +2,7 @@
 
 <!-- module: text_models -->
 
-The text adaptor answers two annotations, `str` and `Annotated[str,
+The text adaptor reads two annotations, `str` and `Annotated[str,
 ...]`, and nothing else. `str` is the language of every string,
 `L[unicode]`; an `Annotated[str, ...]` carrying a length marker
 (`MaxLen(80)`, pydantic's `max_length`, and the `min_length` side) is

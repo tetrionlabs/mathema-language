@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The adaptors are ordinary registrations: every one registered under
-`mathema.language_adaptors`, from this package or another, answers not
-mine without importing its ecosystem (checked in a fresh interpreter,
-so an ecosystem imported by an earlier test cannot hide it); they are
-asked in mathema's order, library-specific before document before
-structural; and an adaptor another package registers is found by
-`adapt_row` and held to the same conformance harness."""
+"""The adaptors are ordinary registrations. Every one registered under
+`mathema.language_adaptors`, from this package or another, returns None
+for objects that are not its own without importing its library
+(checked in a fresh interpreter, so a library imported by an earlier
+test cannot hide it). They are asked in mathema's order,
+library-specific before document before structural, and an adaptor
+another package registers is found by `adapt_row` and passes the same
+conformance checks."""
 import json
 import subprocess
 import sys
@@ -29,17 +30,17 @@ REGISTERED = sorted(ep.name for ep in entry_points(group=GROUP))
 _PROBE = """
 import json, sys
 from importlib.metadata import entry_points
-from mathema_language.conformance import FOREIGN, not_mine_problems
+from mathema_language.conformance import FOREIGN, foreign_object_problems
 (ep,) = [e for e in entry_points(group="mathema.language_adaptors") if e.name == sys.argv[1]]
 adapt = ep.load()
 foreign = tuple(x for x in FOREIGN if x is not str) if sys.argv[1] == "text" else FOREIGN
-print(json.dumps(not_mine_problems(adapt)
-                 if sys.argv[1] != "text" else not_mine_problems(adapt, foreign=foreign)))
+print(json.dumps(foreign_object_problems(adapt)
+                 if sys.argv[1] != "text" else foreign_object_problems(adapt, foreign=foreign)))
 """
 
 
 @pytest.mark.parametrize("name", REGISTERED)
-def test_every_registered_adaptor_answers_not_mine_without_importing_its_ecosystem(name):
+def test_every_registered_adaptor_returns_none_for_other_objects_without_importing_its_library(name):
     done = subprocess.run([sys.executable, "-c", _PROBE, name], capture_output=True, text=True,
                           check=True)
     assert json.loads(done.stdout.strip().splitlines()[-1]) == [], (name, done.stdout)
@@ -76,7 +77,7 @@ class _Entry:
         return self._obj
 
 
-def test_an_adaptor_from_another_package_is_found_and_conforms(monkeypatch):
+def test_an_adaptor_from_another_package_is_found_and_passes_the_checks(monkeypatch):
     discovered = languages._discovered_adaptors()
     monkeypatch.setattr(languages, "_discovered_adaptors",
                         lambda: (*discovered, _Entry("marker", third_party_adapt)))

@@ -6,7 +6,7 @@
 The SQLAlchemy adaptor reads a `Table` or a declarative mapped class,
 and its members are dicts (for a `Table`) or instances of the class.
 What the metadata spells plainly is read into the neutral model and
-checked there first; everything else is the database's to decide, by
+checked there first; everything else is left to the database, which decides by
 inserting the record into an in-memory SQLite database built from the
 table's own DDL, so a CHECK constraint the neutral model cannot read
 still decides membership. A mapped class that is also a dataclass

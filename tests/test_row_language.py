@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""A row language over every ecosystem the package reads: it conforms
-to mathema's protocol, every hazard is a member, two hundred samples
+"""A row language over every ecosystem the package reads: it satisfies
+mathema's `Language` protocol, every hazard is a member, two hundred samples
 are members by the ecosystem's own validator, `outside` never is,
 shrinking stays inside, `fields()` states the one-deep bounds, a
 finite schema enumerates, and a schema nothing satisfies says so
@@ -82,7 +82,7 @@ def language(request):
     return lang
 
 
-def test_the_language_conforms(language):
+def test_the_language_passes_the_conformance_checks(language):
     assert language_problems(language) == []
     assert language.kind == "row" and language.level == "schema"
     assert language.render(True) == f"L[{language.name}]"
@@ -187,7 +187,7 @@ def test_a_regex_field_generates_matching_members():
     assert lang.accepted == 50 and lang.rejected == 0
 
 
-def test_the_pydantic_adaptor_answers_not_mine_without_importing_pydantic():
+def test_the_pydantic_adaptor_returns_none_for_other_objects_without_importing_pydantic():
     import subprocess
     import sys as _sys
     code = ("import sys; from mathema_language.schema.adaptors.pydantic import adapt; "

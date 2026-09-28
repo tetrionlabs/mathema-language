@@ -7,7 +7,7 @@ members are that library's records, and there will be many of them, so
 the package's own seven have no privileged path: each is an ordinary
 registration under mathema's `mathema.language_adaptors` entry-point
 group, found through the same registry an adaptor from your package is
-found through, and held to the same conformance harness. The pages
+found through, and passes the same conformance checks. The pages
 beside this one describe the seven: [dataclasses](adaptor-dataclass.md),
 [TypedDicts](adaptor-typeddict.md), [pydantic](adaptor-pydantic.md),
 [JSON Schema](adaptor-jsonschema.md), [SQLAlchemy](adaptor-sqlalchemy.md),
@@ -15,9 +15,9 @@ beside this one describe the seven: [dataclasses](adaptor-dataclass.md),
 
 ## The contract
 
-An adaptor is a callable, `adapt(obj)`, that answers a language for a
+An adaptor is a callable, `adapt(obj)`, that returns a language for a
 schema object of its own library and `None` for anything else, and it
-decides "not mine" without importing its library: if the library was
+decides that an object is not its own without importing its library: if the library was
 never imported, nothing in the process can be one of its objects, so
 `sys.modules.get("mylib")` is the whole test. It may refuse an object
 that is its own but that it cannot read faithfully (a `$ref` it does
@@ -106,24 +106,24 @@ speclib = "speclib.mathema:adapt"
 
 ## Testing it
 
-`mathema_language.conformance` is the harness the package's own
+`mathema_language.conformance` holds the checks the package's own
 adaptors pass. `row_adaptor_problems(obj)` lists every way the language
-of `obj` falls short (empty when it conforms): the registry answers it
-with this adaptor, the language satisfies mathema's protocol, every
+of `obj` falls short, and is empty when there is none: the registry
+returns it through this adaptor, the language satisfies mathema's protocol, every
 hazard and fifty random members are members by the ecosystem's own
 validator, `outside` never draws a member and explains itself in the
 path grammar, every shrink stays inside, and `fields()` has the shape
-the derive lift reads. `not_mine_problems(adapt)` checks the other half:
+the derive lift reads. `foreign_object_problems(adapt)` checks the other half:
 `None` for objects that are not the library's, with nothing imported
-while answering. `assert_row_adaptor(obj)` is the first as an assertion.
+along the way. `assert_row_adaptor(obj)` is the first as an assertion.
 In the library's own tests, with the adaptor installed, leave the
 registry check on; here the adaptor is not installed, so it is off:
 
 ```python
-from mathema_language.conformance import not_mine_problems, row_adaptor_problems
+from mathema_language.conformance import foreign_object_problems, row_adaptor_problems
 
 print(row_adaptor_problems(Line, adapt=adapt, registered=False))
-print(not_mine_problems(adapt))
+print(foreign_object_problems(adapt))
 ```
 
 <!-- output -->

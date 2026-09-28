@@ -42,7 +42,7 @@ class Order:
 ORDERS = frame_of(Order, primary_key="id", row_count=(1, 6))
 
 
-def test_the_language_conforms():
+def test_the_language_passes_the_conformance_checks():
     assert language_problems(ORDERS) == []
     assert ORDERS.kind == "frame" and ORDERS.level == "schema"
     assert ORDERS.name == "Order_frame" and ORDERS.fields() is None

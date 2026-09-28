@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The dataclass adaptor: conforms by the harness, answers not mine for
-anything that is not a dataclass class, checks members with the neutral
+"""The dataclass adaptor passes the conformance checks, returns None for
+anything that is not a dataclass, checks members with the neutral
 checker, and refuses a regular expression it has no validator for."""
 from dataclasses import dataclass
 from typing import Annotated
@@ -9,7 +9,7 @@ from typing import Annotated
 import pytest
 from annotated_types import Ge, Le, MaxLen
 
-from mathema_language.conformance import assert_row_adaptor, not_mine_problems
+from mathema_language.conformance import assert_row_adaptor, foreign_object_problems
 from mathema_language.schema.adaptors.dataclass import adapt
 
 
@@ -21,13 +21,13 @@ class Line:
     note: str | None = None
 
 
-def test_conforms():
+def test_passes_the_conformance_checks():
     language = assert_row_adaptor(Line, adapt=adapt)
     assert type(language.ecosystem).__name__ == "AttributeEcosystem"
 
 
-def test_not_mine():
-    assert not_mine_problems(adapt) == []
+def test_returns_none_for_other_objects():
+    assert foreign_object_problems(adapt) == []
 
 
 def test_an_instance_is_not_a_schema():

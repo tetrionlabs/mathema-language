@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The JSON Schema adaptor: conforms by the harness, answers not mine
+"""The JSON Schema adaptor passes the conformance checks, returns None
 for a dict that is not an object schema, validates with the jsonschema
 package, whose `absolute_path` becomes the explanation path, and
 refuses a schema when jsonschema is not installed."""
@@ -8,7 +8,7 @@ import importlib.util
 
 import pytest
 
-from mathema_language.conformance import not_mine_problems
+from mathema_language.conformance import foreign_object_problems
 from mathema_language.schema.adaptors.jsonschema import adapt
 from tests._jsonschema_shapes import ORDER_SCHEMA
 
@@ -17,8 +17,8 @@ NESTED = {"title": "Shipment", "type": "object", "required": ["ship"],
                                   "properties": {"city": {"type": "string", "minLength": 1}}}}}
 
 
-def test_not_mine():
-    assert not_mine_problems(adapt) == []
+def test_returns_none_for_other_objects():
+    assert foreign_object_problems(adapt) == []
 
 
 def test_without_jsonschema_a_schema_is_refused_with_the_extra(monkeypatch):
@@ -28,7 +28,7 @@ def test_without_jsonschema_a_schema_is_refused_with_the_extra(monkeypatch):
         adapt(ORDER_SCHEMA)
 
 
-def test_conforms():
+def test_passes_the_conformance_checks():
     pytest.importorskip("jsonschema")
     from mathema_language.conformance import assert_row_adaptor
     language = assert_row_adaptor(ORDER_SCHEMA, adapt=adapt)

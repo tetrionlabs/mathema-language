@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The Django adaptor: conforms by the harness, answers not mine for
+"""The Django adaptor passes the conformance checks, returns None for
 anything that is not a model class, and leaves what the neutral model
 cannot read to `full_clean`: a custom validator's message is the
 explanation."""
@@ -10,19 +10,19 @@ pytest.importorskip("django")
 
 from mathema_language.conformance import (  # noqa: E402
     assert_row_adaptor,
-    not_mine_problems,
+    foreign_object_problems,
 )
 from mathema_language.schema.adaptors.django import adapt  # noqa: E402
 from tests import _django_shapes as shapes  # noqa: E402
 
 
-def test_conforms():
+def test_passes_the_conformance_checks():
     language = assert_row_adaptor(shapes.OrderModelDj, adapt=adapt)
     assert type(language.ecosystem).__name__ == "DjangoEcosystem"
 
 
-def test_not_mine():
-    assert not_mine_problems(adapt) == []
+def test_returns_none_for_other_objects():
+    assert foreign_object_problems(adapt) == []
 
 
 def test_a_custom_validator_is_full_clean_s():

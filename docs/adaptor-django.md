@@ -6,7 +6,7 @@
 The Django adaptor reads a concrete subclass of `django.db.models.Model`,
 and its members are unsaved instances of the model. What the field
 definitions spell plainly is read into the neutral model and checked
-there first; everything else is `full_clean`'s to decide, so a custom
+there first; everything else is left to `full_clean`, so a custom
 validator on a field counts, and its message is the explanation. Fields
 that need a database (relations, uniqueness) are excluded from
 `full_clean`, since a single unsaved record has no table to be unique

@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The TypedDict adaptor: conforms by the harness, answers not mine for
+"""The TypedDict adaptor passes the conformance checks, returns None for
 anything that is not a TypedDict, and members are plain dicts checked
 by the neutral checker, a missing required key included."""
 from typing import Annotated, TypedDict
 
 from annotated_types import Ge, Le, MaxLen
 
-from mathema_language.conformance import assert_row_adaptor, not_mine_problems
+from mathema_language.conformance import assert_row_adaptor, foreign_object_problems
 from mathema_language.schema.adaptors.typeddict import adapt
 
 
@@ -17,13 +17,13 @@ class LineDict(TypedDict):
     price: Annotated[float, Ge(0.0)]
 
 
-def test_conforms():
+def test_passes_the_conformance_checks():
     language = assert_row_adaptor(LineDict, adapt=adapt)
     assert type(language.ecosystem).__name__ == "PlainEcosystem"
 
 
-def test_not_mine():
-    assert not_mine_problems(adapt) == []
+def test_returns_none_for_other_objects():
+    assert foreign_object_problems(adapt) == []
 
 
 def test_a_missing_key_and_a_bound_are_explained():
