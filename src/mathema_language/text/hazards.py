@@ -85,6 +85,7 @@ _ENTRIES: tuple[tuple[str, str, str], ...] = (
     ("text", "1e309", "a number past the largest double"),
     ("text", "0x1p-1074", "the smallest subnormal, written as a hex float"),
     ("text", "1_000", "an underscored number literal"),
+    ("text", "\u00b2", "superscript two, a digit str.isdigit accepts and int refuses"),
     ("text", "\u01c6", "a digraph letter that NFKC splits into two"),
     ("text", "\u0149", "a letter with a preceding apostrophe, one code point that upper-cases to two"),
 )
