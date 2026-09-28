@@ -38,6 +38,15 @@ jsonschema = ["jsonschema>=4.18"]
 sqlalchemy = ["sqlalchemy>=2.0"]
 django = ["django>=4.2"]
 all = ["mathema-language[pydantic,jsonschema,sqlalchemy,django]"]
+docs = [
+    "django==6.1.1",
+    "werkzeug==3.1.9",
+    "python-slugify==9.1.2",
+    "markupsafe==3.0.3",
+    "inflection==0.5.1",
+    "flatten_json==0.1.14",
+    "email-validator==2.3.0",
+]
 test = ["pytest>=8", "annotated-types>=0.6", "mathema-language[pydantic,jsonschema,sqlalchemy,django]"]
 
 [project.urls]

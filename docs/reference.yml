@@ -3,6 +3,13 @@
 section: Strings, records and schemas
 nav:
   - Quick start: index.md
+  - Tutorial:
+      - Your first claim: tutorial-first-claim.md
+      - Reading a result: tutorial-reading-a-result.md
+      - Choosing the inputs: tutorial-choosing-inputs.md
+      - Formats: tutorial-formats.md
+      - Records: tutorial-records.md
+      - Trees: tutorial-trees.md
   - Strings:
       - Text: text.md
       - Formats and identifiers: formats.md
