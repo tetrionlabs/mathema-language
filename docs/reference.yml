@@ -10,6 +10,8 @@ nav:
       - Formats: tutorial-formats.md
       - Records: tutorial-records.md
       - Trees: tutorial-trees.md
+  - How-to:
+      - Narrow a language to what a function accepts: how-to-narrow-a-language.md
   - Strings:
       - Text: text.md
       - Formats and identifiers: formats.md
