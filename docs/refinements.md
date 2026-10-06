@@ -22,7 +22,7 @@ as the value outside the language.
 ```text
 f = display_name
 for username in L[unicode, len <= 32], len(f(username)) <= 32
-    falsified   username='aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ': 33 vs 32
+    falsified   username = 'aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ': 33 vs 32
 ```
 
 Beside the members at the bound, a length bound tries each character

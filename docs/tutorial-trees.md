@@ -51,7 +51,7 @@ thread:
 
 ```text
 for comment in L[shop.threads.Comment], thread_size(comment) >= 1
-    falsified   comment=<Comment tree 1050 records deep>: raised RecursionError…
+    falsified   comment = <Comment tree 1050 records deep>: raised RecursionError…
 ```
 
 The arithmetic is right and the code still fails. Each reply is one more

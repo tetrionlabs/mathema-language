@@ -59,7 +59,7 @@ breaks it:
 
 ```text
 for form in L[shop.forms.SignupForm], years_until_adult(form) <= 4
-    falsified   form=SignupForm(username='aaa', age=13): 5 vs 4
+    falsified   form = SignupForm(username='aaa', age=13): 5 vs 4
 ```
 
 ## A table is a schema too
@@ -91,7 +91,7 @@ for order in L[shop.db.Order], order_total(order) >= 0
     proven
 
 for order in L[shop.db.Order], order_total(order) <= 10000
-    falsified   order=Order(id=0, sku='aaa', quantity=1, unit_price=Decimal('10742.34')): Decimal('10742.34') vs 10000
+    falsified   order = Order(id=0, sku='aaa', quantity=1, unit_price=Decimal('10742.34')): Decimal('10742.34') vs 10000
 ```
 
 The first is proven from the constraints: a quantity of at least 1
@@ -146,7 +146,7 @@ def first_quantity(checkout: Checkout) -> int:
 
 ```text
 for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7], first_quantity(checkout) == 7
-    falsified   checkout=Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
+    falsified   checkout = Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
 ```
 
 This says "for every checkout whose first quantity is 7", and it fails

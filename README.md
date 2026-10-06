@@ -32,11 +32,11 @@ characters, and a value put in an HTTP header:
 ```text
 f = display_name
 for username in L[unicode, len <= 32], len(f(username)) <= 32
-    falsified   username='aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ': 33 vs 32
+    falsified   username = 'aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ': 33 vs 32
 
 f = header_value
 for value in L[latin-1], f(value) == value
-    falsified   value='\xa0': raised UnicodeEncodeError
+    falsified   value = '\xa0': raised UnicodeEncodeError
 
 for value in L[ascii], f(value) == value
     holds
@@ -61,7 +61,7 @@ a token out of it:
 ```text
 f = slugify
 for title in L[unicode], f(title) in L[slug]
-    falsified   title='': '' is not in L[slug]
+    falsified   title = '': '' is not in L[slug]
 
 f = render_comment
 for body in L[unicode], "<" not in f(body)
@@ -161,7 +161,7 @@ the one the router forgot:
 ```text
 f = queue_for
 for event in L[shop.webhooks.CHARGE_EVENT], f(event) in {"billing", "alerts"}
-    falsified   event={'type': 'charge.refunded', 'amount': 0}: raised KeyError
+    falsified   event = {'type': 'charge.refunded', 'amount': 0}: raised KeyError
 ```
 
 A binding reaches into a record at any depth, through fields and
@@ -171,7 +171,7 @@ level, so it keeps only what the failure needs:
 ```text
 f = largest_quantity
 for cart in L[shop.forms.Cart], f(cart) <= 3
-    falsified   cart=Cart(items=[CartItem(sku='', quantity=4)]): 4 vs 3
+    falsified   cart = Cart(items=[CartItem(sku='', quantity=4)]): 4 vs 3
 
 for cart in L[shop.forms.Cart], cart.items[*].quantity in [1, 3], f(cart) <= 3
     holds
@@ -201,7 +201,7 @@ for comment in L[shop.threads.Comment, depth <= 50], f(comment) >= 1
     proven
 
 for comment in L[shop.threads.Comment], f(comment) >= 1
-    falsified   comment=<Comment tree 1050 records deep>: raised RecursionError
+    falsified   comment = <Comment tree 1050 records deep>: raised RecursionError
 ```
 
 The first is proven by structural induction: true for a comment with no

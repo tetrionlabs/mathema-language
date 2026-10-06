@@ -1,6 +1,6 @@
 # Reading a result
 
-<!-- shop: urls -->
+<!-- shop: urls text -->
 <!-- requires: django -->
 
 Every claim comes back with a verdict, and most come back with more:
@@ -21,10 +21,20 @@ URL built from a slug be slugified again safely, and it holds.
 
 ## Three verdicts
 
-A claim over a handful of names you choose yourself:
+The shop finds an account by a key built from the name, so that every
+spelling of a name finds the same account:
+
+```python
+def username_key(name: str) -> str:
+    """The key an account is stored under, so two spellings of a name
+    find the same account."""
+    return name.strip().lower()
+```
+
+A claim over a handful of spellings you choose yourself:
 
 ```text
-for name in {"Blue Mug", "Чай", "Café au lait"}, len(product_slug_unicode(name)) >= 1
+for name in {"Alice", " alice ", "ALICE"}, username_key(name) == "alice"
     proven
 ```
 
@@ -34,6 +44,29 @@ called the function on all three, and the record says so:
 
 ```python
 import mathema
+from shop.text import username_key
+
+(p,) = mathema.claims.check_conjectures(
+    username_key,
+    [mathema.claim('for name in {"Alice", " alice ", "ALICE"}, '
+                   'username_key(name) == "alice"', name="one_account")])
+print(p.verdict)
+print(p.sketch)
+```
+
+<!-- output -->
+```text
+proven
+the declared domain has 3 points, and the claim holds at every one
+```
+
+A proof by visiting every member also needs the function to be pure,
+so that the three calls mathema made are the three answers it will
+always give. `username_key` is plain Python mathema can read. The same
+kind of claim about `product_slug_unicode` stops at `holds`, and says
+why:
+
+```python
 from shop.urls import product_slug_unicode
 
 (p,) = mathema.claims.check_conjectures(
@@ -41,13 +74,13 @@ from shop.urls import product_slug_unicode
     [mathema.claim('for name in {"Blue Mug", "Чай", "Café au lait"}, '
                    'len(product_slug_unicode(name)) >= 1', name="three_names")])
 print(p.verdict)
-print(p.condition)
+print(p.sketch)
 ```
 
 <!-- output -->
 ```text
-proven
-∀ name in the declared finite domain (3 points)
+holds
+the declared domain has 3 points, and the claim holds at every one; every point executed; proven needs the function to be shown pure: product_slug_unicode calls django.utils.text.slugify, which mathema has no purity entry for
 ```
 
 Over `L[unicode]` there is no visiting every member, and nothing in
@@ -81,7 +114,7 @@ The third verdict is the one worth having:
 
 ```text
 for name in L[unicode, len <= 50], len(product_slug_unicode(name)) <= 50
-    falsified   name='0℀…': 51 vs 50
+    falsified   name = '0℀…': 51 vs 50
 ```
 
 Django's `SlugField` holds 50 characters unless told otherwise, and a

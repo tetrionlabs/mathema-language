@@ -52,7 +52,7 @@ for order in L[shop.db.Order], f(order) >= 0
     proven
 
 for order in L[shop.db.Order], f(order) <= 10000
-    falsified   order=Order(id=0, sku='aaa', quantity=1, unit_price=Decimal('10742.34')): Decimal('10742.34') vs 10000
+    falsified   order = Order(id=0, sku='aaa', quantity=1, unit_price=Decimal('10742.34')): Decimal('10742.34') vs 10000
 ```
 
 The table's CHECK constraints bound the quantity and the price from
@@ -88,7 +88,7 @@ def queue_for(event: dict) -> str:
 ```text
 f = queue_for
 for event in L[shop.webhooks.CHARGE_EVENT], f(event) in {"billing", "alerts"}
-    falsified   event={'type': 'charge.refunded', 'amount': 0}: raised KeyError
+    falsified   event = {'type': 'charge.refunded', 'amount': 0}: raised KeyError
 ```
 
 ## Paths into a record
@@ -120,9 +120,9 @@ def first_quantity(checkout: Checkout) -> int:
 ```text
 f = needs_postcode
 for checkout in L[shop.forms.Checkout], f(checkout) == False
-    falsified   checkout=Checkout(cart=Cart(items=[]), postcode=None): True vs False
+    falsified   checkout = Checkout(cart=Cart(items=[]), postcode=None): True vs False
 
-for checkout in L[shop.forms.Checkout], checkout.postcode in L[alnum] \ {missing}, f(checkout) == False
+for checkout in L[shop.forms.Checkout], checkout.postcode in L[alnum], f(checkout) == False
     holds
 
 f = first_quantity
@@ -133,7 +133,7 @@ for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7
     holds
 
 for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7], f(checkout) == 7
-    falsified   checkout=Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
+    falsified   checkout = Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
 ```
 
 The last is falsified by an empty basket: `items[0]` is past the end of
@@ -170,5 +170,5 @@ loads it, from a request or a database, where nothing has.
 | a computed value stays in range for every record | `for order in L[shop.db.Order], f(order) >= 0` |
 | a handler copes with every document the schema allows | `for event in L[shop.webhooks.CHARGE_EVENT], is_arbitrary_input_safe(event)` |
 | every element of a list field is within bounds | `for c in L[shop.forms.Checkout], c.cart.items[*].quantity in [1, 3], ...` |
-| a field is present, not missing | `c.postcode in L[alnum] \ {missing}` |
+| a field is present, not absent | `c.postcode in L[alnum]` |
 | a boundary refuses what the schema rejects | `for form in L[shop.forms.SignupForm], excluded_outside_domain(form)` |

@@ -46,7 +46,7 @@ for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7
     holds
 
 for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7], f(checkout) == 7
-    falsified   checkout=Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
+    falsified   checkout = Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
 ```
 
 The worked examples are on [Records and schemas](records.md).

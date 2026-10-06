@@ -8,7 +8,7 @@ from tests._shop_pages import blocks, claim_blocks, claimed_function
 _NAMED = """
 ```text
 for name in L[unicode_alpha, len >= 1], len(product_slug(name)) >= 1
-    falsified   name='а': 0 vs 1
+    falsified   name = 'а': 0 vs 1
 ```
 """
 
@@ -16,7 +16,7 @@ _AFTER_F = """
 ```text
 f = display_name
 for username in L[unicode, len <= 32], len(f(username)) <= 32
-    falsified   username='aﬁ…': 33 vs 32
+    falsified   username = 'aﬁ…': 33 vs 32
 ```
 """
 
@@ -33,7 +33,7 @@ def test_a_claim_block_reads_the_claim_its_verdict_and_witness():
     ((fn, law, verdict, witness),) = claim_blocks(_NAMED)
     assert fn is None
     assert law.startswith("for name in")
-    assert (verdict, witness) == ("falsified", "name='а': 0 vs 1")
+    assert (verdict, witness) == ("falsified", "name = 'а': 0 vs 1")
 
 
 def test_a_claim_naming_its_function_is_about_that_function_after_an_f_line():
@@ -65,9 +65,9 @@ def test_a_claim_opening_with_let_is_read():
 ```text
 f = username_key
 let nfkc = mathema_language.text.nfkc, for name in L[unicode], f(nfkc(name)) == f(name)
-    falsified   name='℀': 'a/c' vs '℀'
+    falsified   name = '℀': 'a/c' vs '℀'
 ```
 """
     ((fn, law, verdict, witness),) = claim_blocks(page)
     assert fn == "username_key" and law.startswith("let nfkc")
-    assert (verdict, witness) == ("falsified", "name='℀': 'a/c' vs '℀'")
+    assert (verdict, witness) == ("falsified", "name = '℀': 'a/c' vs '℀'")

@@ -109,7 +109,7 @@ print(p.verdict, p.counterexample)
 
 <!-- output -->
 ```text
-falsified name='а': 0 vs 1
+falsified name = 'а': 0 vs 1
 ```
 
 ## Read the failure

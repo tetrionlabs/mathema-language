@@ -27,7 +27,7 @@ In `mathema_language.text`.
 ```text
 f = username_key
 let nfkc = mathema_language.text.nfkc, for name in L[unicode], f(nfkc(name)) == f(name)
-    falsified   name='℀': 'a/c' vs '℀'
+    falsified   name = '℀': 'a/c' vs '℀'
 ```
 
 ## Trees

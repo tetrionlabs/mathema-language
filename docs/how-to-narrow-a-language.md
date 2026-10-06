@@ -26,7 +26,7 @@ A stored name must never contain a slash, whatever the user uploads:
 
 ```text
 for filename in L[unicode], '/' not in upload_name(filename)
-    falsified   filename='': raised SuspiciousFileOperation…
+    falsified   filename = '': raised SuspiciousFileOperation…
 ```
 
 The empty name is refused, and so is every name with nothing Django can

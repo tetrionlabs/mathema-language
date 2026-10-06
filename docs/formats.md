@@ -82,7 +82,7 @@ for text in L[uuid], f(f(text)) == f(text)
     holds
 
 for text in L[uuid], f(text) == text
-    falsified   text='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' vs 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    falsified   text = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' vs 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 
 f = normalise_date
 for text in L[iso_date], f(f(text)) == f(text)
@@ -97,7 +97,7 @@ for text in L[hex], f(f(text)) == f(text)
     holds
 
 for text in L[hex], f(text) == text
-    falsified   text='aA': 'aa' vs 'aA'
+    falsified   text = 'aA': 'aa' vs 'aA'
 ```
 
 A bare 32-digit UUID is a UUID, and it comes back hyphenated, so a
@@ -134,14 +134,14 @@ for address in L[ipv4], f(address) in L[ipv4]
     holds
 
 for address in L[ipv6], f(address) in L[ipv6]
-    falsified   address='::': '::.0' is not in L[ipv6]
+    falsified   address = '::': '::.0' is not in L[ipv6]
 
 f = attribute_name
 for label in L[identifier], f(label) in L[identifier]
     holds
 
 for label in L[alnum], f(label) in L[identifier]
-    falsified   label='': '' is not in L[identifier]
+    falsified   label = '': '' is not in L[identifier]
 ```
 
 The anonymiser was written for IPv4 and quietly produces garbage for
@@ -185,7 +185,7 @@ def delete_command_quoted(filename: str) -> list:
 ```text
 f = delete_command
 for filename in L[printable], f(filename) == ["rm", filename]
-    falsified   filename='': ['rm'] vs ['rm', '']
+    falsified   filename = '': ['rm'] vs ['rm', '']
 
 for filename in L[shell_safe], f(filename) == ["rm", filename]
     holds

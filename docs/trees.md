@@ -87,7 +87,7 @@ to print is summarised by its type and depth.
 ```text
 f = thread_size
 for comment in L[shop.threads.Comment], f(comment) >= 1
-    falsified   comment=<Comment tree 1050 records deep>: raised RecursionError
+    falsified   comment = <Comment tree 1050 records deep>: raised RecursionError
 ```
 
 A reply chain a thousand deep exhausts Python's recursion, and the
@@ -139,7 +139,7 @@ against the claim:
 ```text
 f = thread_size
 for comment in L[shop.threads.Comment, depth <= 20], f(comment) >= 2
-    falsified   comment=Comment(author='', body='', replies=[]): 1 vs 2
+    falsified   comment = Comment(author='', body='', replies=[]): 1 vs 2
 
 for comment in L[shop.threads.Comment, depth <= 20], f(comment) >= thread_depth(comment)
     holds

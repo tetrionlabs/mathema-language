@@ -41,7 +41,7 @@ most 32 code points, so the claim that the header fits is:
 
 ```text
 for username in L[unicode, len <= 32], len(display_name(username)) <= 32
-    falsified   username='aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ': 33 vs 32
+    falsified   username = 'aﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁﬁ': 33 vs 32
 ```
 
 ```text
@@ -55,7 +55,7 @@ on the German sharp s:
 
 ```text
 for username in L[latin-1, len <= 32], len(display_name(username)) <= 32
-    falsified   username='aßßßßßßßßßßßßßßßß': 33 vs 32
+    falsified   username = 'aßßßßßßßßßßßßßßßß': 33 vs 32
 ```
 
 Only ASCII keeps its length when upper-cased:
@@ -85,7 +85,7 @@ def first_initial(name: str) -> str:
 
 ```text
 for name in L[unicode], len(first_initial(name)) == 1
-    falsified   name='': raised IndexError…
+    falsified   name = '': raised IndexError…
 ```
 
 A name with nothing in it has no first letter. If the shop never stores
@@ -93,7 +93,7 @@ an empty name, say so by leaving it out with `\`, the set difference:
 
 ```text
 for name in L[unicode] \ {''}, len(first_initial(name)) == 1
-    falsified   name='ΐ': 3 vs 1
+    falsified   name = 'ΐ': 3 vs 1
 ```
 
 `L[unicode, len >= 1]` says the same thing as `L[unicode] \ {''}`; the

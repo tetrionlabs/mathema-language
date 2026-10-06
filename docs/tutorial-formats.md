@@ -60,7 +60,7 @@ It is tempting to assume the id in the URL already is that spelling:
 
 ```text
 for text in L[uuid], normalise_order_id(text) == text
-    falsified   text='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' vs 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    falsified   text = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa': 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' vs 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 ```
 
 `uuid.UUID` reads an id without hyphens, and in capitals, and in
@@ -83,7 +83,7 @@ def normalise_date(text: str) -> str:
 
 ```text
 for text in L[iso_date], normalise_date(text) == text
-    falsified   text='00060908': '0006-09-08' vs '00060908'
+    falsified   text = '00060908': '0006-09-08' vs '00060908'
 ```
 
 ```text
