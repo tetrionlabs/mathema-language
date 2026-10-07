@@ -13,6 +13,9 @@ want to bound, and code that walks them recursively.
 
 ## A thread
 
+A comment is a dataclass in `shop/threads.py`, and so are the functions
+on this page:
+
 ```python
 @dataclass
 class Comment:

@@ -9,9 +9,43 @@
 
 This page and the five after it are the tutorial. Read them in order:
 each one adds one idea to the page before it, using the same small shop
-throughout (its code is in `examples/shop`). The case studies, the how-to
-pages and the reference can be read in any order once you have been
-through them.
+throughout. The case studies, the how-to pages and the reference can be
+read in any order once you have been through them.
+
+## Where things go
+
+The shop is an ordinary Python package, in `examples/shop` in this
+repository, with a module for each part of the application:
+
+```text
+examples/
+└── shop/
+    ├── urls.py       product URLs
+    ├── text.py       usernames and display text
+    ├── formats.py    order ids, dates, tokens
+    ├── forms.py      pydantic forms: signup, cart, checkout
+    ├── db.py         SQLAlchemy tables: orders
+    └── threads.py    comment threads
+```
+
+Functions live in these modules, and so do the records they take (a
+pydantic model, a SQLAlchemy table, a dataclass), the same as in any
+application. Nothing about them changes for mathema.
+
+Claims are separate. A claim names the function it is about, so it does
+not have to sit in the same file, and there are three places to put one:
+
+- on the command line, `mathema check shop/urls.py:product_slug --claim "..."`,
+  for one you are trying out;
+- in a short Python script that calls `mathema.claims.check_conjectures`,
+  when you want the whole result, the failing input included;
+- next to the code, to keep it: in the function's docstring under
+  `Claims:`, or in a claims file such as `claims/urls.claims.yaml`.
+
+This page uses all three, in that order. To follow along, install
+mathema and Django in a virtual environment (`pip install "mathema[all]" django`)
+and run every command from `examples/`, so that `shop/urls.py` is a path
+and `shop.urls` is a module Python can import.
 
 ## A test you already have
 
@@ -53,7 +87,7 @@ nobody wrote down.
 
 ## Your code
 
-The shop builds each product's URL from its name:
+The shop builds each product's URL from its name, in `shop/urls.py`:
 
 ```python
 from django.utils.text import slugify
@@ -64,7 +98,8 @@ def product_slug(name: str) -> str:
     return slugify(name)
 ```
 
-A test for it in the same style picks a name and checks the slug:
+A test for it in the same style, in the shop's test suite, picks a name
+and checks the slug:
 
 ```python
 assert product_slug("Blue Mug") == "blue-mug"
@@ -88,17 +123,20 @@ is every string of one or more letters, in any script; `for name in` says
 the rest must hold for each of them; and the rest is the rule itself,
 calling the function by its name.
 
-Check it from the shell, the same way as any other claim:
+Nothing has been written to a file yet. The quickest way to check a
+claim is to pass it on the command line, from `examples/`:
 
 ```bash
 mathema check shop/urls.py:product_slug --claim "for name in L[unicode_alpha, len >= 1], len(product_slug(name)) >= 1"
 ```
 
 ```text
-FAIL shop.urls.product_slug: source, no side effects; claims 1/1 adjudicated (0 proven, 0 holds, 1 falsified)  <- 1 falsified claim(s)
+FAIL shop.urls.product_slug: source, no side effects; claims 1/1 checked (0 proven, 0 holds, 1 falsified)  <- 1 falsified claim(s)
 ```
 
-The shell gives the count. The input that broke it comes from Python:
+The shell gives the count but not the input that broke it. For that,
+ask from Python. Save this as `check_slug.py` in `examples/`, beside the
+`shop` folder, and run `python check_slug.py`:
 
 ```python
 import mathema
@@ -117,6 +155,10 @@ falsified name = 'а': 0 vs 1
 ```
 
 ## Read the failure
+
+`check_conjectures` takes the function and a list of claims, and returns
+one result for each, `p` here, whose `verdict` and `counterexample` are
+the two things printed.
 
 `falsified` means mathema ran `product_slug` on a name the claim covers
 and the claim was false for it. The witness is that name, `'а'`, and
@@ -147,13 +189,17 @@ and it shrank the failing name to a single letter before reporting it.
 
 ## Fix it and check again
 
-Keep every script:
+The fix keeps every script. Add it to `shop/urls.py`, under the first
+version:
 
 ```python
 def product_slug_unicode(name: str) -> str:
     """The product's name as it appears in its URL, any script kept."""
     return slugify(name, allow_unicode=True)
 ```
+
+and add the same claim, now about the new function, to the end of
+`check_slug.py`:
 
 ```python
 from shop.urls import product_slug_unicode
@@ -177,8 +223,11 @@ evidence, not proof; a claim mathema can prove comes back `proven`, and
 
 ## Keep the claim with the code
 
-A claim is worth more next to the function than in a shell history. Put
-it in the docstring, under `Claims:`, with a name:
+So far the claim has lived in a shell command and a throwaway script,
+and the next person to change `product_slug_unicode` won't see either.
+A claim is worth more next to the function. The simplest place is the
+function's own docstring in `shop/urls.py`, under `Claims:`, with a
+name:
 
 ```python
 def product_slug_unicode(name: str) -> str:
@@ -190,19 +239,32 @@ def product_slug_unicode(name: str) -> str:
     return slugify(name, allow_unicode=True)
 ```
 
-and `mathema check` finds it there:
+`mathema check` reads it from there, so the command no longer needs
+`--claim`:
 
 ```bash
 mathema check shop/urls.py:product_slug_unicode
 ```
 
 ```text
-ok   shop.urls.product_slug_unicode: source, no side effects; claims 1/2 adjudicated (0 proven, 1 holds, 0 falsified, 1 skipped)
+ok   shop.urls.product_slug_unicode: source, no side effects; claims 1/1 checked (0 proven, 1 holds, 0 falsified)
 ```
 
-The second claim is one mathema adds to every function by itself, that
-it can be called at all; it is skipped because a bare `str` parameter
-says nothing about which strings it takes. Your claim is the one that
-holds.
+If you'd rather keep claims out of the source (because the module
+belongs to someone else, or because a reviewer should see them in one
+place), put them in a claims file instead. mathema finds any file named
+`*.claims.yaml` under the directory you run it from, keyed by the
+function's dotted name. As `examples/claims/urls.claims.yaml`:
+
+```yaml
+shop.urls.product_slug:
+  claims:
+    - name: every_product_has_a_url
+      statement: "for name in L[unicode_alpha, len >= 1], len(product_slug(name)) >= 1"
+```
+
+and `mathema check shop/urls.py:product_slug`, with no `--claim`, picks
+it up and reports the same falsified claim as before. The two places
+can be mixed; where both name the same claim, the file wins.
 
 Next: [Reading a result](tutorial-reading-a-result.md).

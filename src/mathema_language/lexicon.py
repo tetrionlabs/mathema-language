@@ -410,8 +410,8 @@ def short_title(title: Annotated[str, MaxLen(60)]) -> str:
     return title[:60]
 
 
-def years_until_adult(form: object) -> int:
-    """How long until a signup may see adult content."""
+def years_until_eighteen(form: object) -> int:
+    """How many years until the user turns 18."""
     return max(0, 18 - form.age)  # type: ignore[attr-defined, no-any-return]
 
 
@@ -596,7 +596,7 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "parse_order_id": (parse_order_id, ['family_excluded_outside_domain']),
     "shout": (shout, ['family_excluded_outside_domain_accepts']),
     "short_title": (short_title, ['adaptor_text_annotation']),
-    "years_until_adult": (years_until_adult, ['adaptor_pydantic_proven', 'adaptor_pydantic_falsified']),
+    "years_until_eighteen": (years_until_eighteen, ['adaptor_pydantic_proven', 'adaptor_pydantic_falsified']),
     "order_total": (order_total, ['adaptor_sqlalchemy_proven', 'adaptor_sqlalchemy_falsified']),
     "review_weight": (review_weight, ['adaptor_django_proven', 'adaptor_django_falsified']),
     "processing_fee": (processing_fee, ['adaptor_jsonschema_proven']),

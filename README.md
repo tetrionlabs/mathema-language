@@ -184,7 +184,7 @@ class SignupForm(BaseModel):
     age: int = Field(ge=13, le=120)
 
 
-def years_until_adult(form: SignupForm) -> int:
+def years_until_eighteen(form: SignupForm) -> int:
     return max(0, 18 - form.age)
 ```
 
@@ -192,7 +192,7 @@ def years_until_adult(form: SignupForm) -> int:
 for order in L[shop.db.Order], order_total(order) >= 0
     proven
 
-for form in L[shop.forms.SignupForm], 0 <= years_until_adult(form) <= 5
+for form in L[shop.forms.SignupForm], 0 <= years_until_eighteen(form) <= 5
     proven
 ```
 

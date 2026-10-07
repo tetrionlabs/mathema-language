@@ -13,8 +13,12 @@ class SignupForm(BaseModel):
     age: int = Field(ge=13, le=120)
 
 
-def years_until_adult(form: SignupForm) -> int:
-    """How long until the user may see adult content."""
+def years_until_eighteen(form: SignupForm) -> int:
+    """How many years until the user turns 18.
+
+    Claims:
+        at_most_five_years: for form in L[shop.forms.SignupForm], 0 <= years_until_eighteen(form) <= 5
+    """
     return max(0, 18 - form.age)
 
 

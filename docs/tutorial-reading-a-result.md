@@ -20,13 +20,22 @@ for name in L[unicode], product_slug_unicode(product_slug_unicode(name)) == prod
     holds
 ```
 
-This one says slugifying a slug changes nothing, which is what lets a
-URL built from a slug be slugified again safely, and it holds.
+Only the first line is the claim. It is what you would pass to
+`--claim`, write under `Claims:` in the function's docstring, or put as
+a `statement:` in a claims file, exactly as on the first page; the
+indented line is what came back, and you never write it yourself. This
+one says slugifying a slug changes nothing, which is what lets a URL
+built from a slug be slugified again safely, and it holds.
+
+Each function this page uses is in the shop, and the page says which
+module. The Python blocks are scripts like `check_slug.py`, run from
+`examples/`, and each block carries on from the one before it, so an
+`import` at the top of one is still in effect in the next.
 
 ## Three verdicts
 
 The shop finds an account by a key built from the name, so that every
-spelling of a name finds the same account:
+spelling of a name finds the same account. In `shop/text.py`:
 
 ```python
 def username_key(name: str) -> str:
@@ -44,7 +53,8 @@ for name in {"Alice", " alice ", "ALICE"}, username_key(name) == "alice"
 
 `proven` means the claim is true for every member of the domain, not
 just the ones tried. Here the domain has three members, so mathema
-called the function on all three, and the record says so:
+called the function on all three, and the result says so in its
+`sketch`, the short account of how a verdict was reached:
 
 ```python
 import mathema

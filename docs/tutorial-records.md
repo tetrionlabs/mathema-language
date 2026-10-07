@@ -15,7 +15,8 @@ doesn't need a new domain. It names the schema you have.
 
 ## The schema is the domain
 
-The shop's signup form:
+The shop's signup form is a pydantic model, defined in `shop/forms.py`
+next to the functions that use it:
 
 ```python
 class SignupForm(BaseModel):
@@ -31,28 +32,53 @@ SignupForm
 └── age        int, 13 to 120
 ```
 
-`L[shop.forms.SignupForm]` is every `SignupForm` pydantic would accept,
-named by the class's dotted path. mathema asks pydantic itself whether a
+`L[shop.forms.SignupForm]` is every `SignupForm` pydantic would accept.
+The name inside the brackets is the class's dotted path, the module
+`shop.forms` and then the class, and mathema imports it from there the
+way `from shop.forms import SignupForm` would. So the schema stays where
+your application already defines it, at the top level of a module, and
+the claim refers to it by name. You don't copy it into the claim, a
+claims file or a script, and a schema defined only inside a test or a
+function can't be named at all. mathema asks pydantic itself whether a
 record is a member, so the constraints mean exactly what they mean in
 your application.
 
 ## A proof over every record
 
-The site hides adult content until a user turns 18:
+Some of the shop's products are sold only to customers aged 18 or over,
+and a function in the same module works out from the form how long a
+younger user has to wait:
 
 ```python
-def years_until_adult(form: SignupForm) -> int:
-    """How long until the user may see adult content."""
+def years_until_eighteen(form: SignupForm) -> int:
+    """How many years until the user turns 18."""
     return max(0, 18 - form.age)
 ```
 
+The function and the record happen to share a module here, but they
+needn't: the claim names the function by name and the record by dotted
+path, and either can live anywhere Python can import it from. Kept in
+the function's docstring, the claim is:
+
+```python
+def years_until_eighteen(form: SignupForm) -> int:
+    """How many years until the user turns 18.
+
+    Claims:
+        at_most_five_years: for form in L[shop.forms.SignupForm], 0 <= years_until_eighteen(form) <= 5
+    """
+    return max(0, 18 - form.age)
+```
+
+and checked, with `mathema check shop/forms.py:years_until_eighteen`:
+
 ```text
-for form in L[shop.forms.SignupForm], 0 <= years_until_adult(form) <= 5
+for form in L[shop.forms.SignupForm], 0 <= years_until_eighteen(form) <= 5
     proven
 ```
 
 `proven`, although there are infinitely many forms. mathema read
-`years_until_adult`, saw that it only uses `age`, and turned the field
+`years_until_eighteen`, saw that it only uses `age`, and turned the field
 into a symbol bounded by the schema, `13 <= age <= 120`; from there the
 bound on `max(0, 18 - age)` is algebra. This is the thing a record
 schema buys you that a string doesn't: its fields are numbers and
@@ -62,13 +88,14 @@ A claim that is one year too tight is caught with the record that
 breaks it:
 
 ```text
-for form in L[shop.forms.SignupForm], years_until_adult(form) <= 4
+for form in L[shop.forms.SignupForm], years_until_eighteen(form) <= 4
     falsified   form = SignupForm(username='aaa', age=13): 5 vs 4
 ```
 
 ## A table is a schema too
 
-The orders table, with its constraints in the database:
+The orders table is a SQLAlchemy model in `shop/db.py`, with its
+constraints in the database:
 
 ```python
 class Order(Base):
@@ -79,6 +106,8 @@ class Order(Base):
     unit_price: Mapped[Decimal] = mapped_column(sa.Numeric(10, 2),
                                                 sa.CheckConstraint("unit_price >= 0"))
 ```
+
+and the function that totals an order sits beside it:
 
 ```python
 def order_total(order: Order) -> Decimal:
@@ -106,7 +135,8 @@ constraint or the integration needs to handle it.
 
 ## Paths into a record
 
-A checkout holds a cart, which holds a list of items:
+A checkout holds a cart, which holds a list of items, all three
+pydantic models in `shop/forms.py`:
 
 ```python
 class CartItem(BaseModel):

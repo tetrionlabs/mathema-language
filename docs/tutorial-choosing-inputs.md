@@ -32,7 +32,8 @@ code:
 ## Narrowing by length
 
 The shop's header shows the username upper-cased, in a box 32 characters
-wide, and usernames are at most 32 characters:
+wide, and usernames are at most 32 characters. The function is in
+`shop/text.py`, as is every function on this page:
 
 ```python
 def display_name(username: str) -> str:
@@ -41,7 +42,10 @@ def display_name(username: str) -> str:
 ```
 
 `len <= 32` inside the brackets narrows a language to its strings of at
-most 32 code points, so the claim that the header fits is:
+most 32 code points, so the claim that the header fits is the one
+below. As before, the first line is the claim, which you can check with
+`mathema check shop/text.py:display_name --claim "..."` or keep in
+`display_name`'s docstring, and the indented line is the result:
 
 ```text
 for username in L[unicode, len <= 32], len(display_name(username)) <= 32

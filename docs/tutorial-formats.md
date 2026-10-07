@@ -22,7 +22,8 @@ already has, so a claim over one means the same thing that parser does.
 
 ## Refusing what isn't in the format
 
-The shop reads an order id out of the URL:
+The shop reads an order id out of the URL. This function and the others
+on this page are in `shop/formats.py`:
 
 ```python
 def parse_order_id(text: str) -> uuid.UUID:
@@ -41,8 +42,10 @@ for text in L[uuid], excluded_outside_domain(text)
 ```
 
 A built-in claim is about the function being checked rather than one it
-names, so the line above it says which function that is, the same one
-`mathema check shop/formats.py:parse_order_id` would check.
+names, so the line above it says which function that is. `f = ...` is
+only how these pages write it down: in practice the function is the one
+you check, `mathema check shop/formats.py:parse_order_id --claim "for text in L[uuid], excluded_outside_domain(text)"`,
+or the one whose docstring the claim sits in.
 `excluded_outside_domain(text)` says every string outside the domain is
 refused, where refused means the function raises `ValueError`. mathema
 tries the strings just outside the format (a UUID with a letter out of

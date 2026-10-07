@@ -44,15 +44,15 @@ class SignupForm(BaseModel):
     age: int = Field(ge=13, le=120)
 
 
-def years_until_adult(form: SignupForm) -> int:
-    """How long until the user may see adult content."""
+def years_until_eighteen(form: SignupForm) -> int:
+    """How many years until the user turns 18."""
     return max(0, 18 - form.age)
 ```
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `years_until_adult` | `for form in L[shop.forms.SignupForm], 0 <= f(form) <= 5` | proven | The lift reads the age's bounds off the model's fields, so the wait is between none and five years. |
-| `years_until_adult` | `for form in L[shop.forms.SignupForm], f(form) <= 4` | falsified | A thirteen-year-old waits five years. |
+| `years_until_eighteen` | `for form in L[shop.forms.SignupForm], 0 <= f(form) <= 5` | proven | The lift reads the age's bounds off the model's fields, so the wait is between none and five years. |
+| `years_until_eighteen` | `for form in L[shop.forms.SignupForm], f(form) <= 4` | falsified | A thirteen-year-old waits five years. |
 
 ## Enforcing the schema
 
