@@ -46,8 +46,8 @@
  },
  "language_closure_rendered": {
   "input": "for n in N, f(n) in L[digit]",
-  "unicode": "∀ n ∈ ℕ ∪ {absent, ∅}, f(n) ∈ L[digit]",
-  "ascii": "for n in N|absent|missing, f(n) in L[digit]"
+  "unicode": "∀ n ∈ ℕ, f(n) ∈ L[digit]",
+  "ascii": "for n in N, f(n) in L[digit]"
  },
  "language_token_absent": {
   "input": "for s in L[unicode], \"<\" not in f(s)",
