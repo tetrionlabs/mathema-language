@@ -170,7 +170,7 @@ def _probe_over(kinds: tuple[str, ...], extra: Callable[..., list[str]],
         if not corpus:
             return ("skipped", 0, f"L[{names}] has no {what} hazard to try")
 
-        def crash_on(args: list[Any], value: str) -> str | None:
+        def crash_on(args: list[Any], value: Any) -> str | None:
             try:
                 with pinned_float_env():
                     call_with_target(fn, facts, target, args, value)

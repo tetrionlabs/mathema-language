@@ -19,7 +19,7 @@ def adapt_row(obj: Any) -> Language | None:
     None. An adaptor that refuses the object raises, and the refusal
     reaches the caller."""
     for _name, adapt in language_adaptors():
-        language = adapt(obj)
+        language: Language | None = adapt(obj)
         if language is not None and getattr(language, "kind", None) == "row":
             return language
     return None

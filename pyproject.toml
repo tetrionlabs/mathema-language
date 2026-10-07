@@ -29,8 +29,9 @@ classifiers = [
   "Typing :: Typed",
 ]
 # 0.6.1 is the first mathema with the language grammar and the
-# languages, families and sampling seams
-dependencies = ["mathema>=0.6.1"]
+# languages, families and sampling seams; the grammar surface moves on
+# minor releases, so the range stops before the next one
+dependencies = ["mathema>=0.6.1,<0.7"]
 
 [project.optional-dependencies]
 pydantic = ["pydantic>=2.0"]

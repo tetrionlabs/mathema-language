@@ -81,8 +81,9 @@ def _measure(value: Any) -> tuple[int, int, int, int]:
         from ..schema.adaptors import adapt_row
         from ..schema.structure import record_structure
         language = adapt_row(type(value))
-        if language is not None and getattr(language, "schema", None) is not None:
-            return record_structure(language.schema, value)
+        schema = getattr(language, "schema", None)
+        if schema is not None:
+            return record_structure(schema, value)
     return _walk(value)
 
 

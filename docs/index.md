@@ -10,11 +10,13 @@ code actually takes: strings, records and the schemas that describe
 them, each written `L[...]`.
 
 ```
-pip install mathema-language
+pip install "mathema[all]"
 ```
 
-mathema finds it through its entry points once installed, so there is
-nothing to configure. Three claims show the three kinds of data, each on
+That is mathema with every extra this package included;
+`pip install mathema-language` adds it to a mathema you already have.
+mathema finds it through its entry points, so there is nothing to
+configure. Three claims show the three kinds of data, each on
 the shop in `examples/shop`, the example application these pages use
 throughout.
 

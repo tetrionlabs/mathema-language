@@ -9,7 +9,6 @@ from __future__ import annotations
 import random
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import cast
 
 from .._surface import HazardValue, StringLanguage
 from . import generate as _generate
@@ -47,7 +46,7 @@ class TextLanguage(StringLanguage):
                 s = _generate.draw(rng, self.categories, self.planes)
                 if self.contains(s):
                     return s
-        return cast(str, super().sample(rng))
+        return super().sample(rng)
 
     def shrink(self, value: object) -> Iterator[str]:
         """Smaller members one at a time: the base kit's deletions first,

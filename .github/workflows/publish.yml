@@ -1,40 +1,139 @@
-# Publishes to PyPI when a version tag (v*) is pushed.
+# .github/workflows/publish.yml
 #
-# Uses PyPI Trusted Publishing (no token stored in the repo): configure it
-# once at pypi.org -> your project -> Publishing -> "Add a new publisher"
-# with this repository and workflow file name, environment "pypi".
+# Tag-triggered release: verify, build, publish. Publishing uses PyPI
+# Trusted Publishing (OIDC), so no API token is stored anywhere.
+#
+# One-time setup this workflow assumes:
+#   TestPyPI: a pending trusted publisher for project "mathema-language":
+#     owner tetrionlabs, repository mathema-language, workflow
+#     publish.yml, environment testpypi.
+#   PyPI: the same, environment pypi.
+#   GitHub repository -> Settings -> Environments: "testpypi" (no
+#     protection) and "pypi" with a required reviewer, so the final
+#     publish is an explicit click.
+#
+# Release procedure: set __version__ in src/mathema_language/__init__.py,
+# add the CHANGELOG entry, commit, tag vX.Y.Z on main, push the tag.
+
 name: publish
 
 on:
   push:
     tags: ["v*"]
+  # A rehearsal: the whole pipeline (version guard, suite, lint, build,
+  # artefact checks), stopping before either publish.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to rehearse; must equal mathema_language.__version__"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  tests:
-    uses: ./.github/workflows/tests.yml
-
-  build:
-    needs: tests
+  validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
-      - run: pip install build twine
-      - run: python -m build
-      - run: twine check dist/*
+          python-version: "3.12"
+      - name: Version from tag matches the package
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_VERSION="${{ inputs.version }}"
+          else
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          PKG_VERSION="$(python -c 'import re,pathlib;print(re.search(r"__version__ = \"([^\"]+)\"", pathlib.Path("src/mathema_language/__init__.py").read_text()).group(1))')"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "tag $TAG_VERSION != package $PKG_VERSION" >&2; exit 1
+          fi
+          echo "version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
+
+  # The tagged commit is not covered by the push and pull-request runs,
+  # so the whole suite (every ecosystem, every Python, ruff and mypy)
+  # runs again here and the build depends on it.
+  tests:
+    needs: validate
+    uses: ./.github/workflows/tests.yml
+
+  build:
+    needs: [validate, tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --quiet build twine
+          python -m build
+          python -m twine check dist/*
+      - name: The artefacts carry the licence and the entry points
+        run: |
+          python - <<'PY'
+          import glob, tarfile, zipfile
+          version = "${{ needs.validate.outputs.version }}"
+          wheel = glob.glob(f"dist/mathema_language-{version}-*.whl")
+          assert wheel, f"no wheel for {version}"
+          with zipfile.ZipFile(wheel[0]) as z:
+              names = z.namelist()
+              assert any(n.endswith("/LICENSE") for n in names), "no LICENSE in the wheel"
+              assert any(n.endswith("/NOTICE") for n in names), "no NOTICE in the wheel"
+              eps = z.read(next(n for n in names if n.endswith("entry_points.txt"))).decode()
+              for group in ("mathema.languages", "mathema.language_adaptors",
+                            "mathema.claim_families", "mathema.language_refinements",
+                            "mathema.lexicon"):
+                  assert f"[{group}]" in eps, f"entry point group {group} missing"
+          sdist = glob.glob(f"dist/mathema_language-{version}.tar.gz")
+          assert sdist, f"no sdist for {version}"
+          with tarfile.open(sdist[0]) as tar:
+              assert any(n.endswith("/LICENSE") for n in tar.getnames()), "no LICENSE in the sdist"
+          print(f"mathema-language {version}: wheel and sdist verified")
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
 
-  publish:
+  publish-testpypi:
+    # never on a rehearsal
+    if: github.event_name == 'push'
     needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  publish-pypi:
+    # gated by the "pypi" environment's required reviewer
+    if: github.event_name == 'push'
+    needs: publish-testpypi
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      id-token: write          # required for Trusted Publishing
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:

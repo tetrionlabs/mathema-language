@@ -214,7 +214,7 @@ def _accepted(accepts: Callable[[str], bool],
               hazards: tuple[HazardValue, ...]) -> tuple[HazardValue, ...]:
     """The hazards `accepts` takes on the running Python: a parser's
     other spellings are members only where that parser reads them."""
-    return tuple(h for h in hazards if accepts(h.value))
+    return tuple(h for h in hazards if isinstance(h.value, str) and accepts(h.value))
 
 
 #: what `date.fromisoformat` accepts on the running Python
