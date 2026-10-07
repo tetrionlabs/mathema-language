@@ -1,6 +1,11 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/json/).
+<!-- /github-only -->
+
 # JSON
 
 <!-- shop: config -->
+<!-- requires-python: 3.12 -->
 
 `L[json]` is every document Python's JSON parser accepts, which is more
 than the JSON standard: a bare `NaN`, `Infinity` and `-Infinity` are
@@ -17,8 +22,8 @@ The examples are the shop's settings files, from
 ## Nesting
 
 Code that walks a parsed document recursively stops at Python's
-recursion limit, a thousand frames, while the parser accepts documents
-nested almost ten thousand deep:
+recursion limit, a thousand frames, while from Python 3.12 the parser
+accepts documents nested almost ten thousand deep:
 
 ```python
 def settings_keys(text: str) -> int:

@@ -8,6 +8,7 @@ real class, and draws stay within the bounds the schema states or,
 where it states none, the sampling bounds (depth 8, nodes 256,
 width 16) the language publishes; a value far deeper than the
 recursion limit is checked, and a cycle is refused where it closes."""
+import importlib.util
 import random
 
 import pytest
@@ -24,8 +25,9 @@ from tests import _recursive_shapes as shapes  # noqa: E402
 
 
 def _shapes():
-    out = [("dataclass", shapes.Node), ("typeddict", shapes.NodeDict),
-           ("jsonschema-root", shapes.NODE_SCHEMA), ("jsonschema-defs", shapes.TREE_SCHEMA)]
+    out = [("dataclass", shapes.Node), ("typeddict", shapes.NodeDict)]
+    if importlib.util.find_spec("jsonschema") is not None:
+        out += [("jsonschema-root", shapes.NODE_SCHEMA), ("jsonschema-defs", shapes.TREE_SCHEMA)]
     try:
         from tests._recursive_pydantic import PNode
         out.append(("pydantic", PNode))
@@ -82,6 +84,7 @@ def test_a_schema_stated_bound_is_the_language_s():
     rng = random.Random(2)
     for _ in range(60):
         assert tree.width(lang.sample(rng)) <= 3
+    pytest.importorskip("jsonschema")
     lang = adapt_row(shapes.TREE_SCHEMA)
     for _ in range(60):
         assert tree.width(lang.sample(rng)["root"]) <= 3

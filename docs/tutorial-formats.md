@@ -1,6 +1,11 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/tutorial-formats/).
+<!-- /github-only -->
+
 # Formats
 
 <!-- shop: formats -->
+<!-- requires-python: 3.11 -->
 
 Most strings an application handles are not free text but a format: an
 order id, a date, a token. Code that takes a format does three things

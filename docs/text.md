@@ -1,3 +1,7 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/text/).
+<!-- /github-only -->
+
 # Text
 
 <!-- shop: text -->

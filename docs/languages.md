@@ -1,3 +1,7 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/languages/).
+<!-- /github-only -->
+
 # Languages
 
 Every language the package supplies, what its members are, what decides

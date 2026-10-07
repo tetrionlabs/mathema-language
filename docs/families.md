@@ -1,3 +1,7 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/families/).
+<!-- /github-only -->
+
 # Built-in claims
 
 <!-- shop: text formats forms -->

@@ -10,7 +10,8 @@ that name, so a claim on the page can write `L[NAME.Line]`; a text block
 marked `<!-- output -->` is what the python block before it prints, and
 must be exactly that; every claim row (`| fn | claim | verdict |`) lands
 on its printed verdict; a page marked `<!-- requires: MODULE -->` skips
-when MODULE is not installed. The catalogue has its own test; every
+when MODULE is not installed, and one marked
+`<!-- requires-python: 3.N -->` on an older Python. The catalogue has its own test; every
 page named in `reference.yml` exists, every page in `docs/` is named
 there, and every relative link between pages resolves."""
 import importlib.util
@@ -41,6 +42,16 @@ _ROW = re.compile(r"^\| `([^`]+)` \| `(.+?)` \| (\w+) \|", re.M)
 _SENTINEL = "\x1e"
 
 
+def _requires(text):
+    """Skip a page whose `<!-- requires: MODULE -->` is not installed or
+    whose `<!-- requires-python: 3.N -->` is newer than this Python."""
+    for needed in re.findall(r"<!-- requires: (\w+) -->", text):
+        pytest.importorskip(needed)
+    for version in re.findall(r"<!-- requires-python: (\d+)\.(\d+) -->", text):
+        if sys.version_info < tuple(int(v) for v in version):
+            pytest.skip(f"the page describes Python {'.'.join(version)} or later")
+
+
 def _pages():
     return sorted(p for p in DOCS.glob("*.md") if p.name != "catalogue.md")
 
@@ -48,8 +59,7 @@ def _pages():
 def _module(page, tmp_path):
     """The page's module and what each python block printed."""
     text = page.read_text(encoding="utf-8")
-    for needed in re.findall(r"<!-- requires: (\w+) -->", text):
-        pytest.importorskip(needed)
+    _requires(text)
     name = re.search(r"<!-- module: (\w+) -->", text)
     if name is None:
         return None, [], text
@@ -102,10 +112,12 @@ def _shop_pages():
 @pytest.mark.parametrize("page", _shop_pages(), ids=lambda p: p.stem)
 def test_a_shop_page_shows_the_shop_and_its_claims_land(page, capsys):
     text = page.read_text(encoding="utf-8")
-    for needed in re.findall(r"<!-- requires: (\w+) -->", text):
-        pytest.importorskip(needed)
+    _requires(text)
     names = re.search(r"<!-- shop: ([\w ]+) -->", text).group(1).split()
-    modules = [shop_module(name) for name in names]
+    try:
+        modules = [shop_module(name) for name in names]
+    except ModuleNotFoundError as e:
+        pytest.skip(f"the page's shop modules need {e.name}, which is not installed")
     assert definition_problems(text, modules) == [], page.name
     scope: dict = {}
     for module in modules:
@@ -126,3 +138,14 @@ def test_a_shop_page_shows_the_shop_and_its_claims_land(page, capsys):
         assert p.verdict == verdict, (page.name, law, p.verdict, p.note)
         if witness:
             assert witness_matches(witness, p.counterexample or ""), (witness, p.counterexample)
+
+
+_SITE = "https://mathema.tetrionlabs.com/language/reference/"
+
+
+@pytest.mark.parametrize("page", sorted(DOCS.glob("*.md")), ids=lambda p: p.stem)
+def test_every_page_links_to_itself_on_the_site_for_github_readers(page):
+    url = _SITE if page.stem == "index" else f"{_SITE}{page.stem}/"
+    head = page.read_text(encoding="utf-8").split("<!-- /github-only -->")[0]
+    assert head.startswith("<!-- github-only -->\n"), page.name
+    assert f"]({url})" in head, page.name

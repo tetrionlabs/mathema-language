@@ -1,3 +1,7 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/how-to-narrow-a-language/).
+<!-- /github-only -->
+
 # Narrow a language to what a function accepts
 
 <!-- shop: uploads -->
@@ -39,42 +43,65 @@ names it doesn't.
 random members, and lists the ones it refuses. Name the errors that mean
 a refusal; any other exception is a crash and is raised, not listed:
 
+This runs anywhere you can import the function, a Python shell or a
+scratch script, since it is a question you ask once rather than code
+the shop keeps:
+
 ```python
 from django.core.exceptions import SuspiciousFileOperation
 
 from mathema_language.narrowing import refused_inputs
 from mathema_language.text import UNICODE
+from shop.uploads import upload_name
 
-refused = refused_inputs(upload_name, UNICODE, errors=(SuspiciousFileOperation,))
-print(len(refused), "refused")
-for r in refused[:6]:
-    print(f"{r.value!r:10} {r.error}")
+refused = {r.value for r in refused_inputs(upload_name, UNICODE,
+                                           errors=(SuspiciousFileOperation,))}
+for name in ["", " ", "\t", "🙂", "report.pdf"]:
+    print(f"{name!r:14} refused: {name in refused}")
 ```
 
 <!-- output -->
 ```text
-48 refused
-''         SuspiciousFileOperation
-' '        SuspiciousFileOperation
-'\t'       SuspiciousFileOperation
-'\n'       SuspiciousFileOperation
-'\r\n'     SuspiciousFileOperation
-'🙂'        SuspiciousFileOperation
+''             refused: True
+' '            refused: True
+'\t'           refused: True
+'🙂'            refused: True
+'report.pdf'   refused: False
 ```
 
 Blank names, whitespace, and names made only of characters Django
-drops, such as an emoji: each one leaves nothing to store.
+drops, such as an emoji, each leave nothing to store. The full list
+runs to a few dozen of the language's hazards, and how many depends on
+the Unicode version your Python ships.
 
 ## Narrow the language
 
 `narrow_language` returns the language without the refused inputs.
-Assign it in a module, beside the function:
+The narrowed language is an ordinary Python object, so it lives in your
+code, in the same module as the function it is narrowed by. In the shop
+that is `shop/uploads.py`, the whole of which is:
 
 ```python
+from django.core.exceptions import SuspiciousFileOperation
+from django.utils.text import get_valid_filename
+
+from mathema_language.narrowing import narrow_language
+from mathema_language.text import UNICODE
+
+
+def upload_name(filename: str) -> str:
+    """The name an uploaded file is stored under."""
+    return get_valid_filename(filename)
+
+
 UPLOAD_NAMES = narrow_language(UNICODE, upload_name, errors=(SuspiciousFileOperation,))
 ```
 
-and name it in the claim by its dotted path:
+The claim is a separate thing. It names the language by its dotted
+path, `shop.uploads.UPLOAD_NAMES`, the module path and the variable, and
+can live wherever claims live: in `upload_name`'s docstring under
+`Claims:`, in a claims file, or on the command line with
+`mathema check shop/uploads.py:upload_name --claim "..."`:
 
 ```text
 for filename in L[shop.uploads.UPLOAD_NAMES], '/' not in upload_name(filename)
@@ -84,8 +111,8 @@ for filename in L[shop.uploads.UPLOAD_NAMES], '/' not in upload_name(filename)
 ```text
 L[unicode]                       every string
 L[shop.uploads.UPLOAD_NAMES]     the strings upload_name accepts
-                                 (48 of the hazards alone are left out:
-                                 '', ' ', '\t', '🙂', ...)
+                                 (blank names, whitespace and '🙂'
+                                 among the hazards left out)
 ```
 
 The narrowed language keeps everything else a language does: its

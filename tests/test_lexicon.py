@@ -20,6 +20,7 @@ and review the diff:
         write_lexicon_golden(lexicon_source('language', m), \\
         'tests/data/lexicon_golden.json')"
 """
+import importlib.util
 import pathlib
 
 import pytest
@@ -115,8 +116,29 @@ EXPECTED = {
 }
 
 
+#: the library an adaptor row's records need, by the row's adaptor
+_ADAPTOR_LIBRARY = {"pydantic": "pydantic", "sqlalchemy": "sqlalchemy",
+                    "django": "django", "jsonschema": "jsonschema"}
+
+
+def _runnable(key):
+    """Whether a row can be adjudicated here: an `adaptor_<library>_` row
+    needs that library installed."""
+    for adaptor, module in _ADAPTOR_LIBRARY.items():
+        if key.startswith(f"adaptor_{adaptor}_"):
+            return importlib.util.find_spec(module) is not None
+    return True
+
+
 def test_the_lexicon_passes_every_check_mathema_s_own_does():
     problems = lexicon_problems(SOURCE, golden=str(GOLDEN), expected=EXPECTED)
+    # a row whose library is not installed cannot be adjudicated here;
+    # every other check still covers it
+    verdicts = [line for line in problems.get("verdicts", [])
+                if _runnable(line.split(":", 1)[0].strip())]
+    problems = {check: found for check, found in problems.items() if check != "verdicts"}
+    if verdicts:
+        problems["verdicts"] = verdicts
     assert problems == {}, "\n".join(f"{check}:\n  " + "\n  ".join(found)
                                      for check, found in problems.items())
 
@@ -156,6 +178,7 @@ def test_a_proven_row_is_proven_by_derive():
     from mathema.conjecture import check_conjectures
     proven = {key for key, want in EXPECTED.items() if want == "proven"}
     assert proven == set(PROVEN_ROUTES)
+    proven = {key for key in proven if _runnable(key)}
     for fn, keys in lexicon.EXAMPLE_FUNCTIONS.values():
         for key in keys:
             if key in proven:

@@ -1,3 +1,7 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/adaptor-jsonschema/).
+<!-- /github-only -->
+
 # JSON Schema
 
 <!-- requires: jsonschema -->
@@ -10,8 +14,8 @@ explanation path is the validator's `absolute_path`, so a nested field
 reads `.ship.city`. Deciding whether a dict is a schema needs no
 import; validating one does, so a schema with `jsonschema` not
 installed is refused with the extra to install. It needs `jsonschema`
-4.18 or later, `pip install "mathema-language[jsonschema]"`, and is
-tested at 4.18 and at the latest release.
+4.22 or later, `pip install "mathema-language[jsonschema]"`, and is
+tested at 4.22 and at the latest release.
 
 ## What it reads
 

@@ -1,3 +1,7 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/adaptor-text/).
+<!-- /github-only -->
+
 # Text annotations
 
 <!-- shop: text -->

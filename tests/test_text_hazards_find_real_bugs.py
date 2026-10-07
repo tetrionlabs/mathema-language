@@ -2,6 +2,8 @@
 # Copyright 2026 Tetrion Ltd
 """The text hazards include a digit `str.isdigit` accepts but `int`
 refuses, the input behind a common guarded-parse bug."""
+import sys
+
 import pytest
 
 pytest.importorskip("mathema")
@@ -17,6 +19,8 @@ def test_a_digit_int_refuses_falsifies_a_guarded_parse():
     assert p.verdict == "falsified" and "'²'" in p.counterexample, (p.verdict, p.counterexample)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 12),
+                    reason="json.loads reads past the recursion limit from Python 3.12")
 def test_json_nested_past_the_recursion_limit_is_tried():
     import sys
 

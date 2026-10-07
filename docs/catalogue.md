@@ -1,3 +1,7 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/catalogue/).
+<!-- /github-only -->
+
 # What to claim about a function over text
 
 A function over text has one of a few natures, and the nature says which

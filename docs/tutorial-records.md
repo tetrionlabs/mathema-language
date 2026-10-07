@@ -1,3 +1,7 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/tutorial-records/).
+<!-- /github-only -->
+
 # Records
 
 <!-- shop: forms db -->

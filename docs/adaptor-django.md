@@ -1,3 +1,7 @@
+<!-- github-only -->
+> This page is part of the mathema documentation, [read it on the site](https://mathema.tetrionlabs.com/language/reference/adaptor-django/).
+<!-- /github-only -->
+
 # Django
 
 <!-- requires: django -->
@@ -93,8 +97,12 @@ def stars(review: Review) -> str:
 ```text
 f = stars
 for review in L[shop.reviews.Review], excluded_outside_domain(review)
-    falsified   review = Review(id=0, body='aaaa…aaaa', rating=1) (outside L[shop.reviews.Review] at .body: len <= 2000)
+    falsified   review = Review(…) (outside L[shop.reviews.Review] at …
 ```
 
-The same claim over the function that loads the record, from a request
-or a database, is the one that should hold.
+Which rejected record turns up first depends on your Django version: on
+recent releases a body longer than the 2,000 characters the model
+allows, on Django 4.2 an `id` given as the string `'1'`. Either way the
+function accepted a record Django's own `full_clean` refuses. The same
+claim over the function that loads the record, from a request or a
+database, is the one that should hold.

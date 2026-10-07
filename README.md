@@ -127,7 +127,7 @@ for text in L[json, depth <= 100], normalise_config(normalise_config(text)) == n
     holds
 ```
 
-Python's parser accepts documents nested almost ten thousand deep, but
+From Python 3.12 the parser accepts documents nested almost ten thousand deep, but
 writing one back out recurses once per level and stops at the recursion
 limit. A document nested a thousand deep loads and then can't be saved,
 and bounding the depth the service accepts makes the claim hold.
