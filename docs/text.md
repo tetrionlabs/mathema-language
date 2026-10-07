@@ -170,7 +170,7 @@ for text in L[astral] \ {""}, f(text) == 2 * len(text)
 
 ## Crashes on arbitrary input
 
-`is_arbitrary_input_safe` feeds a function the language's hazards and
+`is_language_defined` feeds a function the language's hazards and
 its near non-members and reports a crash the function did not guard
 (an `IndexError`, a `KeyError`, a `TypeError`), shrunk to the smallest
 string that still crashes. A deliberate `ValueError` is a rejection, not
@@ -190,7 +190,7 @@ def parse_quantity(text: str) -> int:
 
 ```text
 f = first_initial
-for name in L[unicode], is_arbitrary_input_safe(name)
+for name in L[unicode], is_language_defined(name)
     falsified   name = '' (inside L[unicode]) raised IndexError
 
 f = parse_quantity
@@ -252,7 +252,7 @@ enforce.
 
 | To say | Write |
 |---|---|
-| it never crashes on user text | `for s in L[unicode], is_arbitrary_input_safe(s)` |
+| it never crashes on user text | `for s in L[unicode], is_language_defined(s)` |
 | it writes any text without an encoding error | `for s in L[unicode], is_encoding_safe(s)` |
 | its output fits the column the input fits | `for s in L[unicode, len <= 32], len(f(s)) <= 32` |
 | it gives the same answer for every spelling | `let nfkc = mathema_language.text.nfkc, for s in L[unicode], f(nfkc(s)) == f(s)` |

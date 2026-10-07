@@ -128,7 +128,7 @@ Checkout
 │       │   ├── sku        str
 │       │   └── quantity   int, 1 to 10
 │       └── [1], [2], …
-└── postcode   str of at most 8 characters, or None
+└── postcode   str of at most 8 characters, or None (absent)
 ```
 
 A path names one place in that tree, spelled the way Python reaches it:
@@ -146,18 +146,34 @@ def first_quantity(checkout: Checkout) -> int:
 
 ```text
 for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7], first_quantity(checkout) == 7
+    holds
+```
+
+This says "for every checkout whose first quantity is 7", and a bound
+on a path means the value is there: a checkout with an empty basket has
+no first quantity, so it is not one of the checkouts this claim is
+about. Sometimes the place a path names can hold nothing, and mathema
+tells two kinds of nothing apart:
+
+```text
+checkout.postcode = None             absent: the field has no value
+checkout.cart.items[0], items = []   absent: there is no first item
+{"note": ...} with no "note" key     absent: the key is not there
+checkout.cart.items[1] = None        a hole: a list slot holding nothing
+price = nan                          a hole: a number with no value
+```
+
+Something is absent when the object isn't there at all, and a hole is
+a slot that exists but holds no value. To make a claim cover the absent
+case too, admit it in the bound with `| {absent}`:
+
+```text
+for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7] | {absent}, first_quantity(checkout) == 7
     falsified   checkout = Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
 ```
 
-This says "for every checkout whose first quantity is 7", and it fails
-on a checkout with no first item at all. A path into a list that may be
-empty doesn't insist the element exists; an empty basket has no first
-quantity to constrain. To say the element must be there, leave out the
-missing case, `\ {missing}`, as the previous pages left out values:
-
-```text
-for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7] \ {missing}, first_quantity(checkout) == 7
-    holds
-```
+Now the empty basket is covered, and `first_quantity` returns 0 for it,
+which the claim didn't allow. Both claims are true statements about
+the code; they just cover different checkouts, and the bound says which.
 
 Next: [Trees](tutorial-trees.md).

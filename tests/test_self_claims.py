@@ -40,20 +40,20 @@ CLAIMS = [
      "holds", None),
     (text.startswith, 'for text in L[unicode], f(text, "") == True', "holds", None),
     # the hazard families on the vocabulary
-    (text.nfc, "for text in L[unicode], is_arbitrary_input_safe(text)", "holds", None),
-    (text.splitlines, "for text in L[unicode], is_arbitrary_input_safe(text)", "holds", None),
+    (text.nfc, "for text in L[unicode], is_language_defined(text)", "holds", None),
+    (text.splitlines, "for text in L[unicode], is_language_defined(text)", "holds", None),
     (text.casefold, "for text in L[unicode], is_encoding_safe(text)", "holds", None),
     (text.strip, "for text in L[unicode], is_length_safe(text)", "holds", None),
     # the predicate languages' membership tests
     (predicates._is_slug, "for s in L[slug], f(s) == True", "holds", None),
     (predicates._is_json, "for s in L[json], f(s) == True", "holds", None),
-    (predicates._is_json, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
-    (predicates._is_uuid, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
-    (predicates._is_iso_date, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
-    (predicates._is_ipv6, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
-    (predicates._is_base64, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
-    (predicates._is_hex, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
-    (predicates._is_shell_safe, "for s in L[unicode], is_arbitrary_input_safe(s)", "holds", None),
+    (predicates._is_json, "for s in L[unicode], is_language_defined(s)", "holds", None),
+    (predicates._is_uuid, "for s in L[unicode], is_language_defined(s)", "holds", None),
+    (predicates._is_iso_date, "for s in L[unicode], is_language_defined(s)", "holds", None),
+    (predicates._is_ipv6, "for s in L[unicode], is_language_defined(s)", "holds", None),
+    (predicates._is_base64, "for s in L[unicode], is_language_defined(s)", "holds", None),
+    (predicates._is_hex, "for s in L[unicode], is_language_defined(s)", "holds", None),
+    (predicates._is_shell_safe, "for s in L[unicode], is_language_defined(s)", "holds", None),
 ]
 
 

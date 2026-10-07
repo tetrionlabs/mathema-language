@@ -1,28 +1,30 @@
-# Claim families
+# Built-in claims
 
 <!-- shop: text formats forms -->
 
-A claim family is a named claim that feeds a function the inputs of one
-hazard class and reports what goes wrong, with a witness shrunk to the
-smallest input that still shows it. Over a language, each family draws
+A built-in claim is a named claim that feeds a function the inputs of
+one hazard class and reports what goes wrong, with a witness shrunk to
+the smallest input that still shows it. Over a language, each draws
 from the language's own hazards and near non-members, and a witness
 says whether it lies inside or outside the claim's domain.
+`is_language_defined` was called `is_arbitrary_input_safe` before
+mathema 0.6.1, and the old name is still accepted.
 
 | Family | Feeds the function | Falsified when |
 |---|---|---|
-| `is_arbitrary_input_safe(s)` | the language's hazards, members and near non-members | it raises an error it did not guard, an `IndexError`, `KeyError`, `TypeError`, `AttributeError`, `UnicodeError`, `RecursionError` or `OverflowError` |
+| `is_language_defined(s)` | the language's hazards, members and near non-members | it raises an error it did not guard, an `IndexError`, `KeyError`, `TypeError`, `AttributeError`, `UnicodeError`, `RecursionError` or `OverflowError` |
 | `excluded_outside_domain(s)` | values just outside the language | it accepts one without an error |
 | `is_encoding_safe(s)` | characters at the language's alphabet edges, and the codecs the body names | it raises an unguarded `UnicodeError` |
 | `is_length_safe(s)` | the language's longest members and overlong inputs | it crashes, or runs past mathema's time limit |
 
 A deliberate `ValueError` is a rejection, not a crash, so
-`is_arbitrary_input_safe` holds for a parser that raises one; a value
+`is_language_defined` holds for a parser that raises one; a value
 claim over the same domain is stricter, since any raise inside its
 domain falsifies it.
 
 ```text
 f = first_initial
-for name in L[unicode], is_arbitrary_input_safe(name)
+for name in L[unicode], is_language_defined(name)
     falsified   name = '' (inside L[unicode]) raised IndexError
 
 f = to_bytes

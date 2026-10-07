@@ -76,18 +76,18 @@ LEXICON: dict[str, str] = {
     "record_length_field_tight": "for line in L[mathema_language.lexicon.Line], f(line) <= 9",
     # the hazard families over a language
     # paths: bindings that reach into a member through fields and
-    # indices, a path past the end or through a missing field reaching
-    # the missing value
+    # indices; a bound means the value is there, and a field holding
+    # None or an index past the end is absent, kept in with | {absent}
     "path_every_element": "for o in L[mathema_language.lexicon.Order], o.lines[*].qty in [1, 3], f(o) <= 3",
     "path_every_element_unbound": "for o in L[mathema_language.lexicon.Order], f(o) <= 3",
     "path_nested_present":
-        "for o in L[mathema_language.lexicon.Order], o.address.zip in L[digit] \\ {missing}, f(o) == True",
+        "for o in L[mathema_language.lexicon.Order], o.address.zip in L[digit], f(o) == True",
     "path_nested_missing": "for o in L[mathema_language.lexicon.Order], f(o) == True",
     "path_nested_length": "for o in L[mathema_language.lexicon.Order], f(o) <= 5",
     "path_nested_length_tight": "for o in L[mathema_language.lexicon.Order], f(o) <= 4",
     "path_index_present":
-        "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7] \\ {missing}, f(o) >= 7",
-    "path_index_missing": "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7], f(o) >= 7",
+        "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7], f(o) >= 7",
+    "path_index_missing": "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7] | {absent}, f(o) >= 7",
     # structure: recursive record trees, bounded by depth, nodes and
     # children, and claims about folds over them proven by induction
     "structure_induction_constant": "for t in L[mathema_language.lexicon.Branch, depth <= 20], f(t) >= 1",
@@ -151,7 +151,7 @@ LEXICON: dict[str, str] = {
         'for hit in L[mathema_language._lexicon_models.search.SearchHit], f(hit) <= 10',
     "family_length_safe": "for s in L[slug], is_length_safe(s)",
     "family_encoding_safe": "for s in L[unicode], is_encoding_safe(s)",
-    "family_arbitrary_input": "for s in L[unicode], is_arbitrary_input_safe(s)",
+    "family_arbitrary_input": "for s in L[unicode], is_language_defined(s)",
     "closure_ascii_in_ascii_out": "for s in L[ascii], f(s) in L[ascii]",
     "closure_ascii_leaves": "for s in L[ascii], f(s) in L[ascii]",
 }

@@ -23,7 +23,7 @@ nav:
       - Languages: languages.md
       - Refinements: refinements.md
       - Relations and paths: paths.md
-      - Claim families: families.md
+      - Built-in claims: families.md
       - Vocabulary: vocabulary.md
       - Adaptors:
           - Writing an adaptor: adaptors.md

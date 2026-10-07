@@ -75,7 +75,7 @@ def resave(text: str) -> str:
 ```text
 f = resave
 let loads = json.loads, for text in L[json, depth <= 100], loads(f(text)) == loads(text)
-    falsified   text = 'NaN': loads returned nan
+    falsified   text = 'NaN': nan vs nan, and a nan is no value
 ```
 
 A bare `NaN` parses to a float NaN, and a NaN is no value and equal to
@@ -87,7 +87,7 @@ way in.
 
 | To say | Write |
 |---|---|
-| it handles any document the parser accepts | `for s in L[json], is_arbitrary_input_safe(s)` |
+| it handles any document the parser accepts | `for s in L[json], is_language_defined(s)` |
 | it handles documents up to the depth you accept | `for s in L[json, depth <= 100], ...` |
 | reading and writing loses nothing | `let loads = json.loads, for s in L[json], loads(f(s)) == loads(s)` |
 | formatting twice is formatting once | `for s in L[json], f(f(s)) == f(s)` |

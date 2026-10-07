@@ -95,10 +95,11 @@ for event in L[shop.webhooks.CHARGE_EVENT], f(event) in {"billing", "alerts"}
 
 A binding can narrow the records a claim covers by naming a path into
 them, through fields and indices, at any depth: `checkout.postcode`,
-`checkout.cart.items[0].quantity`, and `[*]` for every element. A path
-past the end of a list, or through a field that is not set, reaches the
-missing value, and `\ {missing}` on the bound says the path must be
-there.
+`checkout.cart.items[0].quantity`, and `[*]` for every element. A bound
+on a path means the value is there: a record whose path reaches nothing
+(a field holding `None`, a key that is not there, an index past the
+end) is absent there and outside the bound, and `| {absent}` keeps it
+in. [Relations and paths](paths.md) has the two kinds of nothing.
 
 ```python
 class Checkout(BaseModel):
@@ -129,16 +130,16 @@ f = first_quantity
 for checkout in L[shop.forms.Checkout], checkout.cart.items[*].quantity in [1, 3], f(checkout) <= 3
     holds
 
-for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7] \ {missing}, f(checkout) == 7
+for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7], f(checkout) == 7
     holds
 
-for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7], f(checkout) == 7
+for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7] | {absent}, f(checkout) == 7
     falsified   checkout = Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
 ```
 
 The last is falsified by an empty basket: `items[0]` is past the end of
-the list, so the binding reaches the missing value, which the bound
-admits unless it says otherwise.
+the list, so the path is absent there, and `| {absent}` brought that
+checkout into the claim.
 
 ## Enforcing the schema
 
@@ -168,7 +169,7 @@ loads it, from a request or a database, where nothing has.
 | To say | Write |
 |---|---|
 | a computed value stays in range for every record | `for order in L[shop.db.Order], f(order) >= 0` |
-| a handler copes with every document the schema allows | `for event in L[shop.webhooks.CHARGE_EVENT], is_arbitrary_input_safe(event)` |
+| a handler copes with every document the schema allows | `for event in L[shop.webhooks.CHARGE_EVENT], is_language_defined(event)` |
 | every element of a list field is within bounds | `for c in L[shop.forms.Checkout], c.cart.items[*].quantity in [1, 3], ...` |
 | a field is present, not absent | `c.postcode in L[alnum]` |
 | a boundary refuses what the schema rejects | `for form in L[shop.forms.SignupForm], excluded_outside_domain(form)` |

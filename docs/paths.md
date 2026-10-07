@@ -6,8 +6,8 @@
 
 `in` holds a value to a language or a finite set, and `not in` keeps a
 value out of another. Both are decided by execution, since the symbolic
-lift has no reading of a language, and a missing value is a member of
-nothing unless the right-hand side names it.
+lift has no reading of a language, and an absent value or a hole is a
+member of nothing unless the right-hand side names it.
 
 | Spelling | Reads |
 |---|---|
@@ -36,16 +36,23 @@ item, at any depth, `checkout.cart.items[*].quantity`. The derive route
 reads a numeric leaf at the end of a path with the bound the schema
 states for it, and a binding in the claim overrides that bound.
 
-A path past the end of a list, or through a field that is not set,
-reaches the missing value, which a bound admits unless it ends with
-`\ {missing}`:
+A bound on a path means the value is there. Where a path reaches
+nothing, it reaches one of two kinds of nothing:
+
+| The path reaches | Kind | Spelled |
+|---|---|---|
+| a field holding `None`, a key that is not there, an index past the end | absent | `absent` (`None` is accepted) |
+| a list slot holding `None`, a NaN | a hole | `missing` (`null`, `nan` name one member) |
+
+A record whose path is absent is outside a bare bound, and `| {absent}`
+keeps it in:
 
 ```text
 f = first_quantity
-for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7] \ {missing}, f(checkout) == 7
+for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7], f(checkout) == 7
     holds
 
-for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7], f(checkout) == 7
+for checkout in L[shop.forms.Checkout], checkout.cart.items[0].quantity in [7, 7] | {absent}, f(checkout) == 7
     falsified   checkout = Checkout(cart=Cart(items=[]), postcode=''): 0 vs 7
 ```
 

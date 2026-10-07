@@ -9,7 +9,7 @@ domain binding is always the input side (`for s in L[ascii]` says what
 the function is fed), and anything said about `f(...)` is the output side.
 
 The rows use three kinds of claim. A hazard family (`is_length_safe`,
-`is_encoding_safe`, `is_arbitrary_input_safe`, `excluded_outside_domain`)
+`is_encoding_safe`, `is_language_defined`, `excluded_outside_domain`)
 feeds the function the language's own hazards and reports an unguarded
 crash or a missing rejection. A law (`f(f(s)) == f(s)`,
 `len(f(s)) <= len(s)`) is adjudicated by derive where the body lifts
@@ -142,7 +142,7 @@ def is_slug(s: str) -> bool:
 |---|---|---|---|
 | `is_slug` | `for s in L[slug], f(s) == True` | holds | Every member of `L[slug]` is accepted. |
 | `is_slug` | `for s in L[slug], is_length_safe(s)` | holds | The pattern is linear in the input, so the long and pathological members return promptly. |
-| `is_slug` | `for s in L[unicode], is_arbitrary_input_safe(s)` | holds | A `fullmatch` never raises on a `str`, whatever it holds. |
+| `is_slug` | `for s in L[unicode], is_language_defined(s)` | holds | A `fullmatch` never raises on a `str`, whatever it holds. |
 
 ## Escaper
 
@@ -186,7 +186,7 @@ def word_count(s: str) -> int:
 |---|---|---|---|
 | `word_count` | `for s in L[unicode], f(s) >= 0` | holds | A length is never negative. |
 | `word_count` | `for s in L[unicode] \ {""}, f(s) >= 1` | falsified | A whitespace-only string is non-empty and has no words. |
-| `word_count` | `for s in L[unicode], is_arbitrary_input_safe(s)` | holds | `str.split` copes with every hazard in the corpus. |
+| `word_count` | `for s in L[unicode], is_language_defined(s)` | holds | `str.split` copes with every hazard in the corpus. |
 
 ## Row
 
