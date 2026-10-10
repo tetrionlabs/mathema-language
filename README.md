@@ -282,6 +282,7 @@ own validator, that validator decides membership.
 | Django | a `Model` subclass, with field types, options and validators | `full_clean` |
 | JSON Schema | a schema as a dict, local `$ref` included | the `jsonschema` validator |
 | Spark | a `StructType`, or the JSON Spark writes for one, read without importing pyspark | the package's checker |
+| argparse | an `ArgumentParser`, or a function building one: the namespaces `parse_args` returns, one shape per subcommand | the package's checker |
 | dataclass | a dataclass, with `Annotated` bounds | the package's checker |
 | TypedDict | a `TypedDict`, with `Annotated` bounds | the package's checker |
 | text | a `str` parameter, and `Annotated[str, MaxLen(n)]` | the text languages |

@@ -354,6 +354,16 @@
   "unicode": "∀ po ∈ L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], f(po) ≥ 0",
   "ascii": "for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], f(po) >= 0"
  },
+ "adaptor_argparse_bounded": {
+  "input": "for args in L[mathema_language._lexicon_models.admin.build_parser], args.quantity in [1, 100], f(args) <= 1200",
+  "unicode": "∀ args ∈ L[mathema_language._lexicon_models.admin.build_parser], args.quantity ∈ [1.0, 100.0] ⊂ ℝ, f(args) ≤ 1200",
+  "ascii": "for args in L[mathema_language._lexicon_models.admin.build_parser], args.quantity in [1.0, 100.0] : float, f(args) <= 1200"
+ },
+ "adaptor_argparse_falsified": {
+  "input": "for args in L[mathema_language._lexicon_models.admin.build_parser], f(args) >= 0",
+  "unicode": "∀ args ∈ L[mathema_language._lexicon_models.admin.build_parser], f(args) ≥ 0",
+  "ascii": "for args in L[mathema_language._lexicon_models.admin.build_parser], f(args) >= 0"
+ },
  "family_length_safe": {
   "input": "for s in L[slug], is_length_safe(s)",
   "unicode": "∀ s ∈ L[slug], s is length safe",

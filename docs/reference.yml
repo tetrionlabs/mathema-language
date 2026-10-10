@@ -32,6 +32,7 @@ nav:
           - pydantic: adaptor-pydantic.md
           - JSON Schema: adaptor-jsonschema.md
           - Spark schemas: adaptor-spark.md
+          - Command lines (argparse): adaptor-argparse.md
           - SQLAlchemy: adaptor-sqlalchemy.md
           - Django: adaptor-django.md
           - Text annotations: adaptor-text.md

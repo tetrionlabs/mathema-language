@@ -110,6 +110,8 @@ EXPECTED = {
     "adaptor_typeddict_falsified": ("falsified", 'vs 10'),
     "adaptor_spark_proven": "proven",
     "adaptor_spark_falsified": ("falsified", 'vs 0'),
+    "adaptor_argparse_bounded": "holds",
+    "adaptor_argparse_falsified": ("falsified", '-12 vs 0'),
     "family_length_safe": "holds",
     "family_encoding_safe": ("falsified", "raised UnicodeEncodeError"),
     "family_arbitrary_input": ("falsified", "s = '' (inside L[unicode]) raised IndexError"),
