@@ -31,6 +31,7 @@ nav:
           - TypedDicts: adaptor-typeddict.md
           - pydantic: adaptor-pydantic.md
           - JSON Schema: adaptor-jsonschema.md
+          - Spark schemas: adaptor-spark.md
           - SQLAlchemy: adaptor-sqlalchemy.md
           - Django: adaptor-django.md
           - Text annotations: adaptor-text.md

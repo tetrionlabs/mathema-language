@@ -82,7 +82,7 @@ def receipt_line(order: Order) -> str:
 ```text
 f = receipt_line
 for order in L[shop.db.Order], excluded_outside_domain(order)
-    falsified   order = Order(id=2147483648, sku='', quantity=1, unit_price=Decimal('0')) (outside L[shop.db.Order] at .id: int32)
+    falsified   order = Order(id=0, sku=None, quantity=1, unit_price=Decimal('0')) (outside L[shop.db.Order] at .sku: not null)
 ```
 
 The same claim over the function that loads the record, from a request

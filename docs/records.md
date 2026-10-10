@@ -21,6 +21,7 @@ application's own library says so.
 | a SQLAlchemy table or mapped class | `L[shop.db.Order]` | inserting the row into in-memory SQLite |
 | a Django model | `L[shop.reviews.Review]` | `full_clean` |
 | a JSON Schema, as a dict | `L[shop.webhooks.CHARGE_EVENT]` | the `jsonschema` validator |
+| a Spark schema, a `StructType` or its JSON | `L[shop.procurement.PURCHASE_ORDER]` | the package's own checker |
 | a dataclass | `L[shop.shipping.Parcel]` | the package's own checker |
 | a TypedDict | `L[shop.search.SearchHit]` | the package's own checker |
 

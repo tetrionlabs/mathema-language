@@ -34,7 +34,8 @@ class NeutralType:
     `ref` the name of a record type among the schema's definitions,
     which is how a schema refers to itself. `construct` builds a
     struct's value from its field values (a dataclass or model class);
-    without it a struct's value is a dict."""
+    without it a struct's value is a dict. `nullable_items` says a list's
+    items, or a map's values, may be null."""
     base: str
     bits: int | None = None
     signed: bool = True
@@ -49,6 +50,7 @@ class NeutralType:
     key: NeutralType | None = None
     value: NeutralType | None = None
     ref: str | None = None
+    nullable_items: bool = False
     construct: Callable[..., Any] | None = field(default=None, compare=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -58,6 +60,16 @@ class NeutralType:
     @property
     def numeric(self) -> bool:
         return self.base in ("int", "float", "decimal")
+
+    def decimal_bound(self) -> Any:
+        """The largest magnitude a `decimal(p, s)` holds,
+        10^(p-s) - 10^-s, or None without a precision."""
+        if self.base != "decimal" or self.precision is None:
+            return None
+        import decimal
+        scale = self.scale or 0
+        whole = "9" * (self.precision - scale) or "0"
+        return decimal.Decimal(whole + ("." + "9" * scale if scale else ""))
 
     def render(self) -> str:
         """The type as text: `int64`, `string`, `categorical[a, b]`,

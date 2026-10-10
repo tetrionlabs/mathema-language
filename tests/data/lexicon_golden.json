@@ -344,6 +344,16 @@
   "unicode": "∀ hit ∈ L[mathema_language._lexicon_models.search.SearchHit], f(hit) ≤ 10",
   "ascii": "for hit in L[mathema_language._lexicon_models.search.SearchHit], f(hit) <= 10"
  },
+ "adaptor_spark_proven": {
+  "input": "for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], po.quantity in [0, 100], po.unit_price in [0, 99.99], f(po) <= 9999",
+  "unicode": "∀ po ∈ L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], po.quantity ∈ [0, 100] ⊂ ℤ, po.unit_price ∈ [0.0, 99.99] ⊂ ℝ, f(po) ≤ 9999",
+  "ascii": "for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], po.quantity in [0, 100] : int, po.unit_price in [0.0, 99.99] : float, f(po) <= 9999"
+ },
+ "adaptor_spark_falsified": {
+  "input": "for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], f(po) >= 0",
+  "unicode": "∀ po ∈ L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], f(po) ≥ 0",
+  "ascii": "for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], f(po) >= 0"
+ },
  "family_length_safe": {
   "input": "for s in L[slug], is_length_safe(s)",
   "unicode": "∀ s ∈ L[slug], s is length safe",

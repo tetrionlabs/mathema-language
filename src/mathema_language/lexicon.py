@@ -149,6 +149,10 @@ LEXICON: dict[str, str] = {
         'for hit in L[mathema_language._lexicon_models.search.SearchHit], f(hit) >= 0',
     "adaptor_typeddict_falsified":
         'for hit in L[mathema_language._lexicon_models.search.SearchHit], f(hit) <= 10',
+    "adaptor_spark_proven":
+        'for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], po.quantity in [0, 100], po.unit_price in [0, 99.99], f(po) <= 9999',
+    "adaptor_spark_falsified":
+        'for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], f(po) >= 0',
     "family_length_safe": "for s in L[slug], is_length_safe(s)",
     "family_encoding_safe": "for s in L[unicode], is_encoding_safe(s)",
     "family_arbitrary_input": "for s in L[unicode], is_language_defined(s)",
@@ -440,6 +444,11 @@ def rank(hit: dict[str, Any]) -> float:
     return float(hit["score"] * 10 + hit["clicks"] / 1000)
 
 
+def po_line_total(po: dict[str, Any]) -> Any:
+    """What a purchase order's lines come to."""
+    return po["quantity"] * po["unit_price"]
+
+
 #: the lexicon's table of contents, every key in exactly one section;
 #: installed, mathema reads these as `language/<section>`
 SECTIONS: dict[str, tuple[str, ...]] = {
@@ -462,7 +471,7 @@ SECTIONS: dict[str, tuple[str, ...]] = {
                   "structure_nodes_bound", "structure_json_depth"),
     "languages": ("language_printable_output", "language_alpha_closure", "language_unicode_alpha_closure",
                   "language_unicode_alnum_length", "language_identifier_closure", "language_uuid_idempotent", "language_uuid_spelling", "language_iso_date_idempotent", "language_iso_datetime_idempotent", "language_ipv4_closure", "language_ipv6_closure", "language_base64_round_trip", "language_hex_spelling", "language_shell_safe_argument", "language_shell_unsafe_argument", "language_control_header_injection", "language_invisible_blank", "language_combining_stripped", "language_surrogate_encoding", "language_compatibility_key", "language_astral_utf16"),
-    "adaptors": ("adaptor_text_annotation", "adaptor_pydantic_proven", "adaptor_pydantic_falsified", "adaptor_sqlalchemy_proven", "adaptor_sqlalchemy_falsified", "adaptor_django_proven", "adaptor_django_falsified", "adaptor_jsonschema_proven", "adaptor_jsonschema_falsified", "adaptor_typeddict_proven", "adaptor_typeddict_falsified"),
+    "adaptors": ("adaptor_text_annotation", "adaptor_pydantic_proven", "adaptor_pydantic_falsified", "adaptor_sqlalchemy_proven", "adaptor_sqlalchemy_falsified", "adaptor_django_proven", "adaptor_django_falsified", "adaptor_jsonschema_proven", "adaptor_jsonschema_falsified", "adaptor_typeddict_proven", "adaptor_typeddict_falsified", "adaptor_spark_proven", "adaptor_spark_falsified"),
     "vocabulary": ("vocabulary_tree_depth",),
     "families": ("family_excluded_outside_domain", "family_excluded_outside_domain_accepts",
                  "family_length_safe", "family_encoding_safe", "family_arbitrary_input"),
@@ -539,6 +548,8 @@ TAGS: dict[str, tuple[str, ...]] = {
     "adaptor_jsonschema_falsified": ('json schema', 'webhook'),
     "adaptor_typeddict_proven": ('typeddict', 'annotated'),
     "adaptor_typeddict_falsified": ('typeddict', 'unbounded'),
+    "adaptor_spark_proven": ('spark', 'struct type'),
+    "adaptor_spark_falsified": ('spark', 'unbounded'),
     "family_length_safe": ("long input", "backtracking", "regex dos"),
     "family_encoding_safe": ("encode", "unicodeencodeerror"),
     "family_arbitrary_input": ("fuzz", "crash", "empty string"),
@@ -602,6 +613,7 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "processing_fee": (processing_fee, ['adaptor_jsonschema_proven']),
     "queue_for": (queue_for, ['adaptor_jsonschema_falsified']),
     "rank": (rank, ['adaptor_typeddict_proven', 'adaptor_typeddict_falsified']),
+    "po_line_total": (po_line_total, ['adaptor_spark_proven', 'adaptor_spark_falsified']),
 }
 
 __all__ = ["EXAMPLE_FUNCTIONS", "LEXICON", "SECTIONS", "TAGS", "Address", "Branch", "Line",

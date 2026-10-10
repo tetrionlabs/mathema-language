@@ -25,6 +25,26 @@ def _is_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
+def _decimal_problems(value: decimal.Decimal, t: NeutralType, path: str) -> list[Problem]:
+    """How a decimal fails `decimal(p, s)`: not finite, more places after
+    the point than `s`, or more than `p - s` digits before it. Without a
+    precision any decimal is a member."""
+    bound = t.decimal_bound()
+    if bound is None:
+        return []
+    if not value.is_finite():
+        return [Problem(path, f"a finite {t.render()}", value)]
+    digits, exponent = list(value.as_tuple().digits), int(value.as_tuple().exponent)
+    while exponent < -(t.scale or 0) and len(digits) > 1 and digits[-1] == 0:
+        digits.pop()
+        exponent += 1
+    if exponent < -(t.scale or 0) and any(digits):
+        return [Problem(path, f"{t.render()}: at most {t.scale or 0} places after the point", value)]
+    if value.copy_abs() > bound:
+        return [Problem(path, f"{t.render()}: at most {bound}", value)]
+    return []
+
+
 def _scalar_problems(value: Any, t: NeutralType, path: str,
                      nan_allowed: bool) -> list[Problem]:
     """Every way `value` fails a scalar type `t`; containers are the
@@ -50,8 +70,9 @@ def _scalar_problems(value: Any, t: NeutralType, path: str,
             return [Problem(path, "not nan", value)]
         return []
     if base == "decimal":
-        return [] if isinstance(value, (decimal.Decimal, int)) and not isinstance(value, bool) \
-            else [Problem(path, "decimal", value)]
+        if not isinstance(value, (decimal.Decimal, int)) or isinstance(value, bool):
+            return [Problem(path, "decimal", value)]
+        return _decimal_problems(decimal.Decimal(value), t, path)
     if base == "string":
         return [] if isinstance(value, str) else [Problem(path, "string", value)]
     if base == "binary":
@@ -162,6 +183,8 @@ class _Walker:
             if t.item is None or not self._enter(value, path):
                 return
             for i in range(len(value) - 1, -1, -1):
+                if value[i] is None and t.nullable_items:
+                    continue
                 self.push_type(value[i], t.item, f"{path}[{i}]")
             return
         if base == "map":
@@ -171,7 +194,7 @@ class _Walker:
             if not self._enter(value, path):
                 return
             for k, v in reversed(list(value.items())):
-                if t.value is not None:
+                if t.value is not None and not (v is None and t.nullable_items):
                     self.push_type(v, t.value, f"{path}[{k!r}]")
                 if t.key is not None:
                     self.push_type(k, t.key, f"{path}[{k!r}]")

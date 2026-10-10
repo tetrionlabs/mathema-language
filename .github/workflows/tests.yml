@@ -63,6 +63,8 @@ jobs:
           - {ecosystem: sqlalchemy, spec: "sqlalchemy", python-version: "3.13"}
           - {ecosystem: django, spec: "django==4.2", python-version: "3.11"}
           - {ecosystem: django, spec: "django", python-version: "3.13"}
+          - {ecosystem: pyspark, spec: "pyspark==3.5.0", python-version: "3.11"}
+          - {ecosystem: pyspark, spec: "pyspark", python-version: "3.13"}
     name: adaptor (${{ matrix.spec }}, Python ${{ matrix.python-version }})
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +79,7 @@ jobs:
         run: |
           python - <<'PY'
           import importlib.util, os
-          others = [m for m in ("pydantic", "jsonschema", "sqlalchemy", "django")
+          others = [m for m in ("pydantic", "jsonschema", "sqlalchemy", "django", "pyspark")
                     if m != os.environ["ECOSYSTEM"] and importlib.util.find_spec(m) is not None]
           assert not others, others
           PY
