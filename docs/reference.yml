@@ -12,6 +12,7 @@ nav:
       - Trees: tutorial-trees.md
   - How-to:
       - Narrow a language to what a function accepts: how-to-narrow-a-language.md
+      - Prove a Spark rule: how-to-prove-a-spark-rule.md
   - Strings:
       - Text: text.md
       - Formats and identifiers: formats.md

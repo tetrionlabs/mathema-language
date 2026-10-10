@@ -24,6 +24,13 @@ release onward.
   every namespace a user can produce.
 - A union of record languages, one branch per shape, which a parser with
   subcommands reads as.
+- `mathema_language.spark.rule` reads a column a Spark function computes
+  (a `withColumn` chain of `when`, comparisons, `isNull`, `isin`,
+  `between`, `coalesce` and arithmetic) from the function's source,
+  without pyspark, and returns it as a Python function of the columns it
+  reads, with Spark's handling of null and NaN written in, so a banding
+  rule is proven over every value and an edge written wrongly is found.
+  Anything outside that subset is refused by name.
 
 ## 0.1.0
 
