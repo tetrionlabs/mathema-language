@@ -282,7 +282,7 @@ def parser_notes(obj: Any) -> list[ParserNote]:
             parser.format_help()
         except (ValueError, TypeError, KeyError) as e:
             out.append(ParserNote(parser.prog, "", f"its help fails to format ({e}), so --help "
-                                  "raises instead of printing; a literal % in help is written %%"))
+                                  "raises instead of printing; a literal % in usage or help is written %%"))
     return out
 
 

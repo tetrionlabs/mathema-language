@@ -104,7 +104,17 @@ def test_one_choice_the_type_never_produces():
     assert "the choices ['B'] can never be given" in note
 
 
-def test_help_that_fails_to_format():
+def test_usage_that_fails_to_format():
+    p = argparse.ArgumentParser(prog="p", usage="p [--share N], N in %")
+    with pytest.raises(ValueError):
+        parse(p, ["--help"])
+    [note] = parser_notes(p)
+    assert note.argument == "" and "%%" in note.message
+
+
+@pytest.mark.skipif(sys.version_info >= (3, 14),
+                    reason="from Python 3.14 add_argument refuses such help itself")
+def test_argument_help_that_fails_to_format():
     p = parser()
     p.add_argument("--share", help="share in %")
     with pytest.raises(ValueError):

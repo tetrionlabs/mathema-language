@@ -69,7 +69,7 @@ report: argument --limit: the default 'all' is not a value its type reads (inval
 | a text default its type refuses | the default is converted only when the option is left out, so every command line without it exits with a usage error |
 | two options storing into one name | the last one given wins; a `store_true` and `store_false` pair, and alternatives in a mutually exclusive group, are not noted |
 | choices the type never produces | `type=int` with `choices=["1", "2"]` refuses every value, and `type=str.lower` never gives a choice spelled in capitals |
-| help that fails to format | `--help` raises instead of printing, usually a `%` that should be `%%` |
+| help that fails to format | `--help` raises instead of printing, usually a `%` that should be `%%` in the usage, or in an argument's help before Python 3.14 (which refuses it in `add_argument`) |
 
 The notes cover every subcommand, and the parsers in the shop examples
 have none.
