@@ -31,6 +31,13 @@ release onward.
   reads, with Spark's handling of null and NaN written in, so a banding
   rule is proven over every value and an edge written wrongly is found.
   Anything outside that subset is refused by name.
+- `mathema_language.spark.holes` reports what a Spark rule writes at each
+  hole of each column it reads (`null`, and `nan` for a floating-point
+  column), and whether the code decided it (an `isNull`, `isnan` or
+  `coalesce`), Spark's semantics decided it (a fall-through to
+  `otherwise`, NaN compared as above every number, null through
+  arithmetic), or it depends on another column. The rule reader also
+  reads `isnan`.
 
 ## 0.1.0
 

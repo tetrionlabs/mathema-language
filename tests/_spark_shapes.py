@@ -6,7 +6,7 @@ from the columns `x` (a double, may be null or NaN), `n` (an integer,
 may be null) and `s` (a string, may be null)."""
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
-from pyspark.sql.functions import coalesce, col, lit, when
+from pyspark.sql.functions import coalesce, col, isnan, lit, when
 
 LIMIT = 10
 
@@ -62,6 +62,50 @@ def reads_its_own_column(df: DataFrame) -> DataFrame:
     return df.withColumn("doubled", col("n") * 2).withColumn("out", when(col("doubled") > 4, "big"))
 
 
+def nan_tested(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", when(isnan(col("x")), "bad").when(col("x") > 4, "high").otherwise("normal"))
+
+
+# ---- shapes for the hole report: each null pitfall, and how it is handled
+
+
+def hole_explicit(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", when(col("x").isNull() | (col("x") < 0), "Invalid")
+                         .when(col("x") < 5, "low").otherwise("high"))
+
+
+def hole_falls_through(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", when(col("x") < 0, "Invalid").when(col("x") < 5, "low").otherwise("high"))
+
+
+def hole_not_equal(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", when(col("s") != "a", "other").otherwise("is a"))
+
+
+def hole_negated(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", when(~(col("s") == "a"), "not a").otherwise("is a"))
+
+
+def hole_arithmetic(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", when(col("x") * col("n") > 10, "big").otherwise("small"))
+
+
+def hole_nan_above(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", when(col("x").isNull(), "unknown").when(col("x") > 4, "high").otherwise("normal"))
+
+
+def hole_no_otherwise(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", when(col("x") > 5, lit(1)))
+
+
+def hole_filled(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", coalesce(col("n"), lit(0)))
+
+
+def hole_conditional(df: DataFrame) -> DataFrame:
+    return df.withColumn("out", when(col("x").isNull() & (col("n") > 0), "a").otherwise("b"))
+
+
 #: every shape the lowering reads, run against Spark by the agreement test
 READ = ("bands", "no_otherwise", "null_check", "negation_and_or", "membership",
-        "arithmetic", "equality", "first_present", "by_attribute", "chained")
+        "arithmetic", "equality", "first_present", "by_attribute", "chained", "nan_tested")

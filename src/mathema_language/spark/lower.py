@@ -255,6 +255,11 @@ class _Lowering:
         if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Invert):
             t, f = self.condition(node.operand)
             return f, t
+        if _call_name(node) == "isnan" and isinstance(node, ast.Call) and len(node.args) == 1:
+            code, cols = self.value(node.args[0])
+            present = " and ".join(f"{c} is not None" for c in sorted(cols)) or "True"
+            nan = f"({present} and ({code}) != ({code}))"
+            return nan, f"(not {nan})"
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
             method = node.func.attr
             target = node.func.value
