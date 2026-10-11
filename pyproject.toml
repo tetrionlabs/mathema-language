@@ -38,7 +38,8 @@ pydantic = ["pydantic>=2.0"]
 jsonschema = ["jsonschema>=4.22"]
 sqlalchemy = ["sqlalchemy>=2.0"]
 django = ["django>=4.2"]
-all = ["mathema-language[pydantic,jsonschema,sqlalchemy,django]"]
+yaml = ["ruamel.yaml>=0.18"]
+all = ["mathema-language[pydantic,jsonschema,sqlalchemy,django,yaml]"]
 docs = [
     "django==6.1.1",
     "werkzeug==3.1.9",
@@ -48,7 +49,7 @@ docs = [
     "flatten_json==0.1.14",
     "email-validator==2.3.0",
 ]
-test = ["pytest>=8", "annotated-types>=0.6", "mathema-language[pydantic,jsonschema,sqlalchemy,django]"]
+test = ["pytest>=8", "annotated-types>=0.6", "pyyaml>=6", "mathema-language[pydantic,jsonschema,sqlalchemy,django,yaml]"]
 
 [project.urls]
 Homepage = "https://github.com/tetrionlabs/mathema-language"
@@ -83,6 +84,7 @@ combining = "mathema_language.text:COMBINING"
 surrogate = "mathema_language.text:SURROGATE"
 compatibility = "mathema_language.text:COMPATIBILITY"
 astral = "mathema_language.text:ASTRAL"
+yaml = "mathema_language.text.yaml_language:YAML_TEXT"
 
 [project.entry-points."mathema.claim_families"]
 is_length_safe = "mathema_language.families:LENGTH_SAFE"

@@ -39,6 +39,14 @@ release onward.
   arithmetic), or it depends on another column. The rule reader also
   reads `isnan`.
 
+- `L[yaml]` is the texts that are one YAML document, read as YAML 1.2
+  by ruamel.yaml (the new `[yaml]` extra). Its first hazards are the
+  documents a YAML 1.1 reader such as PyYAML reads differently
+  (`country: no`, `on: push`, `mode: 012`, `t: 1:20`), and the texts no
+  YAML reader accepts (a tab in the indentation, a key given twice) are
+  outside it. `mathema_language.text.yaml_language.load` is the YAML 1.2
+  reading, for comparing a loader against.
+
 ## 0.1.0
 
 The first release, for mathema 0.6.1 (`mathema>=0.6.1,<0.7`).

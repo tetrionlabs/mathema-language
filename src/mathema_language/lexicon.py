@@ -54,6 +54,8 @@ LEXICON: dict[str, str] = {
         "let dump = json.dumps, for s in L[json], f(dump(f(s))) == f(s)",
     # a normaliser is idempotent over every string
     "language_idempotent": "for s in L[unicode], f(f(s)) == f(s)",
+    "language_yaml_reading":
+        "let reference = mathema_language.text.yaml_language.load, for text in L[yaml], assuming is_defined(f), f(text) == reference(text)",
     # a length bound: inside it the cut changes nothing
     "language_length_bound_identity": "for s in L[unicode, len <= 80], f(s) == s",
     # one past the bound, the member at the bound loses a character
@@ -311,6 +313,13 @@ def widest(t: Branch) -> int:
     return max([len(t.children), *(widest(c) for c in t.children)])
 
 
+def read_yaml_1_1(text: str) -> object:
+    """A YAML document as PyYAML's `safe_load` reads it, by the YAML 1.1
+    rules."""
+    import yaml
+    return yaml.safe_load(text)
+
+
 def canonical_json(s: str) -> str:
     """The JSON document with its keys sorted."""
     return json.dumps(json.loads(s), sort_keys=True)
@@ -465,7 +474,7 @@ def units_ordered(args: Any) -> int:
 SECTIONS: dict[str, tuple[str, ...]] = {
     "domains": ("language_with_special_member",),
     "laws": ("language_homomorphism", "language_section_inverse", "language_retraction",
-             "language_idempotent"),
+             "language_idempotent", "language_yaml_reading"),
     "boundaries": ("language_encoding_boundary",),
     "length": ("language_length_bound_identity", "language_length_bound_one_past"),
     "membership": ("closure_ascii_in_ascii_out", "closure_ascii_leaves", "in_target_language", "language_closure_rendered",
@@ -496,6 +505,7 @@ TAGS: dict[str, tuple[str, ...]] = {
     "language_section_inverse": ("round trip", "inverse", "unescape"),
     "language_retraction": ("retraction", "parse render parse", "json round trip"),
     "language_idempotent": ("idempotent", "normaliser", "apply twice"),
+    "language_yaml_reading": ("yaml", "reference reading", "1.1 against 1.2"),
     "language_length_bound_identity": ("truncate", "length bound", "max length"),
     "language_length_bound_one_past": ("one past the bound", "truncation bug"),
     "in_target_language": ("slugify", "closure", "output language"),
@@ -600,6 +610,7 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
                                   "vocabulary_tree_depth"]),
     "widest": (widest, ["structure_width_bound", "structure_width_one_past"]),
     "canonical_json": (canonical_json, ["structure_json_depth"]),
+    "read_yaml_1_1": (read_yaml_1_1, ["language_yaml_reading"]),
     "loads": (loads, ["language_retraction"]),
     "log_line": (log_line, ['language_printable_output']),
     "capitalise_word": (capitalise_word, ['language_alpha_closure', 'language_unicode_alpha_closure']),
