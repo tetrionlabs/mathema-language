@@ -45,6 +45,7 @@ EXPECTED = {
     "language_section_inverse": "holds",
     "language_retraction": ("falsified", "s = 'NaN': nan vs nan, and a nan is no value"),
     "language_idempotent": "holds",
+    "language_yaml_reading": ("falsified", " vs "),
     "language_length_bound_identity": "holds",
     "language_length_bound_one_past": ("falsified", "s = '" + "a" * 81 + "':"),
     "in_target_language": ("falsified", "s = '': '' is not in L[slug]"),
@@ -125,9 +126,15 @@ _ADAPTOR_LIBRARY = {"pydantic": "pydantic", "sqlalchemy": "sqlalchemy",
                     "django": "django", "jsonschema": "jsonschema"}
 
 
+#: rows that need libraries beyond their adaptor's
+_ROW_LIBRARIES = {"language_yaml_reading": ("ruamel", "yaml")}
+
+
 def _runnable(key):
     """Whether a row can be adjudicated here: an `adaptor_<library>_` row
-    needs that library installed."""
+    needs that library installed, and so does a row listed above."""
+    if any(importlib.util.find_spec(m) is None for m in _ROW_LIBRARIES.get(key, ())):
+        return False
     for adaptor, module in _ADAPTOR_LIBRARY.items():
         if key.startswith(f"adaptor_{adaptor}_"):
             return importlib.util.find_spec(module) is not None

@@ -29,6 +29,11 @@
   "unicode": "∀ s ∈ L[unicode], f(f(s)) = f(s)",
   "ascii": "for s in L[unicode], f(f(s)) = f(s)"
  },
+ "language_yaml_reading": {
+  "input": "let reference = mathema_language.text.yaml_language.load, for text in L[yaml], assuming is_defined(f), f(text) == reference(text)",
+  "unicode": "assuming f is defined, let reference = mathema_language.text.yaml_language.load, ∀ text ∈ L[yaml], f(text) = reference(text)",
+  "ascii": "assuming f is defined, let reference = mathema_language.text.yaml_language.load, for text in L[yaml], f(text) = reference(text)"
+ },
  "language_length_bound_identity": {
   "input": "for s in L[unicode, len <= 80], f(s) == s",
   "unicode": "∀ s ∈ L[unicode, len <= 80], f(s) = s",
