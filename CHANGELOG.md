@@ -39,6 +39,14 @@ release onward.
   arithmetic), or it depends on another column. The rule reader also
   reads `isnan`.
 
+- `mathema_language.argv.argv_language` is the language of the command
+  lines an argparse parser accepts: drawn in every spelling argparse
+  reads the same, with membership by the parser and refusals in its own
+  words, and the hazards command lines break on (`--help` on every
+  subcommand, a negative number, an empty value, a value starting with a
+  dash, an abbreviation, a repeated option). A parser whose arguments
+  open files is refused.
+
 ## 0.1.0
 
 The first release, for mathema 0.6.1 (`mathema>=0.6.1,<0.7`).
