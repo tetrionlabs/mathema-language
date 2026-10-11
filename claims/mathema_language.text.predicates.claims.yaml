@@ -1,0 +1,69 @@
+# mathema init: bare declared stubs for mathema_language.text.predicates (fill in claims; an empty list means nothing declared yet)
+mathema_language.text.predicates._accepted:
+  claims: []
+mathema_language.text.predicates._generate_base64:
+  claims: []
+mathema_language.text.predicates._generate_hex:
+  claims: []
+mathema_language.text.predicates._generate_identifier:
+  claims: []
+mathema_language.text.predicates._generate_ipv4:
+  claims: []
+mathema_language.text.predicates._generate_ipv6:
+  claims: []
+mathema_language.text.predicates._generate_iso_date:
+  claims: []
+mathema_language.text.predicates._generate_iso_datetime:
+  claims: []
+mathema_language.text.predicates._generate_json:
+  claims: []
+mathema_language.text.predicates._generate_shell_safe:
+  claims: []
+mathema_language.text.predicates._generate_slug:
+  claims: []
+mathema_language.text.predicates._generate_uuid:
+  claims: []
+mathema_language.text.predicates._is_base64:
+  claims:
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"
+mathema_language.text.predicates._is_hex:
+  claims:
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"
+mathema_language.text.predicates._is_ipv4:
+  claims:
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"
+mathema_language.text.predicates._is_ipv6:
+  claims:
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"
+mathema_language.text.predicates._is_iso_date:
+  claims:
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"
+mathema_language.text.predicates._is_iso_datetime:
+  claims:
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"
+mathema_language.text.predicates._is_json:
+  claims:
+    - name: accepts_its_members
+      statement: "for s in L[json], f(s) == True"
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"
+mathema_language.text.predicates._is_shell_safe:
+  claims:
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"
+mathema_language.text.predicates._is_slug:
+  claims:
+    - name: accepts_its_members
+      statement: "for s in L[slug], f(s) == True"
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"
+mathema_language.text.predicates._is_uuid:
+  claims:
+    - name: defined_on_any_text
+      statement: "for s in L[unicode], is_language_defined(s)"

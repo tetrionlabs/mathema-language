@@ -1,0 +1,76 @@
+mathema_language.vocabulary.text._fn:
+  claims: []
+mathema_language.vocabulary.text.casefold:
+  claims:
+  - name: settles
+    statement: for text in L[unicode], f(f(text)) == f(text)
+  - name: encodes_any_text
+    statement: for text in L[unicode], is_encoding_safe(text)
+mathema_language.vocabulary.text.count:
+  claims:
+  - name: not_negative
+    statement: for text in L[unicode], part in L[unicode], f(text, part) >= 0
+  - name: at_most_the_length
+    statement: for text in L[unicode], part in L[unicode] \ {""}, f(text, part) <=
+      len(text)
+mathema_language.vocabulary.text.endswith:
+  claims:
+  - name: empty_suffix
+    statement: for text in L[unicode], f(text, "") == True
+mathema_language.vocabulary.text.lower:
+  claims:
+  - name: settles
+    statement: for text in L[unicode], f(f(text)) == f(text)
+mathema_language.vocabulary.text.nfc:
+  claims:
+  - name: settles
+    statement: for text in L[unicode], f(f(text)) == f(text)
+  - name: absorbs_decomposition
+    statement: let n = mathema_language.vocabulary.text.nfd, for text in L[unicode],
+      f(n(text)) == f(text)
+  - name: ascii_is_composed
+    statement: for text in L[ascii], f(text) == text
+  - name: defined_on_any_text
+    statement: for text in L[unicode], is_language_defined(text)
+mathema_language.vocabulary.text.nfc_len:
+  claims:
+  - name: at_most_three_times_the_text
+    statement: for text in L[unicode], f(text) <= 3 * len(text)
+mathema_language.vocabulary.text.nfd:
+  claims:
+  - name: settles
+    statement: for text in L[unicode], f(f(text)) == f(text)
+mathema_language.vocabulary.text.nfkc:
+  claims:
+  - name: settles
+    statement: for text in L[unicode], f(f(text)) == f(text)
+mathema_language.vocabulary.text.nfkd:
+  claims:
+  - name: settles
+    statement: for text in L[unicode], f(f(text)) == f(text)
+mathema_language.vocabulary.text.splitlines:
+  claims:
+  - name: defined_on_any_text
+    statement: for text in L[unicode], is_language_defined(text)
+mathema_language.vocabulary.text.startswith:
+  claims:
+  - name: empty_prefix
+    statement: for text in L[unicode], f(text, "") == True
+mathema_language.vocabulary.text.strip:
+  claims:
+  - name: settles
+    statement: for text in L[unicode], f(f(text)) == f(text)
+  - name: never_lengthens
+    statement: for text in L[unicode], len(f(text)) <= len(text)
+  - name: bounded_on_long_text
+    statement: for text in L[unicode], is_length_safe(text)
+mathema_language.vocabulary.text.upper:
+  claims:
+  - name: settles
+    statement: for text in L[unicode], f(f(text)) == f(text)
+  - name: at_most_triples_length
+    statement: for text in L[unicode], len(f(text)) <= 3 * len(text)
+mathema_language.vocabulary.text.utf8_len:
+  claims:
+  - name: at_least_the_code_points
+    statement: for text in L[unicode], f(text) >= len(text)

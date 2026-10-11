@@ -1,0 +1,32 @@
+# mathema verify is the CI gate over the committed .mathema/ store: it
+# checks again whatever changed and gates the result. verify is
+# strict by default, which fails a falsified claim, an open unknown
+# one, and also a claim that could not be checked at all (an unreachable
+# surface, an unsupported shape). Most stores have some of the last
+# kind at first, so expect the first run to be red and to tell you
+# exactly which claims it means. Add --lenient to report those
+# unverifiable claims and accepted risk without failing, and keep
+# strict for falsified and unknown, once you have decided each one is
+# understood. Exit codes: 0 clean, 1 gate failure, 2 broken invocation
+# or store, so a failing gate is distinguishable from a broken job
+# without parsing any output.
+name: mathema
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # your project must import for its claims to adjudicate; adjust
+      # this line to however your project installs
+      - run: pip install -e . "mathema>=0.6.1,<0.7"
+      - run: mathema verify --root . --lenient
+      # optional: the claim-level delta since the base, for a PR comment
+      # - run: mathema review --format json --output review.json
