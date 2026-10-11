@@ -33,3 +33,13 @@ def discounted(args: argparse.Namespace, price: float) -> float:
     if args.command == "discount":
         return price * (100 - args.percent) / 100
     return price
+
+
+def units_from_argv(argv: list[str]) -> int:
+    """How many units an admin command line orders, 0 when it only asks
+    for help."""
+    try:
+        args = build_parser().parse_args(argv)
+    except SystemExit:
+        return 0
+    return units_ordered(args)
