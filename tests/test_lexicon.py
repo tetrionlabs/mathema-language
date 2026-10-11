@@ -108,6 +108,8 @@ EXPECTED = {
     "adaptor_jsonschema_falsified": ("falsified", 'raised KeyError'),
     "adaptor_typeddict_proven": "proven",
     "adaptor_typeddict_falsified": ("falsified", 'vs 10'),
+    "adaptor_spark_proven": "proven",
+    "adaptor_spark_falsified": ("falsified", 'vs 0'),
     "family_length_safe": "holds",
     "family_encoding_safe": ("falsified", "raised UnicodeEncodeError"),
     "family_arbitrary_input": ("falsified", "s = '' (inside L[unicode]) raised IndexError"),
@@ -169,6 +171,7 @@ PROVEN_ROUTES = {
     "adaptor_django_proven": "derive",
     "adaptor_jsonschema_proven": "derive",
     "adaptor_typeddict_proven": "derive",
+    "adaptor_spark_proven": "derive",
     "structure_induction_constant": "derive:induction",
     "structure_induction_equation": "derive:induction",
 }

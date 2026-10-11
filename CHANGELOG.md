@@ -3,6 +3,20 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
+## Unreleased
+
+- A Spark schema is a record language: a `pyspark.sql.types.StructType`,
+  or the JSON Spark writes for one (`df.schema.jsonValue()`, a Delta
+  log's `schemaString`), read without importing pyspark. Each Spark type
+  has its neutral type, including the integer widths, `decimal(p, s)`,
+  nullable fields, a CHAR or VARCHAR length, and arrays and maps whose
+  items may be null.
+- A `decimal(p, s)` field holds its precision and scale in every
+  adaptor: a member has at most `s` places after the point and at most
+  `p - s` digits before it, the hazards include the largest value it
+  holds and its smallest step, and the values just outside are one step
+  past the largest and one place too many.
+
 ## 0.1.0
 
 The first release, for mathema 0.6.1 (`mathema>=0.6.1,<0.7`).

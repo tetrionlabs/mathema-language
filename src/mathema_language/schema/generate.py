@@ -137,6 +137,29 @@ def _float_range(f: Field) -> tuple[float, float]:
     return lo, hi
 
 
+def _decimal_range(f: Field) -> tuple[decimal.Decimal, decimal.Decimal]:
+    """The draw range of a decimal field: its bounds, or +/-1e6 where it
+    states none, inside what `decimal(p, s)` holds."""
+    flo, fhi = (decimal.Decimal(str(x)) for x in _float_range(f))
+    bound = f.type.decimal_bound()
+    if bound is not None:
+        flo, fhi = max(flo, -bound), min(fhi, bound)
+    return flo, fhi
+
+
+def _wide() -> Any:
+    """A decimal context wide enough for any `decimal(p, s)` a schema
+    states (Spark and SQL go to 38 digits), so arithmetic on a bound
+    stays exact."""
+    context = decimal.Context(prec=100)
+    return decimal.localcontext(context)
+
+
+def _decimal_step(t: NeutralType) -> decimal.Decimal:
+    """The smallest step a decimal field holds, 10^-scale."""
+    return decimal.Decimal(1).scaleb(-(t.scale if t.scale is not None else 2))
+
+
 def _length_range(f: Field, default_hi: int = 12) -> tuple[int, int]:
     c = f.constraints
     return (c.min_len or 0, c.max_len if c.max_len is not None else max(default_hi, c.min_len or 0))
@@ -183,9 +206,12 @@ def draw_raw(rng: random.Random, f: Field) -> Any:
             return rng.choice((flo, fhi, 0.0, -0.0, 0.5))
         return rng.uniform(flo, fhi)
     if base == "decimal":
-        flo, fhi = _float_range(f)
-        scale = t.scale if t.scale is not None else 2
-        return decimal.Decimal(rng.uniform(flo, fhi)).quantize(decimal.Decimal(1).scaleb(-scale))
+        dlo, dhi = _decimal_range(f)
+        step = _decimal_step(t)
+        with _wide():
+            drawn = decimal.Decimal(rng.uniform(float(dlo), float(dhi))).quantize(step)
+            return min(max(drawn, dlo.quantize(step, decimal.ROUND_CEILING)),
+                       dhi.quantize(step, decimal.ROUND_FLOOR))
     if base == "string":
         return _draw_string(rng, f)
     if base == "binary":
@@ -222,7 +248,7 @@ def draw_raw(rng: random.Random, f: Field) -> Any:
             if len(out) >= lo and budget is not None and _reaches_a_record(item) \
                     and budget["nodes"] <= 0:
                 break
-            out.append(draw(rng, Field("item", item)))
+            out.append(draw(rng, Field("item", item, nullable=t.nullable_items)))
         return out
     if base == "struct":
         return _record(rng, t.fields, t.construct)
@@ -235,7 +261,8 @@ def draw_raw(rng: random.Random, f: Field) -> Any:
     if base == "map":
         key_t = t.key or NeutralType("string")
         value_t = t.value or NeutralType("any")
-        return {draw(rng, Field("key", key_t)): draw(rng, Field("value", value_t))
+        return {draw(rng, Field("key", key_t)): draw(rng, Field("value", value_t,
+                                                               nullable=t.nullable_items))
                 for _ in range(rng.randint(0, 4))}
     return rng.choice((0, 1.5, "x", None, True))
 
@@ -309,7 +336,9 @@ def simplest(f: Field) -> Any:
         flo, fhi = _float_range(f)
         candidates += [0.0, flo, fhi]
     elif base == "decimal":
-        candidates += [decimal.Decimal(0), decimal.Decimal(_float_range(f)[0])]
+        with _wide():
+            candidates += [decimal.Decimal(0), _decimal_range(f)[0].quantize(
+                _decimal_step(t), decimal.ROUND_CEILING)]
     elif base == "string":
         candidates += ["", "a" * (c.min_len or 0)]
     elif base == "binary":
@@ -367,7 +396,19 @@ def hazards(f: Field) -> list[HazardValue]:
         if f.nan_allowed:
             out.append(("null", math.nan, "NaN, a member of this field"))
     elif base == "decimal":
-        out += [("extremity", decimal.Decimal(0), "zero")]
+        step = _decimal_step(t)
+        dlo, dhi = _decimal_range(f)
+        with _wide():
+            dlo, dhi = (dlo.quantize(step, decimal.ROUND_CEILING),
+                        dhi.quantize(step, decimal.ROUND_FLOOR))
+        out += [("extremity", decimal.Decimal(0), "zero"),
+                ("extremity", step, "the smallest step the scale holds"),
+                ("extremity", dlo, "the lowest member"),
+                ("extremity", dhi, "the highest member")]
+        bound = t.decimal_bound()
+        if bound is not None:
+            out += [("extremity", bound, f"the largest {t.render()}"),
+                    ("extremity", -bound, f"the most negative {t.render()}")]
     elif base == "string":
         out.append(("empty", "", "the empty string"))
         for hazard in UNICODE.hazards():
@@ -397,6 +438,8 @@ def hazards(f: Field) -> list[HazardValue]:
         out += [("shape", [], "an empty list")]
         if t.item is not None:
             out.append(("shape", [simplest(Field("item", t.item))], "one item"))
+        if t.nullable_items:
+            out.append(("null", [None], "a null item"))
     elif base == "struct":
         values = {sub.name: simplest(sub) for sub in (t.fields or ())}
         out += [("shape", t.construct(**values) if t.construct is not None else values,
@@ -441,6 +484,12 @@ def outside(rng: random.Random, f: Field) -> tuple[Any, str] | None:
         if t.base == "int" and t.bits:
             lo, hi = _int_range(f)
             candidates.append((hi + 1, f"past the {t.render()} range"))
+        bound = t.decimal_bound()
+        if bound is not None:
+            step = _decimal_step(t)
+            with _wide():
+                candidates.append((bound + step, f"past what {t.render()} holds"))
+                candidates.append((step / 10, f"one place more than {t.render()} holds"))
         candidates.append(("1", "a string where a number is expected"))
         if t.base == "float" and not f.nan_allowed:
             candidates.append((math.nan, "NaN in a field that excludes it"))
