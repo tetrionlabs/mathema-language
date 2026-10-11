@@ -12,6 +12,7 @@ nav:
       - Trees: tutorial-trees.md
   - How-to:
       - Narrow a language to what a function accepts: how-to-narrow-a-language.md
+      - Prove a Spark rule: how-to-prove-a-spark-rule.md
   - Strings:
       - Text: text.md
       - Formats and identifiers: formats.md
@@ -32,6 +33,7 @@ nav:
           - pydantic: adaptor-pydantic.md
           - JSON Schema: adaptor-jsonschema.md
           - Spark schemas: adaptor-spark.md
+          - Command lines (argparse): adaptor-argparse.md
           - SQLAlchemy: adaptor-sqlalchemy.md
           - Django: adaptor-django.md
           - Text annotations: adaptor-text.md

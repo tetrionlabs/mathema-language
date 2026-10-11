@@ -17,6 +17,21 @@ release onward.
   holds and its smallest step, and the values just outside are one step
   past the largest and one place too many.
 
+- A command line is a record language: an `argparse.ArgumentParser`, or
+  a function annotated to build one, is the language of the namespaces
+  `parse_args` returns, one field per action as argparse applies it and
+  one shape per subcommand, so a function taking `args` is claimed over
+  every namespace a user can produce.
+- A union of record languages, one branch per shape, which a parser with
+  subcommands reads as.
+- `mathema_language.spark.rule` reads a column a Spark function computes
+  (a `withColumn` chain of `when`, comparisons, `isNull`, `isin`,
+  `between`, `coalesce` and arithmetic) from the function's source,
+  without pyspark, and returns it as a Python function of the columns it
+  reads, with Spark's handling of null and NaN written in, so a banding
+  rule is proven over every value and an edge written wrongly is found.
+  Anything outside that subset is refused by name.
+
 ## 0.1.0
 
 The first release, for mathema 0.6.1 (`mathema>=0.6.1,<0.7`).

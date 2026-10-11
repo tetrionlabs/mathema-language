@@ -97,6 +97,7 @@ jsonschema = "mathema_language.schema.adaptors.jsonschema:adapt"
 sqlalchemy = "mathema_language.schema.adaptors.sqlalchemy:adapt"
 django = "mathema_language.schema.adaptors.django:adapt"
 spark = "mathema_language.schema.adaptors.spark:adapt"
+argparse = "mathema_language.schema.adaptors.cli_argparse:adapt"
 
 [project.entry-points."mathema.language_refinements"]
 len = "mathema_language.refinements:length"
