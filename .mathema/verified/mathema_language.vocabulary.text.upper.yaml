@@ -12,9 +12,9 @@ mathema_language.vocabulary.text.upper:
     tier: 2
     source_available: true
     pure: true
-    claims_fingerprint: "c99c0a1b6db0"
+    claims_fingerprint: "31f7b0823af4"
     pin: "none"
-    integrity: "v2:27e9a3ec11807c90"
+    integrity: "v2:0bc13e6f433cd5c0"
   math: null
   claims:
     - name: "at_most_triples_length"
@@ -123,9 +123,6 @@ mathema_language.vocabulary.text.upper:
     - step: "evidence"
       claim: "for text in L[unicode], f(f(text)) = f(text)"
       basis: "probed, n=224"
-    - step: "refutation"
-      claim: "NOT (for text in L[unicode], len(f(text)) = len(text))"
-      basis: "counterexample text = 'ŉ': 2 vs 1"
     - step: "evidence"
       claim: "for text in L[unicode], len(f(text)) <= 3*len(text)"
       basis: "probed, n=224"
@@ -136,7 +133,7 @@ mathema_language.vocabulary.text.upper:
     generated_by: "mathema 0.6.1"
     CDD_spec_version: "0.2.0"
     date: "2026-10-11"
-    commit: "30fb232c1ca04445a3ccf649f81bab3d49f3ebc4"
+    commit: "faea7c13e99e8ed3b016180fa70edcdfc8d33225"
   meta:
     mathema.effects:
       line: "no side effects"
