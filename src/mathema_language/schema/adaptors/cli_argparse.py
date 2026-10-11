@@ -8,7 +8,9 @@ branch per subcommand, each with the parser's own fields, the
 subcommand's fields and its `set_defaults`. A zero-argument function
 annotated to return an `ArgumentParser` is called to build one, which
 is how a command line is usually written. Members are
-`argparse.Namespace` objects, checked by the neutral checker."""
+`argparse.Namespace` objects, checked by the neutral checker. Building
+the language warns with each of the parser's notes
+(`mathema_language.argv.parser_notes`)."""
 from __future__ import annotations
 
 import argparse
@@ -16,6 +18,7 @@ import inspect
 from typing import Any
 
 from ...adaptor_priority import LIBRARY, priority
+from ...argv import parser_notes, warn_parser_notes
 from ..ecosystems.namespace import NamespaceEcosystem
 from ..languages import RowLanguage
 from ..model import NO_DEFAULT, Constraints, Field, NeutralType, RowSchema
@@ -204,6 +207,7 @@ def adapt(obj: Any) -> RowLanguage | UnionLanguage | None:
         obj = obj()
     if not isinstance(obj, argparse.ArgumentParser):
         return None
+    warn_parser_notes(parser_notes(obj))
     return _language(obj)
 
 
