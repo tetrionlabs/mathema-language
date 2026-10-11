@@ -14,7 +14,7 @@ mathema_language.vocabulary.text.upper:
     pure: true
     claims_fingerprint: "c99c0a1b6db0"
     pin: "none"
-    integrity: "v2:0f2d5682a408bf3f"
+    integrity: "v2:27e9a3ec11807c90"
   math: null
   claims:
     - name: "at_most_triples_length"
@@ -70,55 +70,6 @@ mathema_language.vocabulary.text.upper:
         surface: "builtin"
       meta:
         mathema.surface: "builtin"
-    - name: "keeps_length"
-      statement: "for text in L[unicode], len(f(text)) = len(text)"
-      verdict: "falsified"
-      n: 21
-      counterexample: "text = 'ŉ': 2 vs 1"
-      note: "text in L[unicode] (entry point mathema_language.text:UNICODE); derive cannot read text, a string or structured value from a language domain (it decides only a finite language, member by member), so the probe decided it by running the code"
-      route: "probe"
-      authored:
-        surface: "claims-file"
-        route: "best"
-      domain:
-        text:
-          base_type: "L"
-          pieces:
-            - language: "unicode"
-          excluded: []
-          explicit_type: true
-      grammar: "mathema/language"
-      meta:
-        mathema.sampling: "text~L[unicode], seed=20260718, n=21"
-        mathema.confidence:
-          score: 4.4
-          stars: 2
-          max_stars: 5
-          n: 21
-          factors:
-            branches: 0
-            loops: 0
-            params: 0
-            wide_domain: 0
-            float_extremes: 0
-            language: 3
-        mathema.counterexample_args:
-          - "ŉ"
-        mathema.witness_shrunk:
-          steps: 0
-        mathema.routes_attempted: "routes attempted, derive: underivable (derive cannot read text, a string or structured value from a language domain (it decides only a finite language, member by member)); probe: falsified"
-        mathema.derive_status: "unliftable"
-        mathema.language:
-          text:
-            - name: "unicode"
-              source: "entry point mathema_language.text:UNICODE"
-              level: "alphabet"
-              kind: "string"
-              schema:
-                type: "string"
-                language: "unicode"
-                level: "alphabet"
-        mathema.surface: "declared"
     - name: "settles"
       statement: "for text in L[unicode], f(f(text)) = f(text)"
       verdict: "holds"
@@ -193,3 +144,63 @@ mathema_language.vocabulary.text.upper:
       writes: []
     mathema.premise_state: {}
     mathema.intent_provenance: "declared"
+  discoveries:
+    - name: "keeps_length"
+      statement: "for text in L[unicode], len(f(text)) = len(text)"
+      verdict: "falsified"
+      n: 21
+      counterexample: "text = 'ŉ': 2 vs 1"
+      note: "text in L[unicode] (entry point mathema_language.text:UNICODE); derive cannot read text, a string or structured value from a language domain (it decides only a finite language, member by member), so the probe decided it by running the code"
+      route: "probe"
+      authored:
+        surface: "claims-file"
+        route: "best"
+      domain:
+        text:
+          base_type: "L"
+          pieces:
+            - language: "unicode"
+          excluded: []
+          explicit_type: true
+      grammar: "mathema/language"
+      meta:
+        mathema.sampling: "text~L[unicode], seed=20260718, n=21"
+        mathema.confidence:
+          score: 4.4
+          stars: 2
+          max_stars: 5
+          n: 21
+          factors:
+            branches: 0
+            loops: 0
+            params: 0
+            wide_domain: 0
+            float_extremes: 0
+            language: 3
+        mathema.counterexample_args:
+          - "ŉ"
+        mathema.witness_shrunk:
+          steps: 0
+        mathema.routes_attempted: "routes attempted, derive: underivable (derive cannot read text, a string or structured value from a language domain (it decides only a finite language, member by member)); probe: falsified"
+        mathema.derive_status: "unliftable"
+        mathema.language:
+          text:
+            - name: "unicode"
+              source: "entry point mathema_language.text:UNICODE"
+              level: "alphabet"
+              kind: "string"
+              schema:
+                type: "string"
+                language: "unicode"
+                level: "alphabet"
+        mathema.surface: "declared"
+      acceptance_history:
+        - at: "2026-10-11"
+          as: "discovery"
+          verdict: "falsified"
+          by: "Aaron Byrne"
+      accepted:
+        as: "discovery"
+        at: "2026-10-11"
+        form: "61844eeba8a5"
+        by: "Aaron Byrne"

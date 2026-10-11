@@ -14,7 +14,7 @@ mathema_language.vocabulary.text.nfc_len:
     pure: true
     claims_fingerprint: "fb793a96f4dc"
     pin: "none"
-    integrity: "v2:190d785cc7448299"
+    integrity: "v2:4e6546083a7e61f6"
   math: null
   claims:
     - name: "at_most_three_times_the_text"
@@ -70,6 +70,38 @@ mathema_language.vocabulary.text.nfc_len:
         surface: "builtin"
       meta:
         mathema.surface: "builtin"
+  concepts: []
+  references: {}
+  reasoning:
+    - step: "intent"
+      claim: "The length in NFC code points, what a character-count truncator ought to count."
+      basis: "documented; the author's stated purpose"
+    - step: "refutation"
+      claim: "NOT (for text in L[unicode], f(text) <= len(text))"
+      basis: "counterexample text = 'פּ': 2 vs 1"
+    - step: "evidence"
+      claim: "for text in L[unicode], f(text) <= 3*len(text)"
+      basis: "probed, n=224"
+    - step: "derivation"
+      claim: ""
+      basis: "no direct function dependencies, vacuously current"
+  lineage:
+    generated_by: "mathema 0.6.1"
+    CDD_spec_version: "0.2.0"
+    date: "2026-10-11"
+    commit: "30fb232c1ca04445a3ccf649f81bab3d49f3ebc4"
+  dependencies:
+    - name: "unicodedata"
+      kind: "module"
+      key: "unicodedata"
+  meta:
+    mathema.effects:
+      line: "no side effects"
+      sites: []
+      writes: []
+    mathema.premise_state: {}
+    mathema.intent_provenance: "declared"
+  discoveries:
     - name: "never_longer_than_text"
       statement: "for text in L[unicode], f(text) <= len(text)"
       verdict: "falsified"
@@ -119,34 +151,13 @@ mathema_language.vocabulary.text.nfc_len:
                 language: "unicode"
                 level: "alphabet"
         mathema.surface: "declared"
-  concepts: []
-  references: {}
-  reasoning:
-    - step: "intent"
-      claim: "The length in NFC code points, what a character-count truncator ought to count."
-      basis: "documented; the author's stated purpose"
-    - step: "refutation"
-      claim: "NOT (for text in L[unicode], f(text) <= len(text))"
-      basis: "counterexample text = 'פּ': 2 vs 1"
-    - step: "evidence"
-      claim: "for text in L[unicode], f(text) <= 3*len(text)"
-      basis: "probed, n=224"
-    - step: "derivation"
-      claim: ""
-      basis: "no direct function dependencies, vacuously current"
-  lineage:
-    generated_by: "mathema 0.6.1"
-    CDD_spec_version: "0.2.0"
-    date: "2026-10-11"
-    commit: "30fb232c1ca04445a3ccf649f81bab3d49f3ebc4"
-  dependencies:
-    - name: "unicodedata"
-      kind: "module"
-      key: "unicodedata"
-  meta:
-    mathema.effects:
-      line: "no side effects"
-      sites: []
-      writes: []
-    mathema.premise_state: {}
-    mathema.intent_provenance: "declared"
+      acceptance_history:
+        - at: "2026-10-11"
+          as: "discovery"
+          verdict: "falsified"
+          by: "Aaron Byrne"
+      accepted:
+        as: "discovery"
+        at: "2026-10-11"
+        form: "90f9f8716f52"
+        by: "Aaron Byrne"
