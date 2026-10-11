@@ -18,6 +18,7 @@ nav:
       - Formats and identifiers: formats.md
       - JSON: json.md
       - YAML: yaml.md
+      - TOML: toml.md
   - Records and schemas:
       - Records and schemas: records.md
       - Trees: trees.md

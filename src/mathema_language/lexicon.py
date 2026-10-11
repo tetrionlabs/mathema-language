@@ -56,6 +56,8 @@ LEXICON: dict[str, str] = {
     "language_idempotent": "for s in L[unicode], f(f(s)) == f(s)",
     "language_yaml_reading":
         "let reference = mathema_language.text.yaml_language.load, for text in L[yaml], assuming is_defined(f), f(text) == reference(text)",
+    # every TOML document gets an answer, dates and times included
+    "language_toml_json": "for text in L[toml], is_language_defined(text)",
     # a length bound: inside it the cut changes nothing
     "language_length_bound_identity": "for s in L[unicode, len <= 80], f(s) == s",
     # one past the bound, the member at the bound loses a character
@@ -320,6 +322,12 @@ def read_yaml_1_1(text: str) -> object:
     return yaml.safe_load(text)
 
 
+def toml_as_json(text: str) -> str:
+    """A TOML document as JSON."""
+    from mathema_language.text.toml_language import load
+    return json.dumps(load(text))
+
+
 def canonical_json(s: str) -> str:
     """The JSON document with its keys sorted."""
     return json.dumps(json.loads(s), sort_keys=True)
@@ -474,7 +482,7 @@ def units_ordered(args: Any) -> int:
 SECTIONS: dict[str, tuple[str, ...]] = {
     "domains": ("language_with_special_member",),
     "laws": ("language_homomorphism", "language_section_inverse", "language_retraction",
-             "language_idempotent", "language_yaml_reading"),
+             "language_idempotent", "language_yaml_reading", "language_toml_json"),
     "boundaries": ("language_encoding_boundary",),
     "length": ("language_length_bound_identity", "language_length_bound_one_past"),
     "membership": ("closure_ascii_in_ascii_out", "closure_ascii_leaves", "in_target_language", "language_closure_rendered",
@@ -506,6 +514,7 @@ TAGS: dict[str, tuple[str, ...]] = {
     "language_retraction": ("retraction", "parse render parse", "json round trip"),
     "language_idempotent": ("idempotent", "normaliser", "apply twice"),
     "language_yaml_reading": ("yaml", "reference reading", "1.1 against 1.2"),
+    "language_toml_json": ("toml", "config to json", "datetime not serializable"),
     "language_length_bound_identity": ("truncate", "length bound", "max length"),
     "language_length_bound_one_past": ("one past the bound", "truncation bug"),
     "in_target_language": ("slugify", "closure", "output language"),
@@ -611,6 +620,7 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "widest": (widest, ["structure_width_bound", "structure_width_one_past"]),
     "canonical_json": (canonical_json, ["structure_json_depth"]),
     "read_yaml_1_1": (read_yaml_1_1, ["language_yaml_reading"]),
+    "toml_as_json": (toml_as_json, ["language_toml_json"]),
     "loads": (loads, ["language_retraction"]),
     "log_line": (log_line, ['language_printable_output']),
     "capitalise_word": (capitalise_word, ['language_alpha_closure', 'language_unicode_alpha_closure']),

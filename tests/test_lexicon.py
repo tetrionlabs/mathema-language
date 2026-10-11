@@ -22,6 +22,7 @@ and review the diff:
 """
 import importlib.util
 import pathlib
+import sys
 
 import pytest
 
@@ -46,6 +47,7 @@ EXPECTED = {
     "language_retraction": ("falsified", "s = 'NaN': nan vs nan, and a nan is no value"),
     "language_idempotent": "holds",
     "language_yaml_reading": ("falsified", " vs "),
+    "language_toml_json": ("falsified", "raised TypeError"),
     "language_length_bound_identity": "holds",
     "language_length_bound_one_past": ("falsified", "s = '" + "a" * 81 + "':"),
     "in_target_language": ("falsified", "s = '': '' is not in L[slug]"),
@@ -127,7 +129,8 @@ _ADAPTOR_LIBRARY = {"pydantic": "pydantic", "sqlalchemy": "sqlalchemy",
 
 
 #: rows that need libraries beyond their adaptor's
-_ROW_LIBRARIES = {"language_yaml_reading": ("ruamel", "yaml")}
+_ROW_LIBRARIES = {"language_yaml_reading": ("ruamel", "yaml"),
+                  "language_toml_json": () if sys.version_info >= (3, 11) else ("tomli",)}
 
 
 def _runnable(key):

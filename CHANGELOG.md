@@ -53,6 +53,15 @@ release onward.
   YAML reader accepts (a tab in the indentation, a key given twice) are
   outside it. `mathema_language.text.yaml_language.load` is the YAML 1.2
   reading, for comparing a loader against.
+- `L[toml]` is the texts that are one TOML 1.0 document, read by
+  `tomllib` (`tomli` before Python 3.11, the new `[toml]` extra). Its
+  first hazards are the documents code most often mishandles once read:
+  dates and times, which come back as `datetime` objects; `inf` and
+  `nan`; an integer past 64 bits; dotted keys against a quoted key
+  containing a dot; `version = 3.10`. The texts no TOML reader accepts
+  (a key given twice, a leading zero, a trailing comma in an inline
+  table) are outside it. `mathema_language.text.toml_language.load` is
+  its reading.
 
 ## 0.1.0
 
