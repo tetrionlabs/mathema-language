@@ -1,8 +1,16 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""`L[toml]`: the texts that are one TOML 1.0 document, read by the
+"""`L[toml]`: the texts that are one TOML document, read by the
 standard library's `tomllib` (`tomli` before Python 3.11, the same
-reader). TOML has one reading, so its hazards are the documents code
+reader). Which version of TOML that is depends on the reader:
+`tomllib` up to Python 3.14 reads TOML 1.0, while tomli from 2.3 and
+`tomllib` from 3.15 read TOML 1.1, which also accepts a trailing comma
+and line breaks in an inline table, a time without seconds, and the
+`\\e` and `\\xHH` escapes. `TOML_VERSION` is the version the installed
+reader reads. A document only TOML 1.1 accepts is a hazard where the
+reader reads 1.1, and outside the language where it reads 1.0.
+
+TOML has one reading per version, so its hazards are the documents code
 built on a TOML file most often mishandles once they are read: a date
 or time, which comes back as a `datetime` object that `json.dumps`
 refuses; `inf` and `nan`; an integer past 64 bits, which Python reads
@@ -13,8 +21,7 @@ that read differently from how they look.
 
 Outside the language are the texts no TOML reader accepts: a key given
 twice, a table declared twice, a value with a leading zero, a bare
-word as a value, a trailing comma or a line break in an inline table,
-a date that does not exist, and a byte-order mark."""
+word as a value, a date that does not exist, and a byte-order mark."""
 from __future__ import annotations
 
 import random
@@ -42,12 +49,16 @@ def load(text: str) -> dict[str, Any]:
 
 
 def _is_toml(text: str) -> bool:
+    """Whether the installed reader reads `text`."""
     try:
         tomllib.loads(text)
     except tomllib.TOMLDecodeError:
         return False
     return True
 
+
+#: the TOML version the installed reader reads
+TOML_VERSION = "1.1" if _is_toml("a = { b = 1, }") else "1.0"
 
 #: values a person writes in a config file, each valid TOML
 _VALUES = ('"a"', '"plain text"', '"café"', "'C:\\temp'", "42", "-1", "1_000", "0x1A",
@@ -102,6 +113,11 @@ _HAZARDS = (
     ("a = 1\r\nb = 2\r\n", "Windows line endings"),
     ("", "an empty document, which reads as an empty table"),
     ("a = 1 # a comment\n", "a comment after a value"),
+    *((text, f"{note}, read by TOML 1.1 and refused by a TOML 1.0 reader")
+      for text, note in (("point = { x = 1, y = 2, }\n", "a trailing comma in an inline table"),
+                         ("point = {\n  x = 1,\n  y = 2\n}\n", "an inline table over several lines"),
+                         ("opens = 09:00\n", "a time without seconds"),
+                         ('esc = "\\e[0m"\n', "the escape character written \\e"))),
 )
 
 #: texts no TOML reader accepts
@@ -137,4 +153,4 @@ TOML_TEXT = TomlLanguage(
     extra_hazards=tuple(HazardValue("text", text, note) for text, note in _HAZARDS))
 
 
-__all__ = ["TOML_TEXT", "TomlLanguage", "load"]
+__all__ = ["TOML_TEXT", "TOML_VERSION", "TomlLanguage", "load"]

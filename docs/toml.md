@@ -7,10 +7,19 @@
 <!-- shop: settings -->
 <!-- requires-python: 3.11 -->
 
-`L[toml]` is every text that is one TOML 1.0 document. Membership is
+`L[toml]` is every text that is one TOML document. Membership is
 decided by the standard library's `tomllib`, so nothing extra is needed
 on Python 3.11 and later; on 3.10, `pip install "mathema-language[toml]"`
 brings `tomli`, the same reader under its earlier name.
+
+Which TOML that is depends on the reader. `tomllib` up to Python 3.14
+reads TOML 1.0; tomli from 2.3, and `tomllib` from Python 3.15, read
+TOML 1.1, which also accepts a trailing comma and line breaks in an
+inline table, a time without seconds, and the `\e` and `\xHH` escapes.
+`mathema_language.text.toml_language.TOML_VERSION` says which one the
+installed reader reads. With a 1.1 reader, those documents are hazards,
+since a 1.0 reader elsewhere refuses them; with a 1.0 reader, they are
+outside the language.
 
 TOML has one reading, unlike YAML, so the gap worth a language is
 between what a reader returns and what the code handling it expects.
@@ -35,8 +44,8 @@ in integers, a literal string where a backslash stays a backslash, a
 multi-line string whose first line break is dropped, Windows line
 endings, an empty document. Outside the language are the texts no TOML
 reader accepts: a key or a table given twice, a value with a leading
-zero, a bare word as a value, a trailing comma or a line break inside
-an inline table, a date that does not exist, a byte-order mark.
+zero, a bare word as a value, a date that does not exist, a byte-order
+mark.
 
 ## A worked claim
 
