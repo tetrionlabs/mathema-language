@@ -16,7 +16,14 @@ Its hazards are the inputs command lines break on: an empty command
 line, `--help` on every subcommand, a negative number as a value, an
 empty value, a value starting with a dash, a repeated option, an
 abbreviation. A parser whose arguments open files (`argparse.FileType`)
-is refused, since deciding membership would open them."""
+is refused, since deciding membership would open them.
+
+Reading a parser also notes the defects argparse accepts without
+complaint and that show up only when the program runs: `type=bool`, a
+default outside its choices, a text default its type refuses, two
+options storing into the same name, choices the type can never
+produce, and help text that fails to format. `parser_notes` returns
+them, and building either language warns with each one."""
 from __future__ import annotations
 
 import argparse
@@ -24,7 +31,9 @@ import contextlib
 import inspect
 import io
 import random
+import warnings
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Any
 
 from ._surface import HazardValue, Problem
@@ -155,6 +164,134 @@ def _draw_parser(rng: random.Random, parser: argparse.ArgumentParser) -> list[st
     return flat + positionals
 
 
+# ---- notes on the parser itself
+
+class ParserNoteWarning(UserWarning):
+    """A defect in a parser that argparse accepts when the parser is
+    built."""
+
+
+@dataclass(frozen=True)
+class ParserNote:
+    """One defect in a parser: the parser's `prog`, the argument it
+    concerns (empty for the parser as a whole), and what goes wrong."""
+
+    prog: str
+    argument: str
+    message: str
+
+    def __str__(self) -> str:
+        noun = "arguments" if ", " in self.argument else "argument"
+        where = f"{self.prog}: {noun} {self.argument}" if self.argument else self.prog
+        return f"{where}: {self.message}"
+
+
+def _label(action: argparse.Action) -> str:
+    return "/".join(action.option_strings) if action.option_strings else action.dest
+
+
+def _takes_values(action: argparse.Action) -> bool:
+    return not isinstance(action, (*_SKIPPED, *_FLAGS, argparse.BooleanOptionalAction,
+                                   argparse._SubParsersAction)) and action.nargs != 0
+
+
+def _converts(action: argparse.Action) -> bool:
+    """The action has a `type` that changes the text it is given."""
+    return callable(action.type) and action.type is not str \
+        and not isinstance(action.type, argparse.FileType)
+
+
+def _convert(action: argparse.Action, text: str) -> tuple[bool, Any]:
+    """`(True, value)` when the action's type reads `text`, else
+    `(False, the error message)`."""
+    convert = action.type
+    if not callable(convert):
+        return False, f"{convert!r} is not callable"
+    try:
+        return True, convert(text)
+    except (TypeError, ValueError, argparse.ArgumentTypeError) as e:
+        return False, str(e) or type(e).__name__
+
+
+def _action_notes(action: argparse.Action) -> list[str]:
+    if not _takes_values(action):
+        return []
+    out = []
+    if action.type is bool:
+        option = action.option_strings[0] if action.option_strings else action.dest
+        out.append(f"type=bool reads every non-empty value as True, so `{option} False` "
+                   "gives True; a flag is action='store_true' or "
+                   "argparse.BooleanOptionalAction")
+    default = action.default
+    if isinstance(default, str) and _converts(action):
+        read, value = _convert(action, default)
+        if not read:
+            out.append(f"the default {default!r} is not a value its type reads ({value}), so "
+                       "every command line that leaves it out is refused")
+        else:
+            default = value
+    if action.choices is not None and default is not None and default is not argparse.SUPPRESS:
+        values = default if isinstance(default, (list, tuple)) and action.nargs not in (None, "?") \
+            else [default]
+        outside = [v for v in values if v not in action.choices]
+        if outside:
+            out.append(f"the default {action.default!r} is not one of the choices "
+                       f"{list(action.choices)!r}, and argparse never checks a default")
+    if action.choices is not None and _converts(action):
+        never = []
+        for choice in action.choices:
+            read, value = _convert(action, str(choice))
+            if not read or value != choice:
+                never.append(choice)
+        if never and len(never) == len(list(action.choices)):
+            out.append(f"no value is accepted: its type never produces one of the choices "
+                       f"{list(action.choices)!r}")
+        elif never:
+            out.append(f"the choices {never!r} can never be given: its type never produces them")
+    return out
+
+
+def _shared_dests(parser: argparse.ArgumentParser) -> list[ParserNote]:
+    """Options that store a value into the same name outside a mutually
+    exclusive group, where the last one given wins."""
+    by_dest: dict[str, list[argparse.Action]] = {}
+    for action in parser._actions:
+        if type(action) is argparse._StoreAction and action.dest is not argparse.SUPPRESS:
+            by_dest.setdefault(action.dest, []).append(action)
+    grouped = [set(map(id, g._group_actions)) for g in parser._mutually_exclusive_groups]
+    out = []
+    for dest, actions in by_dest.items():
+        if len(actions) < 2 or any({id(a) for a in actions} <= group for group in grouped):
+            continue
+        names = ", ".join(_label(a) for a in actions)
+        out.append(ParserNote(parser.prog, names,
+                              f"all store into {dest!r}, so when more than one is given the last "
+                              "one wins silently"))
+    return out
+
+
+def parser_notes(obj: Any) -> list[ParserNote]:
+    """The defects in a parser, or a function building one, that argparse
+    accepts without complaint, over every subcommand."""
+    out: list[ParserNote] = []
+    for _path, parser in _all_parsers(_parser_of(obj)):
+        for action in parser._actions:
+            out += [ParserNote(parser.prog, _label(action), m) for m in _action_notes(action)]
+        out += _shared_dests(parser)
+        try:
+            parser.format_help()
+        except (ValueError, TypeError, KeyError) as e:
+            out.append(ParserNote(parser.prog, "", f"its help fails to format ({e}), so --help "
+                                  "raises instead of printing; a literal % in usage or help is written %%"))
+    return out
+
+
+def warn_parser_notes(notes: list[ParserNote]) -> None:
+    """Warn with each note, as a `ParserNoteWarning`."""
+    for note in notes:
+        warnings.warn(str(note), ParserNoteWarning, stacklevel=3)
+
+
 class ArgvLanguage:
     """The command lines `parser` accepts."""
 
@@ -169,6 +306,8 @@ class ArgvLanguage:
                                      "(argparse.FileType), so deciding membership would open it")
         self.parser = parser
         self.name = name or f"argv, {parser.prog}"
+        self.notes = parser_notes(parser)
+        warn_parser_notes(self.notes)
 
     def __repr__(self) -> str:
         return f"ArgvLanguage({self.parser.prog!r})"
@@ -348,4 +487,4 @@ def argv_language(obj: Any) -> ArgvLanguage:
     return ArgvLanguage(_parser_of(obj))
 
 
-__all__ = ["ArgvLanguage", "argv_language"]
+__all__ = ["ArgvLanguage", "ParserNote", "ParserNoteWarning", "argv_language", "parser_notes"]
