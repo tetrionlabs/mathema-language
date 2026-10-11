@@ -46,6 +46,12 @@ release onward.
   subcommand, a negative number, an empty value, a value starting with a
   dash, an abbreviation, a repeated option). A parser whose arguments
   open files is refused.
+- Reading an argparse parser notes the defects argparse accepts when
+  the parser is built: `type=bool`, a default outside its choices, a
+  text default its type refuses, two options storing into one name,
+  choices the type never produces, and help text that fails to format.
+  Both argparse languages warn with each note (`ParserNoteWarning`), and
+  `mathema_language.argv.parser_notes` returns them.
 - `L[yaml]` is the texts that are one YAML document, read as YAML 1.2
   by ruamel.yaml (the new `[yaml]` extra). Its first hazards are the
   documents a YAML 1.1 reader such as PyYAML reads differently

@@ -35,6 +35,45 @@ A namespace only exists for a command line the parser accepts, so every
 member is one a user can produce. What the parser accepts is often more
 than the code expects: `type=int` takes `-1`.
 
+## Notes on the parser
+
+Some defects in a parser are accepted by argparse when the parser is
+built and show up only when the program runs. Reading a parser, for
+either language on this page, warns with each one it finds
+(`ParserNoteWarning`), and `parser_notes` returns them:
+
+```python
+import argparse
+
+from mathema_language.argv import parser_notes
+
+report = argparse.ArgumentParser(prog="report")
+report.add_argument("--detailed", type=bool, default=False)
+report.add_argument("--format", choices=["csv", "json"], default="text")
+report.add_argument("--limit", type=int, default="all")
+for note in parser_notes(report):
+    print(note)
+```
+
+<!-- output -->
+```text
+report: argument --detailed: type=bool reads every non-empty value as True, so `--detailed False` gives True; a flag is action='store_true' or argparse.BooleanOptionalAction
+report: argument --format: the default 'text' is not one of the choices ['csv', 'json'], and argparse never checks a default
+report: argument --limit: the default 'all' is not a value its type reads (invalid literal for int() with base 10: 'all'), so every command line that leaves it out is refused
+```
+
+| note | what argparse does |
+|---|---|
+| `type=bool` | `bool("False")` is `True`, so any value given turns it on |
+| a default outside its choices | the default reaches the program unchecked, while typing the same value is refused |
+| a text default its type refuses | the default is converted only when the option is left out, so every command line without it exits with a usage error |
+| two options storing into one name | the last one given wins; a `store_true` and `store_false` pair, and alternatives in a mutually exclusive group, are not noted |
+| choices the type never produces | `type=int` with `choices=["1", "2"]` refuses every value, and `type=str.lower` never gives a choice spelled in capitals |
+| help that fails to format | `--help` raises instead of printing, usually a `%` that should be `%%` in the usage, or in an argument's help before Python 3.14 (which refuses it in `add_argument`) |
+
+The notes cover every subcommand, and the parsers in the shop examples
+have none.
+
 ## A worked claim
 
 The shop's admin command line, from `examples/shop/admin.py`:
