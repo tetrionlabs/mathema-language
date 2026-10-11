@@ -102,3 +102,66 @@ def positive_int(text: str) -> int:
 ```
 
 turns the first falsification into a usage error at the command line.
+
+## The command lines themselves
+
+The namespaces are what a handler sees. What a user types is a list of
+strings, and those are a language of their own: the command lines the
+parser accepts. `argv_language` draws them in every spelling argparse
+reads the same way (`--quantity 3` and `--quantity=3`, an unambiguous
+abbreviation such as `--q`, options before or after positionals), and
+membership is the parser's own, so a refusal is explained in its words:
+
+```python
+from mathema_language.argv import argv_language
+
+commands = argv_language(build_parser)
+print(commands.explain(["restock", "--quantity", "x", "a"])[0].predicate)
+for hazard in commands.hazards()[:6]:
+    print(hazard.value)
+```
+
+<!-- output -->
+```text
+shop restock: error: argument --quantity: invalid int value: 'x'
+['--help']
+['restock', '--help']
+['discount', '--help']
+['export', '--help']
+['restock', '--quantity', '-1', 'a']
+['restock', '--quantity=-1', 'a']
+```
+
+Its hazards are what command lines break on: `--help` on every
+subcommand, a negative number given as a value, an empty value, a value
+starting with a dash, an abbreviation, an option given twice. A function
+that takes the command line, as a `main` does, is claimed over it:
+
+```python
+def units_from_argv(argv: list[str]) -> int:
+    """How many units an admin command line orders, 0 when it only asks
+    for help."""
+    try:
+        args = build_parser().parse_args(argv)
+    except SystemExit:
+        return 0
+    return units_ordered(args)
+```
+
+Until the claim can name the language directly, register it under a
+name of your own:
+
+```python
+import mathema.languages
+
+mathema.languages.register_language("shop_admin_argv", commands)
+```
+
+```text
+f = units_from_argv
+for argv in L[shop_admin_argv], f(argv) >= 0
+    falsified   argv = ['restock', '--quantity', '-1', 'a']: -12 vs 0
+```
+
+The witness is the command line itself: `shop restock --quantity -1 a`
+orders minus twelve units.

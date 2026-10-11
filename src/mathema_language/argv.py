@@ -1,0 +1,351 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Tetrion Ltd
+"""The language of the command lines an `argparse.ArgumentParser`
+accepts: lists of strings, the `argv` a program's `main` receives.
+Membership is the parser's own: a command line is a member when
+`parse_args` returns a namespace or ends the program successfully
+(`--help`, `--version`), and outside it when the parser refuses it,
+explained in the parser's own words.
+
+Members are drawn from the parser's actions, in every spelling argparse
+reads the same: `--name value` and `--name=value`, a short option with
+its value attached (`-nvalue`), an unambiguous abbreviation (`--verb`
+for `--verbose`), short flags combined (`-vq`), options before and after
+the positionals, and `--` before a positional that starts with a dash.
+Its hazards are the inputs command lines break on: an empty command
+line, `--help` on every subcommand, a negative number as a value, an
+empty value, a value starting with a dash, a repeated option, an
+abbreviation. A parser whose arguments open files (`argparse.FileType`)
+is refused, since deciding membership would open them."""
+from __future__ import annotations
+
+import argparse
+import contextlib
+import inspect
+import io
+import random
+from collections.abc import Iterable
+from typing import Any
+
+from ._surface import HazardValue, Problem
+from .text import UNICODE
+
+_SKIPPED = (argparse._HelpAction, argparse._VersionAction)
+_FLAGS = (argparse._StoreTrueAction, argparse._StoreFalseAction, argparse._StoreConstAction,
+          argparse._AppendConstAction, argparse._CountAction)
+
+
+def _parser_of(obj: Any) -> argparse.ArgumentParser:
+    if isinstance(obj, argparse.ArgumentParser):
+        return obj
+    if inspect.isfunction(obj):
+        built = obj()
+        if isinstance(built, argparse.ArgumentParser):
+            return built
+    raise TypeError(f"not an argparse.ArgumentParser or a function building one: {obj!r}")
+
+
+def _subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAction[argparse.ArgumentParser] | None:
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            return action
+    return None
+
+
+def _all_parsers(parser: argparse.ArgumentParser, path: tuple[str, ...] = ()) -> list[tuple[tuple[str, ...], argparse.ArgumentParser]]:
+    """Every parser reachable through subcommands, with the words that
+    reach it."""
+    out = [(path, parser)]
+    sub = _subparsers(parser)
+    if sub is not None:
+        seen: set[int] = set()
+        for name, child in sub.choices.items():
+            if id(child) in seen:
+                continue
+            seen.add(id(child))
+            out.extend(_all_parsers(child, (*path, name)))
+    return out
+
+
+def _value(rng: random.Random, action: argparse.Action, plain: bool = False) -> str:
+    """One value for the action, as text on the command line; with
+    `plain`, the simplest one (the first choice, `1`, `a`)."""
+    if action.choices is not None and not isinstance(action, argparse._SubParsersAction):
+        return str(next(iter(action.choices))) if plain else str(rng.choice(list(action.choices)))
+    if plain:
+        return "1" if action.type in (int, float) else "a"
+    if action.type is int:
+        return str(rng.choice([0, 1, 7, 42, rng.randint(-100, 1000)]))
+    if action.type is float:
+        return rng.choice(["0", "1.5", "-0.5", "2.0", str(round(rng.uniform(-100, 100), 3))])
+    text = UNICODE.sample(rng)
+    return text if text and not text.startswith("-") else "value"
+
+
+def _count(nargs: Any, rng: random.Random) -> int:
+    if nargs is None:
+        return 1
+    if isinstance(nargs, int):
+        return nargs
+    return {"?": rng.randint(0, 1), "*": rng.randint(0, 3), "+": rng.randint(1, 3)}.get(nargs, 1)
+
+
+def _abbreviations(parser: argparse.ArgumentParser, option: str) -> list[str]:
+    """Prefixes of a long option that name it alone, when the parser
+    allows abbreviation."""
+    if not parser.allow_abbrev or not option.startswith("--"):
+        return []
+    longs = [o for a in parser._actions for o in a.option_strings if o.startswith("--")]
+    out = []
+    for cut in range(3, len(option)):
+        prefix = option[:cut]
+        if [o for o in longs if o.startswith(prefix)] == [option]:
+            out.append(prefix)
+    return out
+
+
+def _option_tokens(rng: random.Random, parser: argparse.ArgumentParser,
+                   action: argparse.Action) -> list[str]:
+    """The tokens for one optional action, in a random spelling."""
+    options = list(action.option_strings)
+    option = rng.choice(options)
+    if rng.random() < 0.2:
+        option = rng.choice(_abbreviations(parser, option) or [option])
+    if isinstance(action, argparse.BooleanOptionalAction):
+        return [rng.choice([o for o in options if not o.startswith("--no-")] + [o for o in options if o.startswith("--no-")])]
+    if isinstance(action, argparse._CountAction):
+        times = rng.randint(1, 3)
+        shorts = [o for o in options if len(o) == 2 and o[1] != "-"]
+        if shorts and rng.random() < 0.5:
+            return ["-" + shorts[0][1] * times]
+        return [option] * times
+    if isinstance(action, _FLAGS):
+        return [option]
+    count = _count(action.nargs, rng)
+    values = [_value(rng, action) for _ in range(count)]
+    repeats = rng.randint(1, 2) if isinstance(action, (argparse._AppendAction, argparse._ExtendAction)) else 1
+    tokens: list[str] = []
+    for _ in range(repeats):
+        if count == 1 and option.startswith("--") and rng.random() < 0.4:
+            tokens.append(f"{option}={values[0]}")
+        elif count == 1 and len(option) == 2 and rng.random() < 0.3:
+            tokens.append(option + values[0])
+        else:
+            tokens += [option, *values]
+    return tokens
+
+
+def _draw_parser(rng: random.Random, parser: argparse.ArgumentParser) -> list[str]:
+    optionals: list[list[str]] = []
+    positionals: list[str] = []
+    for action in parser._actions:
+        if isinstance(action, (*_SKIPPED, argparse._SubParsersAction)):
+            continue
+        if action.option_strings:
+            if action.required or rng.random() < 0.5:
+                optionals.append(_option_tokens(rng, parser, action))
+        else:
+            positionals += [_value(rng, action) for _ in range(_count(action.nargs, rng))]
+    rng.shuffle(optionals)
+    flat = [t for group in optionals for t in group]
+    if any(p.startswith("-") for p in positionals):
+        return flat + ["--", *positionals]
+    if positionals and rng.random() < 0.3:
+        return positionals + flat
+    return flat + positionals
+
+
+class ArgvLanguage:
+    """The command lines `parser` accepts."""
+
+    kind = "sequence"
+    level = "predicate"
+
+    def __init__(self, parser: argparse.ArgumentParser, name: str | None = None) -> None:
+        for _path, each in _all_parsers(parser):
+            for action in each._actions:
+                if isinstance(action.type, argparse.FileType):
+                    raise ValueError(f"{each.prog}: argument {action.dest} opens a file "
+                                     "(argparse.FileType), so deciding membership would open it")
+        self.parser = parser
+        self.name = name or f"argv, {parser.prog}"
+
+    def __repr__(self) -> str:
+        return f"ArgvLanguage({self.parser.prog!r})"
+
+    # ---- membership
+
+    def _parse(self, argv: list[str]) -> str | None:
+        """None when the parser accepts `argv`, else its own message."""
+        out, err = io.StringIO(), io.StringIO()
+        try:
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+                self.parser.parse_args(list(argv))
+        except SystemExit as e:
+            if e.code in (0, None):
+                return None
+            lines = [line for line in err.getvalue().splitlines() if line.strip()]
+            return lines[-1] if lines else f"exit {e.code}"
+        except argparse.ArgumentError as e:
+            return str(e)
+        return None
+
+    def explain(self, value: Any) -> list[Problem] | None:
+        if not isinstance(value, (list, tuple)) or not all(isinstance(t, str) for t in value):
+            return [Problem("", "a list of str", value)]
+        refused = self._parse(list(value))
+        return None if refused is None else [Problem("", refused, value)]
+
+    def contains(self, value: Any) -> bool:
+        return self.explain(value) is None
+
+    # ---- drawing
+
+    def sample(self, rng: random.Random) -> list[str]:
+        for _ in range(40):
+            argv = self._draw(rng)
+            if self.contains(argv):
+                return argv
+        return self._simplest()
+
+    def _draw(self, rng: random.Random) -> list[str]:
+        tokens = _draw_parser(rng, self.parser)
+        parser = self.parser
+        while True:
+            sub = _subparsers(parser)
+            if sub is None or (not sub.required and rng.random() < 0.2):
+                return tokens
+            name = rng.choice(list(sub.choices))
+            parser = sub.choices[name]
+            tokens = tokens + [name] + _draw_parser(rng, parser)
+
+    def _simplest(self, path: tuple[str, ...] | None = None, extra: tuple[str, ...] = ()) -> list[str]:
+        """The shortest command line through the subcommands `path` (the
+        first one at each level when None), with `extra` placed among the
+        last parser's own arguments, before its positionals."""
+        rng = random.Random(0)
+        tokens: list[str] = []
+        parser = self.parser
+        words = list(path) if path is not None else None
+        while True:
+            options: list[str] = []
+            positionals: list[str] = []
+            for action in parser._actions:
+                if isinstance(action, (*_SKIPPED, argparse._SubParsersAction)):
+                    continue
+                if action.option_strings and action.required:
+                    options += [action.option_strings[0], *([_value(rng, action, plain=True)] * _count(action.nargs, rng))]
+                elif not action.option_strings and action.nargs not in ("?", "*"):
+                    positionals += [_value(rng, action, plain=True)] * max(1, _count(action.nargs, rng))
+            sub = _subparsers(parser)
+            last = sub is None or (words is not None and not words) and not sub.required
+            if words is not None and not words and sub is not None and sub.required:
+                last = False
+            if last:
+                return tokens + options + list(extra) + positionals
+            tokens += options + positionals
+            if sub is None:
+                return tokens
+            name = words.pop(0) if words else next(iter(sub.choices))
+            tokens.append(name)
+            parser = sub.choices[name]
+
+    def members(self, limit: int) -> tuple[Any, ...] | None:
+        return None
+
+    def hazards(self) -> tuple[HazardValue, ...]:
+        """The command lines a program most often gets wrong, each one
+        kept only if the parser accepts it."""
+        out: list[HazardValue] = [HazardValue("empty", [], "an empty command line")]
+        for path, parser in _all_parsers(self.parser):
+            out.append(HazardValue("text", [*path, "--help"], f"--help on {parser.prog}"))
+        for path, parser in _all_parsers(self.parser):
+            for action in parser._actions:
+                if not action.option_strings \
+                        or isinstance(action, (*_SKIPPED, *_FLAGS, argparse.BooleanOptionalAction)):
+                    continue
+                long = next((o for o in action.option_strings if o.startswith("--")), action.option_strings[0])
+                cases: list[tuple[str, tuple[str, ...], str]] = []
+                if action.type in (int, float):
+                    cases += [("extremity", (long, "-1"), f"{long} -1, a negative number as its value"),
+                              ("extremity", (f"{long}=-1",), f"{long}=-1"),
+                              ("extremity", (long, "0"), f"{long} 0")]
+                if action.type in (None, str):
+                    cases += [("empty", (long, ""), f"{long} '', an empty value"),
+                              ("text", (f"{long}=-x",), f"{long}=-x, a value starting with a dash"),
+                              ("text", (long, "ﬁ"), f"{long} with a ligature as its value")]
+                value = "1" if action.type in (int, float) else "x"
+                for abbreviation in _abbreviations(parser, long)[:1]:
+                    cases.append(("text", (abbreviation, value), f"{abbreviation}, an abbreviation of {long}"))
+                cases.append(("duplicate", (long, value, long, value), f"{long} given twice"))
+                for kind, extra, note in cases:
+                    out.append(HazardValue(kind, self._simplest(path, extra), note))
+        kept: list[HazardValue] = []
+        seen: list[object] = []
+        for hazard in out:
+            if hazard.value not in seen and self.contains(hazard.value):
+                seen.append(hazard.value)
+                kept.append(hazard)
+        return tuple(kept)
+
+    def outside(self, rng: random.Random) -> list[str] | None:
+        """One command line the parser refuses, near the accepted ones:
+        an unknown option, an extra positional, a value of the wrong type
+        or outside the choices, a value that starts with a dash, a
+        missing required option, each inside its own subcommand."""
+        candidates: list[list[str]] = []
+        for path, parser in _all_parsers(self.parser):
+            base = self._simplest(path)
+            candidates += [self._simplest(path, ("--no-such-option",)), [*base, "unexpected-extra-value"]]
+            for action in parser._actions:
+                if not action.option_strings \
+                        or isinstance(action, (*_SKIPPED, *_FLAGS, argparse.BooleanOptionalAction)):
+                    continue
+                option = action.option_strings[0]
+                if action.type in (int, float):
+                    candidates.append(self._simplest(path, (option, "not-a-number")))
+                    candidates.append(self._simplest(path, (option, "-1e3")))
+                if action.choices is not None:
+                    candidates.append(self._simplest(path, (option, "<not a choice>")))
+                candidates.append(self._simplest(path, (option, "-x")))
+                if action.required:
+                    candidates.append([t for t in base if t not in action.option_strings])
+        rng.shuffle(candidates)
+        for candidate in candidates:
+            if not self.contains(candidate):
+                return candidate
+        return None
+
+    def shrink(self, value: Any) -> Iterable[Any]:
+        """Shorter command lines that are still members: a token left
+        out, a value cut to its first character."""
+        if not isinstance(value, list):
+            return ()
+        out: list[list[str]] = []
+        for i in range(len(value)):
+            out.append(value[:i] + value[i + 1:])
+            if i + 1 < len(value):
+                out.append(value[:i] + value[i + 2:])
+        for i, token in enumerate(value):
+            if len(token) > 1 and not token.startswith("-"):
+                out.append([*value[:i], token[:1], *value[i + 1:]])
+        return [c for c in out if self.contains(c)]
+
+    def fields(self) -> dict[str, Any] | None:
+        return None
+
+    def render(self, ascii_mode: bool = True) -> str:
+        return f"L[{self.name}]"
+
+    def to_json(self) -> dict[str, Any]:
+        return {"type": "array", "items": {"type": "string"},
+                "x-mathema": {"argv": self.parser.prog}}
+
+
+def argv_language(obj: Any) -> ArgvLanguage:
+    """The command lines a parser accepts, for a parser or a function of
+    no arguments that builds one."""
+    return ArgvLanguage(_parser_of(obj))
+
+
+__all__ = ["ArgvLanguage", "argv_language"]
