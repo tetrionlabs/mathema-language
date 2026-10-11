@@ -105,6 +105,63 @@ code; running the real function on a one-row DataFrame with that value
 confirms it, and the package's own tests run every construct `rule`
 reads against Spark to keep the two the same.
 
+## What the rule does with a missing value
+
+A null in a column is a hole, and Spark decides what a rule does with
+one even when the code never says. `holes` reports, for each column the
+rule reads and each hole it admits, what the rule writes and how it got
+there:
+
+```python
+from mathema_language.spark import holes
+
+for outcome in holes("shop.spend.classify_po_category", "po_category", float_columns=set()):
+    print(outcome.sentence())
+```
+
+<!-- output -->
+```text
+at po_value = null f gave 'Invalid' (handled in the code: isNull)
+```
+
+The rule tests for the null, so the outcome is the code's. A version
+without that test bands a missing value too, but not by anyone's
+decision:
+
+```python
+for outcome in holes("shop.spend.classify_po_category_unguarded", "po_category", float_columns=set()):
+    print(outcome.sentence())
+```
+
+<!-- output -->
+```text
+at po_value = null f gave 'Major' (not handled: every condition is null or false there (a comparison with null is null), so otherwise)
+```
+
+A comparison with null is null, so every `when` is skipped and the
+order falls through to `otherwise`: a purchase order with no value is
+reported as Major spend. The same happens with `!=` (a null country is
+not "not UK"), with `~` (a null status is not "not closed") and with
+arithmetic (a null quantity makes the total null, and every comparison
+on it null). For a floating-point column, NaN is a second hole, and
+Spark compares it as above every number.
+
+An outcome the code did not decide is settled one of four ways: test for
+the hole in the code if the outcome is wrong; mark the column
+`nullable=False` in the schema if a null cannot arrive; state it as a
+claim if it is intended; or accept it as a risk until one of those is
+done. As a claim on the rule:
+
+```python
+unguarded = rule("shop.spend.classify_po_category_unguarded", "po_category", float_columns=set())
+```
+
+```text
+f = unguarded
+f(None) == "Major"
+    proven
+```
+
 ## What it reads
 
 `rule` reads a `withColumn` chain, in one expression or one statement

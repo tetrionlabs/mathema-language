@@ -30,3 +30,15 @@ def classify_po_category_bug(df: DataFrame, value_col: str = "po_value") -> Data
         .when(col(value_col) < 50000, lit("Strategic"))
         .otherwise(lit("Major")),
     )
+
+
+def classify_po_category_unguarded(df: DataFrame, value_col: str = "po_value") -> DataFrame:
+    """The same banding with no test for a missing value."""
+    return df.withColumn(
+        "po_category",
+        when(col(value_col) < 0, lit("Invalid"))
+        .when(col(value_col) < 1000, lit("Micro"))
+        .when(col(value_col) < STRATEGIC_FROM, lit("Standard"))
+        .when(col(value_col) < 50000, lit("Strategic"))
+        .otherwise(lit("Major")),
+    )
