@@ -12,9 +12,9 @@ mathema_language.schema.generate.simplest:
     tier: 3
     source_available: true
     pure: false
-    claims_fingerprint: "e327c4ea5885"
+    claims_fingerprint: "bf03c252e088"
     pin: "none"
-    integrity: "v2:da72e3ccc35e2ddf"
+    integrity: "v2:d79eefd01cc2f394"
   math: null
   claims:
     - name: "absent[f.default]"
@@ -58,7 +58,6 @@ mathema_language.schema.generate.simplest:
         surface: "builtin"
       meta:
         mathema.surface: "builtin"
-      counterexample: null
     - name: "simplest_is_a_member"
       statement: "assuming not_empty(f) == True, let ok = mathema_language.schema.checks.field_problems, let not_empty = mathema_language.schema.emptiness.not_empty, for f in L[mathema_language.schema.model.Field, depth <= 2], ok(simplest(f), f) = []"
       verdict: "holds"
@@ -82,6 +81,7 @@ mathema_language.schema.generate.simplest:
           explicit_type: true
       grammar: "mathema/language"
       meta:
+        mathema.membership: "repopulated-from-verified"
         mathema.sampling: "f~L[mathema_language.schema.model.Field, depth <= 2], seed=20260718, n=91"
         mathema.confidence:
           score: 3.5
@@ -99,13 +99,13 @@ mathema_language.schema.generate.simplest:
           admitted: {}
           executed:
             f.default:
-              None: "null in, None out (propagates)"
+              null: "null in, None out (propagates)"
           behaviour:
             f.default:
-              None: "propagates"
+              null: "propagates"
           said:
             f.default:
-              None: "at f.default = null (absent) f gave None back"
+              null: "at f.default = null (absent) f gave None back"
         mathema.routes_attempted: "routes attempted, derive: underivable (derive cannot read the function's field f.nullable, which is not a number, so the claim is decided by running the code); probe: holds"
         mathema.derive_status: "unliftable"
         mathema.language:
@@ -699,6 +699,7 @@ mathema_language.schema.generate.simplest:
           explicit_type: true
       grammar: "mathema/language"
       meta:
+        mathema.membership: "repopulated-from-verified"
         mathema.sampling: "f~L[mathema_language.schema.model.Field, depth <= 2], seed=20260718, n=90"
         mathema.confidence:
           score: 3.5
@@ -721,13 +722,13 @@ mathema_language.schema.generate.simplest:
             declared: "Any | None"
           executed:
             f.default:
-              None: "null in, None out (propagates)"
+              null: "null in, None out (propagates)"
           behaviour:
             f.default:
-              None: "propagates"
+              null: "propagates"
           said:
             f.default:
-              None: "at f.default = null (absent) f gave None back"
+              null: "at f.default = null (absent) f gave None back"
         mathema.routes_attempted: "routes attempted, derive: underivable (derive cannot read the function's field f.nullable, which is not a number, so the claim is decided by running the code); probe: holds"
         mathema.derive_status: "unliftable"
         mathema.language:
@@ -1316,14 +1317,14 @@ mathema_language.schema.generate.simplest:
     - step: "derivation"
       claim: "absent(f) introduces"
       basis: "symbolic derivation"
-    - step: "gap"
+    - step: "derivation"
       claim: ""
-      basis: "no verified record yet for: mathema_language.schema.generate._definitions, mathema_language.schema.generate._simplest_candidates, mathema_language.schema.generate.draw, mathema_language.schema.checks.field_problems"
+      basis: "every direct function dependency's form matches its verified record"
   lineage:
     generated_by: "mathema 0.6.2"
     CDD_spec_version: "0.2.0"
     date: "2026-10-14"
-    commit: "f10526c098ba75fe813d567690166f5c10de4016"
+    commit: "ace551b52a62373c7004516ec1254185588cc63b"
   dependencies:
     - name: "_REJECTION_TRIES"
       kind: "constant"
@@ -1334,28 +1335,28 @@ mathema_language.schema.generate.simplest:
       file: "src/mathema_language/schema/generate.py"
       line: 57
       form: "91b4c2196829"
-      freshness: "unverified"
+      freshness: "current"
     - name: "_simplest_candidates"
       kind: "function"
       key: "mathema_language.schema.generate._simplest_candidates"
       file: "src/mathema_language/schema/generate.py"
       line: 341
       form: "ae6530651a20"
-      freshness: "unverified"
+      freshness: "current"
     - name: "draw"
       kind: "function"
       key: "mathema_language.schema.generate.draw"
       file: "src/mathema_language/schema/generate.py"
       line: 293
       form: "f5e6a9407ce4"
-      freshness: "unverified"
+      freshness: "current"
     - name: "field_problems"
       kind: "function"
       key: "mathema_language.schema.checks.field_problems"
       file: "src/mathema_language/schema/checks.py"
-      line: 301
+      line: 306
       form: "2e6a70c148b7"
-      freshness: "unverified"
+      freshness: "current"
   meta:
     mathema.effects:
       line: "_record changes an element of the module-level _BUDGET (budget['nodes'] -= 1)"
