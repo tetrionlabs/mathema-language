@@ -4,7 +4,7 @@
 anything that is not a dataclass, checks members with the neutral
 checker, and refuses a regular expression it has no validator for."""
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Any
 
 import pytest
 from annotated_types import Ge, Le, MaxLen
@@ -107,3 +107,15 @@ def test_a_class_that_refuses_a_value_in_its_constructor_is_still_a_language(cls
         assert language.contains(language.sample(rng))
     members = language.members(10_000)
     assert members is None or all(language.contains(m) for m in members)
+
+
+@dataclass
+class Note:
+    text: str
+    extra: Any = None
+
+
+def test_a_field_annotated_any_admits_none_as_the_class_does():
+    language = adapt(Note)
+    assert language.contains(Note("a", None))
+    assert language.contains(Note("a", {"k": 1}))

@@ -21,12 +21,12 @@ from ...adaptor_priority import LIBRARY, priority
 from ...argv import parser_notes, warn_parser_notes
 from ..ecosystems.namespace import NamespaceEcosystem
 from ..languages import RowLanguage
-from ..model import NO_DEFAULT, Constraints, Field, NeutralType, RowSchema
+from ..model import NO_DEFAULT, Base, Constraints, Field, NeutralType, RowSchema
 from ..union import UnionLanguage
 
 #: the argument types read as neutral types; any other callable is kept
 #: as a converter, and the field is drawn as text and converted
-_TYPES = {None: "string", str: "string", int: "int", float: "float"}
+_TYPES: dict[Any, Base] = {None: "string", str: "string", int: "int", float: "float"}
 
 _SKIPPED = (argparse._HelpAction, argparse._VersionAction)
 
