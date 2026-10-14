@@ -21,8 +21,6 @@ mathema_language.schema.generate._record:
   claims: []
 mathema_language.schema.generate._room:
   claims: []
-mathema_language.schema.generate._same:
-  claims: []
 mathema_language.schema.generate._simplest_candidates:
   claims: []
 mathema_language.schema.generate._wide:
@@ -34,12 +32,4 @@ mathema_language.schema.generate.build:
 mathema_language.schema.generate.draw:
   claims: []
 mathema_language.schema.generate.draw_raw:
-  claims: []
-mathema_language.schema.generate.drawing_within:
-  claims: []
-mathema_language.schema.generate.hazards:
-  claims: []
-mathema_language.schema.generate.outside:
-  claims: []
-mathema_language.schema.generate.simpler:
   claims: []

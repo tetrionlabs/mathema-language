@@ -207,7 +207,12 @@ class _Walker:
             self.push_row(RowSchema("struct", t.fields, construct=t.construct), value, path)
             return
         if base == "ref":
-            if self.definitions is None or t.ref is None:
+            if t.ref is None:
+                self.out.append(Problem(path, "a reference that names a definition", value))
+                return
+            if self.definitions is None:
+                self.out.append(Problem(path, f"a definition named {t.ref}, with no definitions "
+                                              "given to resolve it", value))
                 return
             try:
                 schema = self.definitions.definition(t.ref)
@@ -298,15 +303,15 @@ def constraint_problems(value: Any, c: Constraints, path: str = "") -> list[Prob
     return out
 
 
-def field_problems(value: Any, f: Field, path: str = "",
+def field_problems(value: Any, field: Field, path: str = "",
                    definitions: RowSchema | None = None, *,
                    shallow: bool = False) -> list[Problem]:
-    """Every way `value` fails field `f`: null where none is allowed,
-    the type, then the constraints; `shallow` stops at the records
-    nested inside the value (a list's items, a map's values), taking
-    them as already checked."""
+    """Every way `value` fails `field`: null where none is allowed, the
+    type, then the constraints; `shallow` stops at the records nested
+    inside the value (a list's items, a map's values), taking them as
+    already checked."""
     walker = _Walker(definitions, shallow)
-    walker.push_field(value, f, path)
+    walker.push_field(value, field, path)
     return walker.run()
 
 

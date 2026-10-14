@@ -5,6 +5,8 @@ release onward.
 
 ## Unreleased
 
+- A field of a referenced record type checked with no definitions to
+  resolve the reference is a problem; it accepted every value before.
 - `mathema_language.schema.emptiness.not_empty(field)` says whether a
   field describes any value at all, decided by constructing candidate
   members from its bounds, lengths, levels, divisor and regular
