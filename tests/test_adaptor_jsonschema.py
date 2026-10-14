@@ -70,7 +70,21 @@ def test_the_lift_reads_the_fields_through_this_adaptor():
 
 
 def test_a_json_schema_record_is_refused_with_jsonschema_s_validation_error():
+    pytest.importorskip("jsonschema")
     from jsonschema.exceptions import ValidationError
     refusal = adapt(ORDER_SCHEMA).refusal
     assert refusal.text == "jsonschema ValidationError"
     assert refusal.matches_raise(ValidationError("bad")) and not refusal.matches_raise(ValueError("bad"))
+
+
+def test_without_jsonschema_installed_no_refusal_is_declared(monkeypatch):
+    import builtins
+    real_import = builtins.__import__
+
+    def no_jsonschema(name, *args, **kwargs):
+        if name.startswith("jsonschema"):
+            raise ImportError(name)
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", no_jsonschema)
+    assert adapt(ORDER_SCHEMA).refusal is None

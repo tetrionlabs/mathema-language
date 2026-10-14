@@ -44,10 +44,14 @@ class JsonSchemaEcosystem:
             self._validator = Draft202012Validator(self.schema)
         return self._validator
 
-    def refusal(self) -> Refusal:
-        """A function refuses an invalid record with the library's own
-        validation error."""
-        from jsonschema.exceptions import ValidationError
+    def refusal(self) -> Refusal | None:
+        """A function refuses an invalid record with jsonschema's own
+        validation error; with jsonschema not installed the neutral
+        checker decides membership and any raise refuses."""
+        try:
+            from jsonschema.exceptions import ValidationError
+        except ImportError:
+            return None
         return Refusal("jsonschema ValidationError", raises=ValidationError)
 
     def validate_row(self, schema: RowSchema, row: Any) -> list[Problem]:
