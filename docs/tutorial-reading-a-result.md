@@ -71,7 +71,7 @@ print(p.sketch)
 <!-- output -->
 ```text
 proven
-the declared domain has 3 points, and the claim holds at every one
+the claim ranges over 3 points, and it holds at every one
 ```
 
 A proof by visiting every member also needs the function to be pure,
@@ -94,7 +94,7 @@ print(p.sketch)
 <!-- output -->
 ```text
 holds
-the declared domain has 3 points, and the claim holds at every one; every point executed; proven needs the function to be shown pure: product_slug_unicode calls django.utils.text.slugify, which mathema has no purity entry for
+the claim ranges over 3 points, and it holds at every one; every point executed; proven needs the function to be shown pure: product_slug_unicode calls django.utils.text.slugify, which mathema has no purity entry for
 ```
 
 Over `L[unicode]` there is no visiting every member, and nothing in

@@ -36,7 +36,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
-from ._surface import HazardValue, Problem
+from ._surface import DefinedAnswer, HazardValue, Problem, Refusal
 from .text import UNICODE
 
 _SKIPPED = (argparse._HelpAction, argparse._VersionAction)
@@ -293,10 +293,16 @@ def warn_parser_notes(notes: list[ParserNote]) -> None:
 
 
 class ArgvLanguage:
-    """The command lines `parser` accepts."""
+    """The command lines `parser` accepts. A program refuses a command
+    line outside it the way argparse does, with `SystemExit` and exit
+    code 2, and answers one inside it with a return or `SystemExit`
+    with exit code 0 or 1; `excluded_outside_domain` and
+    `is_language_defined` read these."""
 
     kind = "sequence"
     level = "predicate"
+    refusal = Refusal.exit(2)
+    defined_answer = DefinedAnswer.exit(0, 1)
 
     def __init__(self, parser: argparse.ArgumentParser, name: str | None = None) -> None:
         for _path, each in _all_parsers(parser):
