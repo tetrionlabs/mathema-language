@@ -5,6 +5,8 @@ release onward.
 
 ## Unreleased
 
+- A field of a referenced record type checked with no definitions to
+  resolve the reference is a problem; it accepted every value before.
 - `mathema_language.schema.emptiness.not_empty(field)` says whether a
   field describes any value at all, decided by constructing candidate
   members from its bounds, lengths, levels, divisor and regular
@@ -23,7 +25,13 @@ release onward.
   over its records holds for a function that refuses an invalid record
   through the library's validation and is falsified for one that refuses
   with an error of its own; a dataclass, TypedDict or SQLAlchemy record
-  declares none, and any raise refuses.
+  declares none, nor does a JSON Schema language without jsonschema
+  installed, and any raise refuses.
+- The lexicon rows `path_index_present` and `path_index_missing` bound
+  the first line's quantity as `in {7}` (and `in {7} | {absent}`), where
+  they wrote the one-point interval `[7, 7]`; their verdicts are
+  unchanged. The ten `structure_*` and eight `path_*` rows are frozen:
+  their names and meanings no longer change.
 
 ## 0.2.0
 

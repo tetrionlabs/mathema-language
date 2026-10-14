@@ -90,8 +90,8 @@ LEXICON: dict[str, str] = {
     "path_nested_length": "for o in L[mathema_language.lexicon.Order], f(o) <= 5",
     "path_nested_length_tight": "for o in L[mathema_language.lexicon.Order], f(o) <= 4",
     "path_index_present":
-        "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7], f(o) >= 7",
-    "path_index_missing": "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in [7, 7] | {absent}, f(o) >= 7",
+        "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in {7}, f(o) >= 7",
+    "path_index_missing": "for o in L[mathema_language.lexicon.Order], o.lines[0].qty in {7} | {absent}, f(o) >= 7",
     # structure: recursive record trees, bounded by depth, nodes and
     # children, and claims about folds over them proven by induction
     "structure_induction_constant": "for t in L[mathema_language.lexicon.Branch, depth <= 20], f(t) >= 1",
