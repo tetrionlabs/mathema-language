@@ -25,8 +25,7 @@ release onward.
   over its records holds for a function that refuses an invalid record
   through the library's validation and is falsified for one that refuses
   with an error of its own; a dataclass, TypedDict or SQLAlchemy record
-  declares none, nor does a JSON Schema language without jsonschema
-  installed, and any raise refuses.
+  declares none, and any raise refuses.
 - The lexicon rows `path_index_present` and `path_index_missing` bound
   the first line's quantity as `in {7}` (and `in {7} | {absent}`), where
   they wrote the one-point interval `[7, 7]`; their verdicts are
