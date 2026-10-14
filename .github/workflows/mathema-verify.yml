@@ -26,7 +26,7 @@ jobs:
           python-version: "3.12"
       # your project must import for its claims to adjudicate; adjust
       # this line to however your project installs
-      - run: pip install -e . "mathema>=0.6.1,<0.7"
+      - run: pip install -e . "mathema>=0.6.2,<0.7"
       - run: mathema verify --root . --lenient
       # optional: the claim-level delta since the base, for a PR comment
       # - run: mathema review --format json --output review.json

@@ -13,6 +13,7 @@ from mathema.interfaces.extension import HAZARD_KINDS as HAZARD_KINDS
 from mathema.interfaces.extension import KINDS as KINDS
 from mathema.interfaces.extension import LEVELS as LEVELS
 from mathema.interfaces.extension import STRING_HAZARDS as STRING_HAZARDS
+from mathema.interfaces.extension import DefinedAnswer as DefinedAnswer
 from mathema.interfaces.extension import HazardValue as HazardValue
 from mathema.interfaces.extension import Language as Language
 from mathema.interfaces.extension import LanguageRef as LanguageRef
@@ -20,6 +21,7 @@ from mathema.interfaces.extension import OutputPredicateFamily as OutputPredicat
 from mathema.interfaces.extension import Problem as Problem
 from mathema.interfaces.extension import ProofResult as ProofResult
 from mathema.interfaces.extension import RefinedLanguage as RefinedLanguage
+from mathema.interfaces.extension import Refusal as Refusal
 from mathema.interfaces.extension import SafetyFamily as SafetyFamily
 from mathema.interfaces.extension import StringLanguage as StringLanguage
 from mathema.interfaces.extension import UnknownLanguage as UnknownLanguage

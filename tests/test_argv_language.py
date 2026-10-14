@@ -111,3 +111,46 @@ def test_a_claim_over_command_lines_finds_the_negative_order():
     (p,) = check_conjectures(units_from_argv, [claim("for argv in L[shop_admin_argv], f(argv) >= 0")])
     assert p.verdict == "falsified"
     assert p.counterexample.startswith("argv = ['restock', '--quantity', '-1', 'a']")
+
+
+def _parses(argv: list[str]) -> int:
+    """Lets argparse refuse, and answers 0."""
+    admin.build_parser().parse_args(argv)
+    return 0
+
+
+def _swallows_the_refusal(argv: list[str]) -> int:
+    """Answers 1 where argparse would refuse."""
+    try:
+        admin.build_parser().parse_args(argv)
+    except SystemExit:
+        return 1
+    return 0
+
+
+def _crashes_on_a_negative_order(argv: list[str]) -> int:
+    args = admin.build_parser().parse_args(argv)
+    if getattr(args, "quantity", None) == -1:
+        raise KeyError("quantity")
+    return 0
+
+
+def _exits_3(argv: list[str]) -> int:
+    admin.build_parser().parse_args(argv)
+    raise SystemExit(3)
+
+
+@pytest.mark.parametrize("fn, refused, answered", [
+    (_parses, "holds", "holds"),
+    (_swallows_the_refusal, "falsified", "holds"),
+    (_crashes_on_a_negative_order, "holds", "falsified"),
+    (_exits_3, "holds", "falsified"),
+], ids=lambda v: getattr(v, "__name__", v))
+def test_a_program_refuses_with_exit_2_and_answers_with_a_return_or_exit_0_or_1(fn, refused, answered):
+    from mathema.conjecture import check_conjectures, claim
+    language = argv_language(admin.build_parser)
+    assert language.refusal.text == "SystemExit (exit code 2)"
+    languages.register_language("shop_admin_argv", language)
+    (outside,) = check_conjectures(fn, [claim("for argv in L[shop_admin_argv], excluded_outside_domain(argv)")])
+    (inside,) = check_conjectures(fn, [claim("for argv in L[shop_admin_argv], is_language_defined(argv)")])
+    assert (outside.verdict, inside.verdict) == (refused, answered)

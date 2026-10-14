@@ -14,9 +14,9 @@ from typing import Any
 from ...adaptor_priority import DOCUMENT, priority
 from ..ecosystems.jsonschema import JsonSchemaEcosystem
 from ..languages import RowLanguage
-from ..model import NO_DEFAULT, Constraints, Field, NeutralType, RowSchema
+from ..model import NO_DEFAULT, Base, Constraints, Field, NeutralType, RowSchema
 
-_BASES = {"boolean": "bool", "integer": "int", "number": "float", "string": "string",
+_BASES: dict[str, Base] = {"boolean": "bool", "integer": "int", "number": "float", "string": "string",
           "array": "list", "object": "struct", "null": "any"}
 
 

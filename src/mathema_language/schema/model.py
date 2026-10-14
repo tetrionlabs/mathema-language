@@ -9,11 +9,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal, get_args
 
 #: the base types a `NeutralType` can have
-BASES = ("bool", "int", "float", "decimal", "string", "binary", "date", "time",
-         "datetime", "duration", "categorical", "list", "struct", "map", "ref", "any")
+Base = Literal["bool", "int", "float", "decimal", "string", "binary", "date", "time",
+               "datetime", "duration", "categorical", "list", "struct", "map", "ref", "any"]
+BASES: tuple[str, ...] = get_args(Base)
 
 #: the draw bounds a recursive schema is sampled within when it states
 #: none of its own; they are sampling choices, published by the
@@ -36,7 +37,7 @@ class NeutralType:
     struct's value from its field values (a dataclass or model class);
     without it a struct's value is a dict. `nullable_items` says a list's
     items, or a map's values, may be null."""
-    base: str
+    base: Base
     bits: int | None = None
     signed: bool = True
     precision: int | None = None

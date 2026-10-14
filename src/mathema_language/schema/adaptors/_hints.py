@@ -15,9 +15,9 @@ import types
 import typing
 from typing import Any
 
-from ..model import Constraints, Field, NeutralType, RowSchema
+from ..model import Base, Constraints, Field, NeutralType, RowSchema
 
-_SCALARS: dict[Any, str] = {
+_SCALARS: dict[Any, Base] = {
     bool: "bool", int: "int", float: "float", decimal.Decimal: "decimal",
     str: "string", bytes: "binary", bytearray: "binary", _dt.date: "date",
     _dt.time: "time", _dt.datetime: "datetime", _dt.timedelta: "duration",
@@ -45,8 +45,9 @@ def constraints_of(markers: tuple[Any, ...]) -> Constraints:
 
 def field_of(name: str, hint: Any, *, required: bool = True, default: Any = ...,
              extra_markers: tuple[Any, ...] = ()) -> Field:
-    """One field from a type hint: `Optional` makes it nullable,
-    `Annotated` markers become constraints, a default is kept."""
+    """One field from a type hint: `Optional`, `Any` and `object` make
+    it nullable, `Annotated` markers become constraints, a default is
+    kept."""
     from ..model import NO_DEFAULT
     markers: tuple[Any, ...] = extra_markers
     nullable = False
@@ -65,6 +66,8 @@ def field_of(name: str, hint: Any, *, required: bool = True, default: Any = ...,
                 hint = Any
             continue
         break
+    if hint is Any or hint is object:
+        nullable = True
     t = type_of(hint)
     return Field(name, t, nullable=nullable, required=required,
                  constraints=constraints_of(markers),

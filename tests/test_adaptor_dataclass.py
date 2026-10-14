@@ -4,7 +4,7 @@
 anything that is not a dataclass, checks members with the neutral
 checker, and refuses a regular expression it has no validator for."""
 from dataclasses import dataclass
-from typing import Annotated
+from typing import Annotated, Any
 
 import pytest
 from annotated_types import Ge, Le, MaxLen
@@ -78,3 +78,44 @@ def test_the_lift_reads_the_fields_through_this_adaptor():
     assert _lift_verdict(total, "for row in L[tests.test_adaptor_dataclass.Line], f(row) >= 0") == "proven"
     assert _lift_verdict(width, "for row in L[tests.test_adaptor_dataclass.Line], f(row) <= 10") == "proven"
     assert _lift_verdict(width, "for row in L[tests.test_adaptor_dataclass.Line], f(row) <= 9") == "falsified"
+
+
+@dataclass
+class Sku:
+    code: str
+    pack: int
+
+    def __post_init__(self) -> None:
+        if not self.code:
+            raise ValueError("a SKU code is never empty")
+
+
+@dataclass
+class Shelf:
+    sku: Sku
+    facings: int
+
+
+@pytest.mark.parametrize("cls", [Sku, Shelf])
+def test_a_class_that_refuses_a_value_in_its_constructor_is_still_a_language(cls):
+    import random
+    language = adapt(cls)
+    hazards = language.hazards()
+    assert hazards and all(language.contains(h.value) for h in hazards)
+    rng = random.Random(3)
+    for _ in range(50):
+        assert language.contains(language.sample(rng))
+    members = language.members(10_000)
+    assert members is None or all(language.contains(m) for m in members)
+
+
+@dataclass
+class Note:
+    text: str
+    extra: Any = None
+
+
+def test_a_field_annotated_any_admits_none_as_the_class_does():
+    language = adapt(Note)
+    assert language.contains(Note("a", None))
+    assert language.contains(Note("a", {"k": 1}))

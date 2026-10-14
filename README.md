@@ -311,7 +311,7 @@ can call.
 
 ## Requirements
 
-Python 3.10 or later and mathema 0.6.1 or later, before 0.7. The package
+Python 3.10 or later and mathema 0.6.2 or later, before 0.7. The package
 imports only from `mathema.interfaces.extension`, the surface mathema
 versions for extension authors, and a test pins that.
 

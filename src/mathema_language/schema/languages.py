@@ -174,7 +174,11 @@ class RowLanguage:
 
     def _sample(self, rng: random.Random) -> Any:
         for _ in range(_REJECTION_TRIES):
-            row = self._build(self.draw_values(rng))
+            try:
+                row = self._build(self.draw_values(rng))
+            except Exception:
+                self.rejected += 1
+                continue
             if self.contains(row):
                 self.accepted += 1
                 return row
@@ -206,7 +210,10 @@ class RowLanguage:
         import itertools
         out = []
         for combo in itertools.product(*options):
-            row = self._build(dict(zip(self.schema.names, combo, strict=True)))
+            try:
+                row = self._build(dict(zip(self.schema.names, combo, strict=True)))
+            except Exception:
+                continue
             if self.contains(row):
                 out.append(row)
         return tuple(out)
@@ -431,7 +438,7 @@ class RowLanguage:
         return {f.name: _gen.simplest(f) for f in schema.fields}
 
     def _record(self, schema: RowSchema, values: dict[str, Any]) -> Any:
-        return schema.construct(**values) if schema.construct is not None else values
+        return _gen.build(schema.construct, values)
 
     @_within_budget
     def _spine(self, records: int) -> Any:

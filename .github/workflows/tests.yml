@@ -25,7 +25,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install "mathema>=0.6.1,<0.7"
+      - run: pip install "mathema>=0.6.2,<0.7"
       - run: pip install --no-deps . && pip install pytest annotated-types
       - name: no ecosystem is installed
         run: |
@@ -71,7 +71,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install "mathema>=0.6.1,<0.7"
+      - run: pip install "mathema>=0.6.2,<0.7"
       - run: pip install --no-deps . && pip install pytest annotated-types "${{ matrix.spec }}"
       - name: only this ecosystem is installed
         env:
@@ -93,7 +93,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install "mathema>=0.6.1,<0.7"
+      - run: pip install "mathema>=0.6.2,<0.7"
       - run: pip install --no-deps . && pip install pytest ruff mypy annotated-types pydantic jsonschema sqlalchemy django ruamel.yaml pyyaml
       - run: ruff check .
       - run: mypy src

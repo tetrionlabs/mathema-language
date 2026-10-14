@@ -5,6 +5,18 @@ release onward.
 
 ## Unreleased
 
+- mathema-language needs mathema 0.6.2 (`mathema>=0.6.2,<0.7`).
+- The argv language declares how a program refuses and answers: a
+  command line outside it is refused with `SystemExit` and exit code 2,
+  as argparse refuses it, and one inside it is answered with a return or
+  `SystemExit` with exit code 0 or 1, so `excluded_outside_domain` and
+  `is_language_defined` over a command line check exactly that.
+- A record class that refuses values in its constructor (a dataclass
+  `__post_init__` that raises) is a language like any other: a value
+  its class refuses is not a member, so drawing, hazards and the
+  simplest member pass over it instead of raising out of the check.
+- A record field annotated `Any` or `object` admits `None`, as the
+  dataclass, TypedDict or pydantic model itself does.
 - A Spark schema is a record language: a `pyspark.sql.types.StructType`,
   or the JSON Spark writes for one (`df.schema.jsonValue()`, a Delta
   log's `schemaString`), read without importing pyspark. Each Spark type

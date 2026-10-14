@@ -204,3 +204,15 @@ for argv in L[shop_admin_argv], f(argv) >= 0
 
 The witness is the command line itself: `shop restock --quantity -1 a`
 orders minus twelve units.
+
+The language also says how a program over it refuses and answers. A
+command line outside it is refused the way argparse refuses one, with
+`SystemExit` and exit code 2, and one inside it is answered with a
+return or `SystemExit` with exit code 0 or 1. The two built-in claims
+read both: `excluded_outside_domain(argv)` holds only for a program
+that refuses every command line the parser refuses, so a `main` that
+catches the parser's exit and carries on is falsified at the command
+line it let through, and `is_language_defined(argv)` holds only for a
+program that answers every command line the parser accepts, so a
+traceback or an exit code of 3 on an accepted command line is
+falsified.
