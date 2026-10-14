@@ -1,0 +1,51 @@
+# mathema init: bare declared stubs for mathema_language.schema.checks (fill in claims; an empty list means nothing declared yet)
+mathema_language.schema.checks._Walker._constraints:
+  claims: []
+mathema_language.schema.checks._Walker._enter:
+  claims: []
+mathema_language.schema.checks._Walker._extras:
+  claims: []
+mathema_language.schema.checks._Walker._field:
+  claims: []
+mathema_language.schema.checks._Walker._leave:
+  claims: []
+mathema_language.schema.checks._Walker._missing:
+  claims: []
+mathema_language.schema.checks._Walker._row:
+  claims: []
+mathema_language.schema.checks._Walker._type:
+  claims: []
+mathema_language.schema.checks._Walker.push_field:
+  claims: []
+mathema_language.schema.checks._Walker.push_row:
+  claims: []
+mathema_language.schema.checks._Walker.push_type:
+  claims: []
+mathema_language.schema.checks._Walker.run:
+  claims: []
+mathema_language.schema.checks._columns_of:
+  claims: []
+mathema_language.schema.checks._decimal_problems:
+  claims: []
+mathema_language.schema.checks._hashable:
+  claims: []
+mathema_language.schema.checks._is_int:
+  claims: []
+mathema_language.schema.checks._read:
+  claims: []
+mathema_language.schema.checks._record_class:
+  claims: []
+mathema_language.schema.checks._scalar_problems:
+  claims: []
+mathema_language.schema.checks.check_problems:
+  claims: []
+mathema_language.schema.checks.constraint_problems:
+  claims: []
+mathema_language.schema.checks.field_problems:
+  claims: []
+mathema_language.schema.checks.json_schema:
+  claims: []
+mathema_language.schema.checks.row_problems:
+  claims: []
+mathema_language.schema.checks.type_problems:
+  claims: []
