@@ -1,0 +1,6 @@
+mathema_language.schema.generate.simplest:
+  claims:
+    - name: simplest_is_a_member
+      statement: "let ok = mathema_language.schema.checks.field_problems, let not_empty = mathema_language.schema.emptiness.not_empty, for f in L[mathema_language.schema.model.Field, depth <= 2], assuming not_empty(f) == True, ok(simplest(f), f) == []"
+    - name: simplest_of_an_empty_field_is_none
+      statement: "let not_empty = mathema_language.schema.emptiness.not_empty, for f in L[mathema_language.schema.model.Field, depth <= 2], assuming not_empty(f) == False, simplest(f) == None"

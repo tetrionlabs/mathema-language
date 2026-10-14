@@ -9,12 +9,26 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Literal, get_args
+from typing import Annotated, Any, Literal, get_args
 
 #: the base types a `NeutralType` can have
 Base = Literal["bool", "int", "float", "decimal", "string", "binary", "date", "time",
                "datetime", "duration", "categorical", "list", "struct", "map", "ref", "any"]
 BASES: tuple[str, ...] = get_args(Base)
+
+@dataclass(frozen=True)
+class _Range:
+    """An inclusive range on an int attribute of the model, read by the
+    record adaptors as `ge` and `le` like any `Annotated` bound."""
+    ge: int | None = None
+    le: int | None = None
+
+
+#: a width in bits, a decimal's digits and scale, and a length
+Bits = Annotated[int, _Range(ge=1, le=512)]
+Digits = Annotated[int, _Range(ge=1, le=1000)]
+Scale = Annotated[int, _Range(ge=0, le=1000)]
+Count = Annotated[int, _Range(ge=0)]
 
 #: the draw bounds a recursive schema is sampled within when it states
 #: none of its own; they are sampling choices, published by the
@@ -23,6 +37,16 @@ SAMPLING_BOUNDS = {"depth": 8, "nodes": 256, "width": 16}
 
 #: the marker for a field with no default and a constraint with no constant
 NO_DEFAULT: Any = type("NoDefault", (), {"__repr__": lambda self: "NO_DEFAULT"})()
+
+
+def _in_range(name: str, value: Any, low: int, high: int | None) -> None:
+    """Refuse an int attribute outside `[low, high]`; None is unset."""
+    if value is None:
+        return
+    if not isinstance(value, int) or isinstance(value, bool) or value < low \
+            or (high is not None and value > high):
+        bound = f"[{low}, {high}]" if high is not None else f">= {low}"
+        raise ValueError(f"{name} must be an int in {bound}, not {value!r}")
 
 
 @dataclass(frozen=True)
@@ -38,10 +62,10 @@ class NeutralType:
     without it a struct's value is a dict. `nullable_items` says a list's
     items, or a map's values, may be null."""
     base: Base
-    bits: int | None = None
+    bits: Bits | None = None
     signed: bool = True
-    precision: int | None = None
-    scale: int | None = None
+    precision: Digits | None = None
+    scale: Scale | None = None
     unit: str | None = None
     tz: str | None = None
     levels: tuple[Any, ...] | None = None
@@ -57,6 +81,9 @@ class NeutralType:
     def __post_init__(self) -> None:
         if self.base not in BASES:
             raise ValueError(f"unknown base type {self.base!r}; one of {BASES}")
+        _in_range("bits", self.bits, 1, 512)
+        _in_range("precision", self.precision, 1, 1000)
+        _in_range("scale", self.scale, 0, self.precision if self.precision is not None else 1000)
 
     @property
     def numeric(self) -> bool:
@@ -105,12 +132,16 @@ class Constraints:
     max: Any = None
     exclusive_min: Any = None
     exclusive_max: Any = None
-    min_len: int | None = None
-    max_len: int | None = None
+    min_len: Count | None = None
+    max_len: Count | None = None
     regex: str | None = None
     enum: tuple[Any, ...] | None = None
     const: Any = NO_DEFAULT
     multiple_of: Any = None
+
+    def __post_init__(self) -> None:
+        _in_range("min_len", self.min_len, 0, None)
+        _in_range("max_len", self.max_len, 0, None)
 
     def __bool__(self) -> bool:
         return any(v is not None for v in (self.min, self.max, self.exclusive_min,

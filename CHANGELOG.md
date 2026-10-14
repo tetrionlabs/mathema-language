@@ -3,6 +3,22 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
+## Unreleased
+
+- `mathema_language.schema.emptiness.not_empty(field)` says whether a
+  field describes any value at all, decided by constructing candidate
+  members from its bounds, lengths, levels, divisor and regular
+  expression and checking each with the field's own checker. A claim
+  over schema fields can take it as a premise:
+  `assuming not_empty(f) == True`.
+- The simplest member of a field with no members is `None`, where it
+  was a value the field refuses; a bound its type cannot read, or a
+  regular expression that does not compile, no longer raises from the
+  checker or the generator.
+- `NeutralType` and `Constraints` refuse a width, precision, scale or
+  length that cannot mean anything (a negative width, a scale above the
+  precision), and say which.
+
 ## 0.2.0
 
 For mathema 0.6.2 (`mathema>=0.6.2,<0.7`).

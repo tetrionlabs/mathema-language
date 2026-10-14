@@ -278,8 +278,13 @@ def constraint_problems(value: Any, c: Constraints, path: str = "") -> list[Prob
                 out.append(Problem(path, f"len >= {c.min_len}", value))
             if c.max_len is not None and n > c.max_len:
                 out.append(Problem(path, f"len <= {c.max_len}", value))
-    if c.regex is not None and isinstance(value, str) and re.fullmatch(c.regex, value) is None:
-        out.append(Problem(path, f"matches {c.regex!r}", value))
+    if c.regex is not None and isinstance(value, str):
+        try:
+            matched = re.fullmatch(c.regex, value) is not None
+        except re.error:
+            matched = False
+        if not matched:
+            out.append(Problem(path, f"matches {c.regex!r}", value))
     if c.enum is not None and value not in c.enum:
         out.append(Problem(path, f"one of {list(c.enum)}", value))
     if c.const is not NO_DEFAULT and value != c.const:
@@ -288,7 +293,7 @@ def constraint_problems(value: Any, c: Constraints, path: str = "") -> list[Prob
         try:
             if value % c.multiple_of != 0:
                 out.append(Problem(path, f"multiple of {c.multiple_of}", value))
-        except (TypeError, ZeroDivisionError):
+        except (TypeError, ArithmeticError):
             out.append(Problem(path, f"multiple of {c.multiple_of}", value))
     return out
 
