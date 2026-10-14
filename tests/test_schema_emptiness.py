@@ -62,3 +62,12 @@ def test_a_field_with_members_is_not_empty_and_simplest_is_one(f):
 def test_a_description_that_cannot_mean_anything_is_refused(make):
     with pytest.raises(ValueError):
         make()
+
+
+@pytest.mark.parametrize("value", [{}, 1, "x"])
+def test_a_reference_with_no_definitions_to_resolve_it_is_a_problem(value):
+    from mathema_language.schema.model import RowSchema
+    ref = Field("a", NeutralType("ref", ref="Node"))
+    assert field_problems(value, ref) != []
+    assert field_problems(value, ref, definitions=RowSchema("Other", ())) != []
+    assert field_problems(None, Field("a", NeutralType("ref", ref="Node"), nullable=True)) == []

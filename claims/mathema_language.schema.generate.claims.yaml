@@ -1,0 +1,35 @@
+# mathema init: bare declared stubs for mathema_language.schema.generate (fill in claims; an empty list means nothing declared yet)
+mathema_language.schema.generate._decimal_range:
+  claims: []
+mathema_language.schema.generate._decimal_step:
+  claims: []
+mathema_language.schema.generate._deeper:
+  claims: []
+mathema_language.schema.generate._definitions:
+  claims: []
+mathema_language.schema.generate._draw_string:
+  claims: []
+mathema_language.schema.generate._float_range:
+  claims: []
+mathema_language.schema.generate._int_range:
+  claims: []
+mathema_language.schema.generate._length_range:
+  claims: []
+mathema_language.schema.generate._reaches_a_record:
+  claims: []
+mathema_language.schema.generate._record:
+  claims: []
+mathema_language.schema.generate._room:
+  claims: []
+mathema_language.schema.generate._simplest_candidates:
+  claims: []
+mathema_language.schema.generate._wide:
+  claims: []
+mathema_language.schema.generate._zone:
+  claims: []
+mathema_language.schema.generate.build:
+  claims: []
+mathema_language.schema.generate.draw:
+  claims: []
+mathema_language.schema.generate.draw_raw:
+  claims: []

@@ -1,0 +1,7 @@
+# mathema init: bare declared stubs for mathema_language.schema.checks (fill in claims; an empty list means nothing declared yet)
+mathema_language.schema.checks.field_problems:
+  claims:
+    - name: accepts_the_simplest_member
+      statement: "let simplest = mathema_language.schema.generate.simplest, let not_empty = mathema_language.schema.emptiness.not_empty, for field in L[mathema_language.schema.model.Field, depth <= 2], assuming not_empty(field) == True, field_problems(simplest(field), field) == []"
+    - name: checks_an_absent_value
+      statement: "absent(f, value) drops"
