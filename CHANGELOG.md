@@ -20,6 +20,11 @@ release onward.
 - `NeutralType` and `Constraints` refuse a width, precision, scale or
   length that cannot mean anything (a negative width, a scale above the
   precision), and say which.
+- The lexicon rows `path_index_present` and `path_index_missing` bound
+  the first line's quantity as `in {7}` (and `in {7} | {absent}`), where
+  they wrote the one-point interval `[7, 7]`; their verdicts are
+  unchanged. The ten `structure_*` and eight `path_*` rows are frozen:
+  their names and meanings no longer change.
 
 ## 0.2.0
 
