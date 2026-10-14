@@ -88,14 +88,18 @@ from shop.urls import product_slug_unicode
     [mathema.claim('for name in {"Blue Mug", "Чай", "Café au lait"}, '
                    'len(product_slug_unicode(name)) >= 1', name="three_names")])
 print(p.verdict)
-print(p.sketch)
+print(p.sketch.split(": ")[0])
 ```
 
 <!-- output -->
 ```text
 holds
-the claim ranges over 3 points, and it holds at every one; every point executed; proven needs the function to be shown pure: product_slug_unicode calls django.utils.text.slugify, which mathema has no purity entry for
+the claim ranges over 3 points, and it holds at every one; every point executed; proven needs the function to be shown pure
 ```
+
+The full sketch goes on to name the call mathema cannot vouch for, a
+function inside Django's `slugify` that has no purity entry; which
+function that is depends on the Django version installed.
 
 Over `L[unicode]` there is no visiting every member, and nothing in
 mathema reads what a function does to a string symbolically, so a claim
