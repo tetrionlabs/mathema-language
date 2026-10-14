@@ -43,6 +43,22 @@ def constraints_of(markers: tuple[Any, ...]) -> Constraints:
     return Constraints(**found)
 
 
+def _decimal_digits(t: NeutralType, markers: tuple[Any, ...]) -> NeutralType:
+    """A decimal's total digits and places (pydantic's `max_digits` and
+    `decimal_places`) as its precision and scale, when both are given;
+    one alone has no neutral spelling and is left to the library's own
+    validation."""
+    digits = places = None
+    for marker in markers:
+        if getattr(marker, "max_digits", None) is not None:
+            digits = marker.max_digits
+        if getattr(marker, "decimal_places", None) is not None:
+            places = marker.decimal_places
+    if isinstance(digits, int) and isinstance(places, int) and 0 <= places <= digits:
+        return NeutralType("decimal", precision=digits, scale=places)
+    return t
+
+
 def field_of(name: str, hint: Any, *, required: bool = True, default: Any = ...,
              extra_markers: tuple[Any, ...] = ()) -> Field:
     """One field from a type hint: `Optional`, `Any` and `object` make
@@ -69,6 +85,8 @@ def field_of(name: str, hint: Any, *, required: bool = True, default: Any = ...,
     if hint is Any or hint is object:
         nullable = True
     t = type_of(hint)
+    if t.base == "decimal":
+        t = _decimal_digits(t, markers)
     return Field(name, t, nullable=nullable, required=required,
                  constraints=constraints_of(markers),
                  default=NO_DEFAULT if default is ... else default)
