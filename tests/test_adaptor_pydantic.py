@@ -59,3 +59,19 @@ def test_the_lift_reads_the_fields_through_this_adaptor():
     assert _lift_verdict(total, "for row in L[tests._pydantic_shapes.OrderModel], f(row) >= 0") == "proven"
     assert _lift_verdict(width, "for row in L[tests._pydantic_shapes.OrderModel], f(row) <= 10") == "proven"
     assert _lift_verdict(width, "for row in L[tests._pydantic_shapes.OrderModel], f(row) <= 9") == "falsified"
+
+
+def test_a_decimal_s_digits_and_places_are_its_precision_and_scale():
+    import decimal
+    import random
+
+    from pydantic import BaseModel, Field
+
+    class Rate(BaseModel):
+        rate: decimal.Decimal = Field(max_digits=5, decimal_places=2, gt=0)
+
+    language = adapt(Rate)
+    (f,) = language.schema.fields
+    assert (f.type.precision, f.type.scale) == (5, 2)
+    rng = random.Random(0)
+    assert all(language.contains(language.sample(rng)) for _ in range(20))

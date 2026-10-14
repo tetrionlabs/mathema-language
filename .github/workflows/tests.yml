@@ -94,7 +94,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install "mathema>=0.6.2,<0.7"
-      - run: pip install --no-deps . && pip install pytest ruff mypy annotated-types pydantic jsonschema sqlalchemy django ruamel.yaml pyyaml
+      - run: pip install --no-deps . && pip install pytest ruff mypy annotated-types pydantic jsonschema sqlalchemy django ruamel.yaml pyyaml z3-solver
       - run: ruff check .
       - run: mypy src
       - run: pytest -v

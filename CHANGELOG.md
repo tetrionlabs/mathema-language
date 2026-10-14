@@ -25,6 +25,15 @@ release onward.
   they wrote the one-point interval `[7, 7]`; their verdicts are
   unchanged. The ten `structure_*` and eight `path_*` rows are frozen:
   their names and meanings no longer change.
+- `mathema_language.smt` encodes a record language's membership as a z3
+  formula (the new `[smt]` extra), reading at least or at most what the
+  language's library admits, for a solver deciding whether one schema
+  admits everything another does. It reads pydantic models, JSON Schema
+  dicts, dataclasses and TypedDicts field by field, and names whatever
+  it does not read.
+- A pydantic decimal's `max_digits` and `decimal_places` are its
+  precision and scale, so its record language draws members pydantic
+  accepts; it drew none before.
 
 ## 0.2.0
 
