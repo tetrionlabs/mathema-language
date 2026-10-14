@@ -338,72 +338,87 @@ def simpler(f: Field, current: Any) -> list[Any]:
     return out
 
 
-def simplest(f: Field) -> Any:
-    """The member shrinking substitutes first: the lowest bound or
-    zero, the empty text, the first level, the epoch, an empty list;
-    or null where the field allows it and nothing simpler is a
-    member."""
+def _simplest_candidates(f: Field) -> list[Any]:
+    """The plain candidates for the simplest member, in order; a bound
+    or a type its kind cannot read (a text bound on an int) ends the
+    list where it is met."""
     t, c = f.type, f.constraints
     candidates: list[Any] = []
-    if c.const is not NO_DEFAULT:
-        candidates.append(c.const)
-    if c.enum:
-        candidates.append(c.enum[0])
-    base = t.base
-    if base == "bool":
-        candidates += [False]
-    elif base == "int":
-        lo, hi = _int_range(f)
-        candidates += [0, lo, hi]
-    elif base == "float":
-        flo, fhi = _float_range(f)
-        candidates += [0.0, flo, fhi]
-    elif base == "decimal":
-        with _wide():
-            candidates += [decimal.Decimal(0), _decimal_range(f)[0].quantize(
-                _decimal_step(t), decimal.ROUND_CEILING)]
-    elif base == "string":
-        candidates += ["", "a" * (c.min_len or 0)]
-    elif base == "binary":
-        candidates += [b"", b"\x00" * (c.min_len or 0)]
-    elif base == "date":
-        candidates += [EPOCH.date()]
-    elif base == "time":
-        candidates += [_dt.time(0, 0)]
-    elif base == "datetime":
-        candidates += [EPOCH.replace(tzinfo=_zone(t))]
-    elif base == "duration":
-        candidates += [_dt.timedelta(0)]
-    elif base == "categorical":
-        candidates += list(t.levels or ())[:1]
-    elif base == "list":
-        candidates += [[]]
-    elif base == "struct":
-        with _deeper():
-            values = {sub.name: simplest(sub) for sub in (t.fields or ())}
-        candidates += [build(t.construct, values)]
-    elif base == "ref":
-        defs = _definitions()
-        if defs is not None and t.ref is not None and _room() > 0:
-            schema = defs.definition(t.ref)
+    try:
+        if c.const is not NO_DEFAULT:
+            candidates.append(c.const)
+        if c.enum:
+            candidates.append(c.enum[0])
+        base = t.base
+        if base == "bool":
+            candidates += [False]
+        elif base == "int":
+            lo, hi = _int_range(f)
+            candidates += [0, lo, hi]
+        elif base == "float":
+            flo, fhi = _float_range(f)
+            candidates += [0.0, flo, fhi]
+        elif base == "decimal":
+            with _wide():
+                candidates += [decimal.Decimal(0), _decimal_range(f)[0].quantize(
+                    _decimal_step(t), decimal.ROUND_CEILING)]
+        elif base == "string":
+            candidates += ["", "a" * (c.min_len or 0)]
+        elif base == "binary":
+            candidates += [b"", b"\x00" * (c.min_len or 0)]
+        elif base == "date":
+            candidates += [EPOCH.date()]
+        elif base == "time":
+            candidates += [_dt.time(0, 0)]
+        elif base == "datetime":
+            candidates += [EPOCH.replace(tzinfo=_zone(t))]
+        elif base == "duration":
+            candidates += [_dt.timedelta(0)]
+        elif base == "categorical":
+            candidates += list(t.levels or ())[:1]
+        elif base == "list":
+            candidates += [[]]
+        elif base == "struct":
             with _deeper():
-                values = {sub.name: simplest(sub) for sub in schema.fields}
-            candidates += [build(schema.construct or t.construct, values)]
-    elif base == "map":
-        candidates += [{}]
+                values = {sub.name: simplest(sub) for sub in (t.fields or ())}
+            candidates += [build(t.construct, values)]
+        elif base == "ref":
+            defs = _definitions()
+            if defs is not None and t.ref is not None and _room() > 0:
+                schema = defs.definition(t.ref)
+                with _deeper():
+                    values = {sub.name: simplest(sub) for sub in schema.fields}
+                candidates += [build(schema.construct or t.construct, values)]
+        elif base == "map":
+            candidates += [{}]
+    except (TypeError, ValueError, ArithmeticError):
+        pass
+    return candidates
+
+
+def simplest(f: Field) -> Any | None:
+    """The member shrinking substitutes first: the lowest bound or
+    zero, the empty text, the first level, the epoch, an empty list;
+    else the first member of a fixed run of draws; else null, which is
+    the member of a nullable field and the answer for a field with no
+    members."""
+    candidates = _simplest_candidates(f)
     for candidate in candidates:
         if not field_problems(candidate, f, definitions=_definitions()):
             return candidate
-    if base in ("struct", "ref") and not f.nullable:
-        # a record whose class refuses the simplest field values: the
-        # first of a fixed run of draws its class builds
+    if not f.nullable:
+        # none of the plain candidates is a member (a regular expression,
+        # a divisor, a record whose class refuses them): the first member
+        # of a fixed run of draws
         rng = random.Random(0)
         for _ in range(_REJECTION_TRIES):
-            drawn = draw(rng, f)
+            try:
+                drawn = draw(rng, f)
+            except Exception:
+                break
             if not field_problems(drawn, f, definitions=_definitions()):
                 return drawn
-    built = [c for c in candidates if c is not UNBUILT]
-    return None if f.nullable or not built else built[0]
+    return None
 
 
 def hazards(f: Field) -> list[HazardValue]:
