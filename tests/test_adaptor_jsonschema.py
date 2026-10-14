@@ -67,3 +67,10 @@ def test_the_lift_reads_the_fields_through_this_adaptor():
     assert _lift_verdict(total, "for row in L[tests._jsonschema_shapes.ORDER_SCHEMA], f(row) >= 0") == "proven"
     assert _lift_verdict(width, "for row in L[tests._jsonschema_shapes.ORDER_SCHEMA], f(row) <= 10") == "proven"
     assert _lift_verdict(width, "for row in L[tests._jsonschema_shapes.ORDER_SCHEMA], f(row) <= 9") == "falsified"
+
+
+def test_a_json_schema_record_is_refused_with_jsonschema_s_validation_error():
+    from jsonschema.exceptions import ValidationError
+    refusal = adapt(ORDER_SCHEMA).refusal
+    assert refusal.text == "jsonschema ValidationError"
+    assert refusal.matches_raise(ValidationError("bad")) and not refusal.matches_raise(ValueError("bad"))

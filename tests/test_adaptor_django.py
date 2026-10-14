@@ -54,3 +54,10 @@ def test_the_lift_reads_the_fields_through_this_adaptor():
     assert _lift_verdict(total, "for row in L[tests._django_shapes.OrderModelDj], f(row) >= 0") == "proven"
     assert _lift_verdict(width, "for row in L[tests._django_shapes.OrderModelDj], f(row) <= 10") == "proven"
     assert _lift_verdict(width, "for row in L[tests._django_shapes.OrderModelDj], f(row) <= 9") == "falsified"
+
+
+def test_a_django_record_is_refused_with_django_s_validation_error():
+    from django.core.exceptions import ValidationError
+    refusal = adapt(shapes.OrderModelDj).refusal
+    assert refusal.text == "Django ValidationError"
+    assert refusal.matches_raise(ValidationError("bad")) and not refusal.matches_raise(ValueError("bad"))

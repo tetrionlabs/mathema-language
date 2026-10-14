@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..._surface import Problem
+from ..._surface import Problem, Refusal
 from ..checks import row_problems
 from ..model import RowSchema
 
@@ -41,6 +41,12 @@ class DjangoEcosystem:
 
     def values(self, row: Any) -> dict[str, Any]:
         return {name: getattr(row, name, None) for name in self._attnames()}
+
+    def refusal(self) -> Refusal:
+        """A function refuses an invalid record with the library's own
+        validation error."""
+        from django.core.exceptions import ValidationError
+        return Refusal("Django ValidationError", raises=ValidationError)
 
     def validate_row(self, schema: RowSchema, row: Any) -> list[Problem]:
         from django.core.exceptions import ValidationError

@@ -18,6 +18,12 @@ release onward.
 - `NeutralType` and `Constraints` refuse a width, precision, scale or
   length that cannot mean anything (a negative width, a scale above the
   precision), and say which.
+- A pydantic, Django or JSON Schema record language declares that
+  library's `ValidationError` as its refusal, so `excluded_outside_domain`
+  over its records holds for a function that refuses an invalid record
+  through the library's validation and is falsified for one that refuses
+  with an error of its own; a dataclass, TypedDict or SQLAlchemy record
+  declares none, and any raise refuses.
 
 ## 0.2.0
 

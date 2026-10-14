@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..._surface import Problem
+from ..._surface import Problem, Refusal
 from ..model import RowSchema
 
 
@@ -54,6 +54,12 @@ class PydanticEcosystem:
         if extra:
             values.update(extra)
         return values
+
+    def refusal(self) -> Refusal:
+        """A function refuses an invalid record with the library's own
+        validation error."""
+        from pydantic import ValidationError
+        return Refusal("pydantic ValidationError", raises=ValidationError)
 
     def validate_row(self, schema: RowSchema, row: Any) -> list[Problem]:
         from pydantic import ValidationError

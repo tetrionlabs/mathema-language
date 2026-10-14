@@ -162,12 +162,20 @@ def welcome_message(form: SignupForm) -> str:
 ```text
 f = welcome_message
 for form in L[shop.forms.SignupForm], excluded_outside_domain(form)
-    falsified   form = SignupForm(username='aaa', age=12) (outside L[shop.forms.SignupForm] at .age: Input should be greater than or equal to 13) is outside the declared domain but was accepted
+    falsified   form = SignupForm(username='aaa', age=12) (outside L[shop.forms.SignupForm] at .age: Input should be greater than or equal to 13) is outside the declared domain and was not refused the way the language declares (pydantic ValidationError): the call returned 'Welcome, aaa!'
 ```
 
 That is fine for a function that trusts pydantic to have validated the
 form already, and the claim is the one to write for the function that
 loads it, from a request or a database, where nothing has.
+
+The refusal the claim looks for is the library's own. A pydantic, Django
+or JSON Schema record language declares that library's
+`ValidationError`, so a function that validates through the model
+(`SignupForm.model_validate(...)`) holds, while one that refuses with an
+error of its own, or lets the record through, is falsified, and the
+witness says which. A dataclass or TypedDict has no validator of its
+own, so any raise refuses one.
 
 ## Recipes
 

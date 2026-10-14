@@ -19,7 +19,10 @@ class Ecosystem(Protocol):
     whether a schema object is this ecosystem's without importing
     anything, `to_model` reads it into the neutral model, `build_row`
     makes a record from neutral values, and `validate_row` reports
-    every problem with one."""
+    every problem with one. An ecosystem whose library has a validation
+    error of its own may also offer `refusal()`, the `Refusal` a function
+    over its records gives an invalid one; the record language declares
+    it."""
 
     name: str
 
