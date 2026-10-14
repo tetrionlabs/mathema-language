@@ -113,6 +113,7 @@ EXPECTED = {
     "adaptor_typeddict_falsified": ("falsified", 'vs 10'),
     "adaptor_spark_proven": "proven",
     "adaptor_spark_falsified": ("falsified", 'vs 0'),
+    "adaptor_argparse_proven": "proven",
     "adaptor_argparse_bounded": "holds",
     "adaptor_argparse_falsified": ("falsified", '-12 vs 0'),
     "family_length_safe": "holds",
@@ -184,6 +185,7 @@ PROVEN_ROUTES = {
     "adaptor_jsonschema_proven": "derive",
     "adaptor_typeddict_proven": "derive",
     "adaptor_spark_proven": "derive",
+    "adaptor_argparse_proven": "derive",
     "structure_induction_constant": "derive:induction",
     "structure_induction_equation": "derive:induction",
 }

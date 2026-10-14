@@ -128,6 +128,35 @@ path bound in the second claim keeps the namespaces that have a
 quantity, so the other two subcommands are outside it, and within it
 the order is at most 1,200 units.
 
+That bound `holds` rather than being `proven` because `units_ordered`
+branches on `args.command`, and derive does not yet read a field that
+is not a number: the subcommand, or an option with `choices`. A
+function that reads only numeric options is proven. The warehouse's
+restock tool has no subcommands:
+
+```python
+def build_restock_parser() -> argparse.ArgumentParser:
+    """`restock SKU [--quantity N]`, the warehouse's own tool, with no
+    subcommands."""
+    parser = argparse.ArgumentParser(prog="restock")
+    parser.add_argument("sku")
+    parser.add_argument("--quantity", type=int, default=1)
+    return parser
+
+
+def cases_ordered(args: argparse.Namespace) -> int:
+    """How many units a restock command orders, in cases of 12."""
+    return args.quantity * 12
+```
+
+and over it the same bound is proven:
+
+```text
+f = cases_ordered
+for args in L[shop.admin.build_restock_parser], args.quantity in [1, 100], f(args) <= 1200
+    proven
+```
+
 The fix belongs where the input arrives: a `type` that refuses what the
 code cannot use. A `type` the neutral model does not know is drawn as
 text and passed through it, so a function such as

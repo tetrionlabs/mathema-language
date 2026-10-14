@@ -21,6 +21,20 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_restock_parser() -> argparse.ArgumentParser:
+    """`restock SKU [--quantity N]`, the warehouse's own tool, with no
+    subcommands."""
+    parser = argparse.ArgumentParser(prog="restock")
+    parser.add_argument("sku")
+    parser.add_argument("--quantity", type=int, default=1)
+    return parser
+
+
+def cases_ordered(args: argparse.Namespace) -> int:
+    """How many units a restock command orders, in cases of 12."""
+    return args.quantity * 12
+
+
 def units_ordered(args: argparse.Namespace) -> int:
     """How many units a command orders from the supplier, in cases of 12."""
     if args.command == "restock":

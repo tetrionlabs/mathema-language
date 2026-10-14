@@ -3,9 +3,15 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
-## Unreleased
+## 0.2.0
 
-- mathema-language needs mathema 0.6.2 (`mathema>=0.6.2,<0.7`).
+For mathema 0.6.2 (`mathema>=0.6.2,<0.7`).
+
+- A claim over the namespaces of a command line with no subcommands,
+  whose function reads only numeric options, is proven (the lexicon row
+  `adaptor_argparse_proven`); a function that branches on a subcommand
+  or an option with `choices` is decided by running the code, so a true
+  claim there `holds`.
 - The argv language declares how a program refuses and answers: a
   command line outside it is refused with `SystemExit` and exit code 2,
   as argparse refuses it, and one inside it is answered with a return or

@@ -157,6 +157,10 @@ LEXICON: dict[str, str] = {
         'for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], po.quantity in [0, 100], po.unit_price in [0, 99.99], f(po) <= 9999',
     "adaptor_spark_falsified":
         'for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], f(po) >= 0',
+    # a command line with no subcommands: every field the function reads
+    # is a number, so the bound is proven
+    "adaptor_argparse_proven":
+        'for args in L[mathema_language._lexicon_models.admin.build_restock_parser], args.quantity in [1, 100], f(args) <= 1200',
     "adaptor_argparse_bounded":
         'for args in L[mathema_language._lexicon_models.admin.build_parser], args.quantity in [1, 100], f(args) <= 1200',
     "adaptor_argparse_falsified":
@@ -470,6 +474,11 @@ def po_line_total(po: dict[str, Any]) -> Any:
     return po["quantity"] * po["unit_price"]
 
 
+def cases_ordered(args: Any) -> int:
+    """How many units a restock command orders, in cases of 12."""
+    return args.quantity * 12  # type: ignore[no-any-return]
+
+
 def units_ordered(args: Any) -> int:
     """How many units an admin command orders, in cases of 12."""
     if args.command == "restock":
@@ -499,7 +508,7 @@ SECTIONS: dict[str, tuple[str, ...]] = {
                   "structure_nodes_bound", "structure_json_depth"),
     "languages": ("language_printable_output", "language_alpha_closure", "language_unicode_alpha_closure",
                   "language_unicode_alnum_length", "language_identifier_closure", "language_uuid_idempotent", "language_uuid_spelling", "language_iso_date_idempotent", "language_iso_datetime_idempotent", "language_ipv4_closure", "language_ipv6_closure", "language_base64_round_trip", "language_hex_spelling", "language_shell_safe_argument", "language_shell_unsafe_argument", "language_control_header_injection", "language_invisible_blank", "language_combining_stripped", "language_surrogate_encoding", "language_compatibility_key", "language_astral_utf16"),
-    "adaptors": ("adaptor_text_annotation", "adaptor_pydantic_proven", "adaptor_pydantic_falsified", "adaptor_sqlalchemy_proven", "adaptor_sqlalchemy_falsified", "adaptor_django_proven", "adaptor_django_falsified", "adaptor_jsonschema_proven", "adaptor_jsonschema_falsified", "adaptor_typeddict_proven", "adaptor_typeddict_falsified", "adaptor_spark_proven", "adaptor_spark_falsified", "adaptor_argparse_bounded", "adaptor_argparse_falsified"),
+    "adaptors": ("adaptor_text_annotation", "adaptor_pydantic_proven", "adaptor_pydantic_falsified", "adaptor_sqlalchemy_proven", "adaptor_sqlalchemy_falsified", "adaptor_django_proven", "adaptor_django_falsified", "adaptor_jsonschema_proven", "adaptor_jsonschema_falsified", "adaptor_typeddict_proven", "adaptor_typeddict_falsified", "adaptor_spark_proven", "adaptor_spark_falsified", "adaptor_argparse_proven", "adaptor_argparse_bounded", "adaptor_argparse_falsified"),
     "vocabulary": ("vocabulary_tree_depth",),
     "families": ("family_excluded_outside_domain", "family_excluded_outside_domain_accepts",
                  "family_length_safe", "family_encoding_safe", "family_arbitrary_input"),
@@ -580,6 +589,7 @@ TAGS: dict[str, tuple[str, ...]] = {
     "adaptor_typeddict_falsified": ('typeddict', 'unbounded'),
     "adaptor_spark_proven": ('spark', 'struct type'),
     "adaptor_spark_falsified": ('spark', 'unbounded'),
+    "adaptor_argparse_proven": ('argparse', 'command line bound', 'no subcommands'),
     "adaptor_argparse_bounded": ('argparse', 'path bound'),
     "adaptor_argparse_falsified": ('argparse', 'negative argument'),
     "family_length_safe": ("long input", "backtracking", "regex dos"),
@@ -648,6 +658,7 @@ EXAMPLE_FUNCTIONS: dict[str, tuple[object, list[str]]] = {
     "queue_for": (queue_for, ['adaptor_jsonschema_falsified']),
     "rank": (rank, ['adaptor_typeddict_proven', 'adaptor_typeddict_falsified']),
     "po_line_total": (po_line_total, ['adaptor_spark_proven', 'adaptor_spark_falsified']),
+    "cases_ordered": (cases_ordered, ['adaptor_argparse_proven']),
     "units_ordered": (units_ordered, ['adaptor_argparse_bounded', 'adaptor_argparse_falsified']),
 }
 
