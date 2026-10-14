@@ -12,7 +12,13 @@ import threading
 from collections.abc import Iterable
 from typing import Any, cast
 
-from .._surface import HazardValue, LanguageRef, Problem, domain_bound_from_json
+from .._surface import (
+    HazardValue,
+    LanguageRef,
+    Problem,
+    Refusal,
+    domain_bound_from_json,
+)
 from . import generate as _gen
 from .checks import check_problems, json_schema
 from .ecosystems._base import Ecosystem
@@ -135,6 +141,14 @@ class RowLanguage:
 
     def __repr__(self) -> str:
         return f"RowLanguage({self.name!r}, {self.ecosystem.name})"
+
+    @property
+    def refusal(self) -> Refusal | None:
+        """How a function over these records refuses an invalid one: the
+        library's own validation error where the ecosystem has one, else
+        None, and any raise refuses."""
+        offer = getattr(self.ecosystem, "refusal", None)
+        return offer() if callable(offer) else None
 
     def explain(self, value: Any) -> list[Problem] | None:
         problems = list(self.ecosystem.validate_row(self.schema, value))
