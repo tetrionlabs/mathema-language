@@ -80,6 +80,29 @@ def _deeper() -> Iterator[None]:
             budget["level"] -= 1
 
 
+class _Unbuilt:
+    """The value of a record whose class refused the values it was
+    given; no checker accepts it."""
+
+    def __repr__(self) -> str:
+        return "<a record its class refused to build>"
+
+
+UNBUILT = _Unbuilt()
+
+
+def build(construct: Any, values: dict[str, Any]) -> Any:
+    """The record `construct` (the record's class) builds from `values`,
+    the values themselves when there is no class, or `UNBUILT` when the
+    class refuses them."""
+    if construct is None:
+        return values
+    try:
+        return construct(**values)
+    except Exception:
+        return UNBUILT
+
+
 def _record(rng: random.Random, fields: Any, construct: Any) -> Any:
     """A struct's value: each field drawn one record down, then built
     through `construct` (the record's class) or left a dict."""
@@ -88,7 +111,7 @@ def _record(rng: random.Random, fields: Any, construct: Any) -> Any:
         budget["nodes"] -= 1
     with _deeper():
         values = {sub.name: draw(rng, sub) for sub in (fields or ())}
-    return construct(**values) if construct is not None else values
+    return build(construct, values)
 
 
 def _reaches_a_record(t: NeutralType) -> bool:
@@ -358,21 +381,29 @@ def simplest(f: Field) -> Any:
     elif base == "struct":
         with _deeper():
             values = {sub.name: simplest(sub) for sub in (t.fields or ())}
-        candidates += [t.construct(**values) if t.construct is not None else values]
+        candidates += [build(t.construct, values)]
     elif base == "ref":
         defs = _definitions()
         if defs is not None and t.ref is not None and _room() > 0:
             schema = defs.definition(t.ref)
             with _deeper():
                 values = {sub.name: simplest(sub) for sub in schema.fields}
-            build = schema.construct or t.construct
-            candidates += [build(**values) if build is not None else values]
+            candidates += [build(schema.construct or t.construct, values)]
     elif base == "map":
         candidates += [{}]
     for candidate in candidates:
         if not field_problems(candidate, f, definitions=_definitions()):
             return candidate
-    return None if f.nullable else candidates[0] if candidates else None
+    if base in ("struct", "ref") and not f.nullable:
+        # a record whose class refuses the simplest field values: the
+        # first of a fixed run of draws its class builds
+        rng = random.Random(0)
+        for _ in range(_REJECTION_TRIES):
+            drawn = draw(rng, f)
+            if not field_problems(drawn, f, definitions=_definitions()):
+                return drawn
+    built = [c for c in candidates if c is not UNBUILT]
+    return None if f.nullable or not built else built[0]
 
 
 def hazards(f: Field) -> list[HazardValue]:
@@ -442,8 +473,7 @@ def hazards(f: Field) -> list[HazardValue]:
             out.append(("null", [None], "a null item"))
     elif base == "struct":
         values = {sub.name: simplest(sub) for sub in (t.fields or ())}
-        out += [("shape", t.construct(**values) if t.construct is not None else values,
-                 "the simplest struct")]
+        out += [("shape", build(t.construct, values), "the simplest struct")]
     elif base == "map":
         out += [("shape", {}, "an empty map")]
     kept: list[HazardValue] = []
