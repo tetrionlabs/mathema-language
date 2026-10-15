@@ -23,6 +23,7 @@ nav:
   - Records and schemas:
       - Records and schemas: records.md
       - Trees: trees.md
+      - OpenAPI operations: openapi.md
   - Reference:
       - Languages: languages.md
       - Refinements: refinements.md
