@@ -3,6 +3,13 @@
 **mathema for strings, records and schemas.**
 
 <p align="center">
+  <a href="https://github.com/tetrionlabs/mathema-language/actions/workflows/tests.yml"><img src="https://github.com/tetrionlabs/mathema-language/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
+  <a href="https://pypi.org/project/mathema-language/"><img src="https://img.shields.io/pypi/v/mathema-language.svg?cacheSeconds=3600" alt="PyPI"></a>
+  <img src="https://img.shields.io/pypi/pyversions/mathema-language.svg?cacheSeconds=3600" alt="Python versions">
+  <a href="https://github.com/tetrionlabs/mathema-language/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/mathema-language.svg?cacheSeconds=3600" alt="licence"></a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/implementation.json" alt="implementation">
   <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/intent.json" alt="intent">
   <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/clarity.json" alt="clarity">
