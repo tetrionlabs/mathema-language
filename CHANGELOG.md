@@ -40,6 +40,9 @@ release onward.
 - A pydantic decimal's `max_digits` and `decimal_places` are its
   precision and scale, so its record language draws members pydantic
   accepts; it drew none before.
+- Text drawn for a pattern with a negated category (`\S`, `\D`, `\W`)
+  matches it; it drew the category itself, so a record with a pattern
+  such as `^\S+@\S+\.\w{2,}$` had no member to draw.
 
 ## 0.2.0
 

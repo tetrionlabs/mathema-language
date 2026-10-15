@@ -32,6 +32,10 @@ class Unsupported(ValueError):
 
 
 def _category(code: Any, negate: bool) -> str:
+    """The characters a `\\d`, `\\w` or `\\s` category draws from, or its
+    negation (`\\D`, `\\W`, `\\S`, named `CATEGORY_NOT_...`)."""
+    if "_NOT_" in str(code):
+        negate = not negate
     name = str(code).rsplit("_", 1)[-1].lower()
     pool = {"digit": _DIGIT, "word": _WORD, "space": _SPACE}.get(name)
     if pool is None:
