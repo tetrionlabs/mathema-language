@@ -42,6 +42,7 @@ import math
 import re
 from dataclasses import dataclass, field
 from fractions import Fraction
+from pathlib import PurePath
 from typing import Any
 
 from .schema.model import NO_DEFAULT, Field, RowSchema
@@ -297,12 +298,30 @@ class MembershipEncoding:
         options.append(z3.And(*conds))
         return z3.Or(*options)
 
+    def text(self, language: Any, x: Any, side: str) -> Any:
+        """The formula: the z3 string `x` is a member of a text language
+        defined by a regular expression read in full (its `pattern`, as
+        `L[path]` and `L[path, within "/root"]` are)."""
+        pattern = getattr(language, "pattern", None)
+        if not isinstance(pattern, str):
+            raise Untranslated(f"{getattr(language, 'name', language)!r}, which states no pattern")
+        return self.z3.InRe(x, _Regex(self.z3, widen=side == "older").translate(pattern))
+
     def language(self, language: Any, names: list[str], side: str) -> Any:
         """The formula: the values of `names` make a member of `language`,
         one of its shapes when it has several (a command line's
         subcommands)."""
-        shapes = [self.row(b.schema, names, side, _SUPPORTED[b.ecosystem.name])
-                  for b in _branches(language)]
+        shapes = []
+        for b in _branches(language):
+            shape = self.row(b.schema, names, side, _SUPPORTED[b.ecosystem.name])
+            # the text of a path a converter builds is never empty
+            # (`Path("")` is `.`), so neither is the text the encoding holds
+            for dest, convert in (getattr(b.ecosystem, "converters", None) or {}).items():
+                if dest in names and getattr(convert, "__name__", "") in _TEXT_CONVERTERS - {"str"}:
+                    x = self.var(dest)
+                    shape = self.z3.And(shape, self.z3.Implies(
+                        self.V.is_s(x), self.z3.Length(self.V.sv(x)) >= 1))
+            shapes.append(shape)
         return shapes[0] if len(shapes) == 1 else self.z3.Or(*shapes)
 
     def row(self, schema: RowSchema, names: list[str], side: str, mapping: bool) -> Any:
@@ -659,6 +678,60 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     return _InclusionResult("unknown", f"z3 offered {values!r}, which the validations do not "
                            f"confirm ({older.name} must admit it and {newer.name} refuse it); "
                            "this is a gap in the encoding")
+
+
+def _field_in(language: Any, name: str, text_language: Any, *,
+              timeout_ms: int = 5000) -> _InclusionResult:
+    """Whether every member of `language` has field `name` in
+    `text_language` (when the field holds text): the harness the tests
+    hold the text encoding to."""
+    z3 = _z3()
+    why = untranslated(language)
+    if why:
+        return _InclusionResult("unknown", f"not translated: {why}")
+    enc = MembershipEncoding(z3)
+    names = list(_fields(language))
+    try:
+        member = enc.language(language, names, "older")
+        x = enc.var(name)
+        inside = enc.text(text_language, enc.V.sv(x), "newer")
+    except Untranslated as e:
+        return _InclusionResult("unknown", f"not translated: {e}")
+    solver = z3.Solver()
+    solver.set("timeout", timeout_ms)
+    solver.add(member, enc.V.is_s(x), z3.Not(inside))
+    answer = solver.check()
+    if answer == z3.unknown:
+        return _InclusionResult("unknown", f"z3 did not decide it ({solver.reason_unknown()})")
+    if answer == z3.unsat:
+        return _InclusionResult("proven", f"every {name} {language.name} admits is in "
+                                f"L[{text_language.name}]")
+    model = solver.model()
+    fields = _fields(language)
+    values = {}
+    for n in names:
+        present, value = _value(enc, model, enc.var(n), fields.get(n))
+        if present:
+            values[n] = value
+    received = _received(language, values, name)
+    if _admits(language, values) and received is not None and not text_language.contains(received):
+        return _InclusionResult("falsified", f"{name} is not in L[{text_language.name}]", values)
+    return _InclusionResult("unknown", f"z3 offered {values!r}, which does not confirm")
+
+
+def _received(language: Any, values: dict[str, Any], name: str) -> Any:
+    """Field `name` of the record a member's shape builds from `values`,
+    as a program receives it, a path as its text."""
+    for branch in _branches(language):
+        try:
+            row = branch.ecosystem.build_row(branch.schema, dict(values))
+        except Exception:
+            continue
+        if not branch.contains(row):
+            continue
+        value = row.get(name) if isinstance(row, dict) else getattr(row, name, None)
+        return str(value) if isinstance(value, PurePath) else value
+    return None
 
 
 def _a_member(language: Any) -> dict[str, Any] | None:
