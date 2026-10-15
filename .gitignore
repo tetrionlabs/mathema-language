@@ -10,3 +10,6 @@ build/
 .smd/
 *.smd
 .DS_Store
+.coverage
+.coverage.*
+coverage.sources.json

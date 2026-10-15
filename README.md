@@ -2,6 +2,25 @@
 
 **mathema for strings, records and schemas.**
 
+<p align="center">
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/implementation.json" alt="implementation">
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/intent.json" alt="intent">
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/clarity.json" alt="clarity">
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/triangle.svg" alt="mathema triangle" width="360">
+</p>
+
+| score | what it measures |
+|:---|:---|
+| [**implementation**](https://mathema.tetrionlabs.com/modes/badges/#the-three-badges) | the share of statements reached by a test, a probe or a derive proof, taken together |
+| [**intent**](https://mathema.tetrionlabs.com/modes/badges/#the-three-badges) | how much of what the code is meant to do is explicitly specified |
+| [**clarity**](https://mathema.tetrionlabs.com/modes/badges/#how-clarity-is-scored) | how much of each function's knowable behaviour its verified claims have pinned down |
+| [**overall**](https://mathema.tetrionlabs.com/modes/badges/#the-triangle) | the area the three span, so it falls toward zero when any one of them is empty |
+
+[ [mathema](https://mathema.tetrionlabs.com/) ] know what your code actually does
+
 An example-based test checks the inputs whoever wrote it thought of,
 which is a good way to pin down behaviour you already understand. The
 inputs that break code in production tend to be the ones nobody wrote

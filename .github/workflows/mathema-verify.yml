@@ -30,3 +30,24 @@ jobs:
       - run: mathema verify --root . --lenient
       # optional: the claim-level delta since the base, for a PR comment
       # - run: mathema review --format json --output review.json
+
+  # The badges in .mathema/badges/ are committed with the change that
+  # moves them: regenerate them after verify and a fresh coverage run,
+  # commit them, and this job checks they are current. The implementation
+  # score reads coverage, which mathema trusts only once stamped against
+  # the files it measured.
+  badges:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[test]" "mathema>=0.6.2,<0.7" pytest-cov
+      - name: Coverage for the implementation score
+        run: |
+          python -m pytest -q -p no:cacheprovider --cov=mathema_language --cov-report=
+          mathema coverage --stamp --root .
+      - run: mathema badges mathema_language --root . --out .mathema/badges
+      - name: The committed badges are current
+        run: git diff --exit-code .mathema/badges/
