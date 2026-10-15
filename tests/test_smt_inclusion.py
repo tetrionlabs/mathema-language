@@ -93,8 +93,11 @@ ORDER_V2 = {"type": "object", "required": ["sku", "qty", "note"],
                            "qty": {"type": "integer", "minimum": 1, "maximum": 10},
                            "note": {"type": "string"}}}
 ORDER_FORMAT = {"type": "object", "required": ["sku", "qty"],
-                "properties": {"sku": {"type": "string", "format": "uuid"},
+                "properties": {"sku": {"type": "string", "minLength": 1, "format": "uuid"},
                                "qty": {"type": "integer"}}}
+ORDER_NOT = {"type": "object", "required": ["sku", "qty"],
+             "properties": {"sku": {"type": "string", "not": {"const": ""}},
+                            "qty": {"type": "integer"}}}
 
 
 @pytest.mark.parametrize("older, newer, verdict", [
@@ -106,6 +109,7 @@ ORDER_FORMAT = {"type": "object", "required": ["sku", "qty"],
     (V1, Pattern, "falsified"),
     (ORDER_V1, ORDER_V1, "proven"),
     (ORDER_V1, ORDER_V2, "falsified"),
+    (ORDER_V1, ORDER_FORMAT, "proven"),
 ], ids=lambda v: getattr(v, "__name__", None) or (v if isinstance(v, str) else "schema"))
 def test_inclusion_between_versions(older, newer, verdict):
     result = smt._schema_inclusion(older, newer)
@@ -122,7 +126,7 @@ def test_a_witness_leaves_out_what_the_older_schema_does_not_have():
 
 @pytest.mark.parametrize("older, newer, named", [
     (V1, Validated, "a custom validator"),
-    (ORDER_V1, ORDER_FORMAT, "'format'"),
+    (ORDER_V1, ORDER_NOT, "'not'"),
 ])
 def test_what_the_encoding_does_not_read_is_unknown_and_named(older, newer, named):
     result = smt._schema_inclusion(older, newer)

@@ -13,8 +13,9 @@ way a library reads what the encoding cannot pin down: a regular
 expression is a search on the older side and a full match on the newer,
 and the newer side gets no credit for coercing a value into its type
 (pydantic reading `"3"` as `3`). Anything the encoding does not read (a
-list, a nested record, a custom validator, a JSON Schema keyword the
-adaptor does not read, a decimal with one of its two digit limits)
+record inside a list, a custom validator, a JSON Schema keyword the
+validator enforces and the adaptor does not read, a decimal with one of
+its two digit limits)
 raises `Untranslated` naming it; `untranslated(language)` says so before
 encoding. A constraint is never dropped.
 
@@ -56,12 +57,15 @@ _SUPPORTED = {"plain": True, "jsonschema": True, "attribute": False, "pydantic":
 #: string converts, and the encoding holds the text it came from
 _TEXT_CONVERTERS = {"Path", "PurePath", "PosixPath", "PurePosixPath", "str"}
 
-#: the JSON Schema keywords the adaptor reads into the neutral model;
-#: `jsonschema` enforces every other one, which the encoding cannot see
-_JSON_SCHEMA_READ = {
-    "type", "properties", "required", "additionalProperties", "minimum", "maximum",
-    "exclusiveMinimum", "exclusiveMaximum", "minLength", "maxLength", "pattern", "enum",
-    "const", "multipleOf", "title", "description", "$schema", "$id", "default", "examples",
+#: the JSON Schema keywords `jsonschema` enforces that the adaptor does not
+#: read into the neutral model; a keyword it does not enforce (`format`
+#: without a format checker, `title`, an OpenAPI `example`) constrains
+#: nothing and is ignored
+_JSON_SCHEMA_ENFORCED_UNREAD = {
+    "not", "allOf", "if", "then", "else", "dependentRequired", "dependentSchemas",
+    "dependencies", "propertyNames", "patternProperties", "minProperties", "maxProperties",
+    "uniqueItems", "contains", "minContains", "maxContains", "prefixItems",
+    "unevaluatedProperties", "unevaluatedItems", "$ref", "$dynamicRef",
 }
 
 #: the last character z3's strings hold; a higher one is not passed to
@@ -69,7 +73,7 @@ _JSON_SCHEMA_READ = {
 _Z3_MAX_CHAR = 0x2FFFF
 
 #: the scalar types the encoding reads
-_READ_BASES = {"bool", "int", "float", "decimal", "string", "categorical", "list", "any"}
+_READ_BASES = {"bool", "int", "float", "decimal", "string", "categorical", "list", "struct", "any"}
 
 
 class Untranslated(Exception):
@@ -202,10 +206,14 @@ class MembershipEncoding:
         parts.append(z3.Option(z3.Re(z3.StringVal("\n"))) if regex.anchored_end else anything)
         return z3.Concat(*parts)
 
-    def member(self, f: Field, x: Any, side: str, mapping: bool, D: Any = None) -> Any:
+    def member(self, f: Field, x: Any, side: str, mapping: bool, D: Any = None,
+               path: str | None = None) -> Any:
         """The formula: `x` is a value field `f` admits. `side` is
         `older` (admit at least what the library admits) or `newer`
-        (admit at most). With `D`, `x` is a list item of that type."""
+        (admit at most). With `D`, `x` is a list item of that type.
+        `path` is the field's dotted name; a nested record's fields are
+        variables of their own under it (`body.sku`), and `x` itself only
+        says whether the record is there."""
         z3, c, t = self.z3, f.constraints, f.type
         V = D if D is not None else self.V
         options = []
@@ -271,6 +279,14 @@ class MembershipEncoding:
                 conds.append(z3.Length(s) <= c.max_len)
             if c.regex is not None:
                 conds.append(z3.InRe(s, self._regex(c.regex, side)))
+        elif t.base == "struct":
+            if V is not self.V or path is None:
+                raise Untranslated(f"the record items of the list field .{f.name}")
+            present = [x == V.b(z3.BoolVal(True))]
+            for sub in t.fields or ():
+                child = f"{path}.{sub.name}"
+                present.append(self.member(sub, self.var(child), side, mapping, path=child))
+            conds.append(z3.And(*present))
         elif t.base == "list":
             item_t = t.item
             if V is not self.V or item_t is None or item_t.base not in _READ_BASES - {"any", "list"}:
@@ -322,7 +338,12 @@ class MembershipEncoding:
                     shape = self.z3.And(shape, self.z3.Implies(
                         self.V.is_s(x), self.z3.Length(self.V.sv(x)) >= 1))
             shapes.append(shape)
-        return shapes[0] if len(shapes) == 1 else self.z3.Or(*shapes)
+        formula = shapes[0] if len(shapes) == 1 else self.z3.Or(*shapes)
+        # a nested field is there only when the record holding it is
+        nested = [self.z3.Implies(self.var(n.rsplit(".", 1)[0]) != self.V.b(self.z3.BoolVal(True)),
+                                  self.V.is_absent(self.var(n)))
+                  for n in names if "." in n]
+        return self.z3.And(formula, *nested) if nested else formula
 
     def row(self, schema: RowSchema, names: list[str], side: str, mapping: bool) -> Any:
         """The formula: the values of `names` make a record `schema`
@@ -331,9 +352,9 @@ class MembershipEncoding:
         if schema.checks:
             raise Untranslated(f"a check of {schema.name}'s own")
         own = {f.name for f in schema.fields}
-        conds = [self.member(f, self.var(f.name), side, mapping) for f in schema.fields]
+        conds = [self.member(f, self.var(f.name), side, mapping, path=f.name) for f in schema.fields]
         for name in names:
-            if name in own:
+            if name in own or "." in name:
                 continue
             x = self.var(name)
             if not mapping or schema.column_policy == "exact":
@@ -468,6 +489,51 @@ def _fields(language: Any) -> dict[str, Field]:
     return out
 
 
+def _names(language: Any) -> list[str]:
+    """Every field name of a language, a nested record's fields by their
+    dotted name after the record's own."""
+    out: list[str] = []
+
+    def walk(fields: Any, prefix: str) -> None:
+        for f in fields or ():
+            name = prefix + f.name
+            out.append(name)
+            if f.type.base == "struct":
+                walk(f.type.fields, name + ".")
+    for branch in _branches(language):
+        walk(branch.schema.fields, "")
+    return list(dict.fromkeys(out))
+
+
+def _field_at(language: Any, name: str) -> Field | None:
+    """The field a dotted name names, or None."""
+    fields: Any = [f for b in _branches(language) for f in b.schema.fields]
+    found = None
+    for part in name.split("."):
+        found = next((f for f in fields if f.name == part), None)
+        if found is None:
+            return None
+        fields = found.type.fields or ()
+    return found
+
+
+def _nest(language: Any, values: dict[str, Any]) -> dict[str, Any]:
+    """Values by dotted name as the nested record they describe: a record
+    that is there holds its fields, one that is null is None."""
+    out: dict[str, Any] = {}
+    for name in sorted(values, key=lambda n: n.count(".")):
+        f = _field_at(language, name)
+        value = {} if f is not None and f.type.base == "struct" and values[name] is True \
+            else values[name]
+        *parents, last = name.split(".")
+        holder: Any = out
+        for part in parents:
+            holder = holder.get(part) if isinstance(holder, dict) else None
+        if isinstance(holder, dict):
+            holder[last] = value
+    return out
+
+
 def untranslated(language: Any) -> str | None:
     """Why a language's records cannot be encoded, or None."""
     if language is not None and getattr(language, "branches", None):
@@ -529,13 +595,28 @@ def _unread_pydantic(model: Any, schema: RowSchema) -> str | None:
     return None
 
 
-def _unread_keywords(schema: Any) -> set[str]:
+def _nullable_pair(options: Any) -> bool:
+    """`anyOf` or `oneOf` of one type and `null`, the one shape of either
+    the adaptor reads (as a nullable field)."""
+    return isinstance(options, list) and len(options) == 2 \
+        and sum(1 for o in options if isinstance(o, dict) and o.get("type") == "null") == 1
+
+
+def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
+    """The keywords of a JSON Schema the neutral model does not carry;
+    `additionalProperties` is carried at the top only."""
     out: set[str] = set()
     if not isinstance(schema, dict):
         return out
-    out |= set(schema) - _JSON_SCHEMA_READ
+    out |= set(schema) & _JSON_SCHEMA_ENFORCED_UNREAD
+    for key in ("anyOf", "oneOf"):
+        options = schema.get(key)
+        if options is not None and not _nullable_pair(options):
+            out.add(key)
+    if nested and "additionalProperties" in schema and schema["additionalProperties"] is not True:
+        out.add("additionalProperties (on a nested object)")
     for prop in (schema.get("properties") or {}).values():
-        out |= _unread_keywords(prop)
+        out |= _unread_keywords(prop, nested=True)
     return out
 
 
@@ -589,6 +670,7 @@ def _admits(language: Any, values: dict[str, Any]) -> bool:
         return any(_admits(branch, values) for branch in language.branches)
     names = {f.name for f in language.schema.fields}
     mapping = _SUPPORTED.get(language.ecosystem.name, True)
+    values = _nest(language, values)
     given = values if mapping or language.schema.column_policy == "exact" \
         else {k: v for k, v in values.items() if k in names}
     try:
@@ -637,7 +719,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         if why:
             return _InclusionResult("unknown", f"not translated: {why}")
     enc = MembershipEncoding(z3)
-    names = list(dict.fromkeys([*_fields(older), *_fields(newer)]))
+    names = list(dict.fromkeys([*_names(older), *_names(newer)]))
     try:
         m_older = enc.language(older, names, "older")
         m_newer = enc.language(newer, names, "newer")
@@ -648,7 +730,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     solver.add(m_older, z3.Not(m_newer))
     # a witness reads best with the keys `older` does not declare left out,
     # so those are tried absent first and allowed only if they must be
-    own = set(_fields(older))
+    own = set(_names(older))
     undeclared = [enc.V.is_absent(enc.var(n)) for n in names if n not in own]
     answer = solver.check(*undeclared) if undeclared else solver.check()
     if answer != z3.sat and undeclared:
@@ -665,16 +747,15 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         return _InclusionResult("proven", f"every record {older.name} admits, {newer.name} admits",
                                float_line=tried)
     model = solver.model()
-    fields = {**_fields(newer), **_fields(older)}
-    older_fields = _fields(older)
     values: dict[str, Any] = {}
     for name in names:
-        present, value = _value(enc, model, enc.var(name), older_fields.get(name, fields.get(name)))
+        f = _field_at(older, name) or _field_at(newer, name)
+        present, value = _value(enc, model, enc.var(name), f)
         if present:
             values[name] = value
     if _admits(older, values) and not _admits(newer, values):
         return _InclusionResult("falsified", f"{older.name} admits it and {newer.name} refuses it",
-                               values)
+                               _nest(older, values))
     return _InclusionResult("unknown", f"z3 offered {values!r}, which the validations do not "
                            f"confirm ({older.name} must admit it and {newer.name} refuse it); "
                            "this is a gap in the encoding")
@@ -690,7 +771,7 @@ def _field_in(language: Any, name: str, text_language: Any, *,
     if why:
         return _InclusionResult("unknown", f"not translated: {why}")
     enc = MembershipEncoding(z3)
-    names = list(_fields(language))
+    names = _names(language)
     try:
         member = enc.language(language, names, "older")
         x = enc.var(name)
@@ -707,15 +788,15 @@ def _field_in(language: Any, name: str, text_language: Any, *,
         return _InclusionResult("proven", f"every {name} {language.name} admits is in "
                                 f"L[{text_language.name}]")
     model = solver.model()
-    fields = _fields(language)
     values = {}
     for n in names:
-        present, value = _value(enc, model, enc.var(n), fields.get(n))
+        present, value = _value(enc, model, enc.var(n), _field_at(language, n))
         if present:
             values[n] = value
     received = _received(language, values, name)
     if _admits(language, values) and received is not None and not text_language.contains(received):
-        return _InclusionResult("falsified", f"{name} is not in L[{text_language.name}]", values)
+        return _InclusionResult("falsified", f"{name} is not in L[{text_language.name}]",
+                               _nest(language, values))
     return _InclusionResult("unknown", f"z3 offered {values!r}, which does not confirm")
 
 
@@ -724,12 +805,14 @@ def _received(language: Any, values: dict[str, Any], name: str) -> Any:
     as a program receives it, a path as its text."""
     for branch in _branches(language):
         try:
-            row = branch.ecosystem.build_row(branch.schema, dict(values))
+            row = branch.ecosystem.build_row(branch.schema, _nest(branch, values))
         except Exception:
             continue
         if not branch.contains(row):
             continue
-        value = row.get(name) if isinstance(row, dict) else getattr(row, name, None)
+        value: Any = row
+        for part in name.split("."):
+            value = value.get(part) if isinstance(value, dict) else getattr(value, part, None)
         return str(value) if isinstance(value, PurePath) else value
     return None
 
