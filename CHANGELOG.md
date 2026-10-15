@@ -3,6 +3,17 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
+## Unreleased
+
+- The z3 membership encoding reads command lines: an argparse parser's
+  namespace language, each subcommand a shape of its own, with flags,
+  choices, typed values, `pathlib.Path` arguments as their text, and
+  options taking several values (`nargs`, `append`) as sequences. A
+  `type=` the encoding does not read is named.
+- A positional argument taking several values (`nargs="+"`, `"*"` or a
+  count) is never `None` in the argparse namespace language, as
+  argparse never gives it one; it was read as nullable.
+
 ## 0.2.1
 
 For mathema 0.6.2 (`mathema>=0.6.2,<0.7`).

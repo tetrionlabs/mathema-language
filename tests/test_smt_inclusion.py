@@ -9,9 +9,11 @@ held to the two conditions a proof rests on, over drawn members and
 values just outside: every member of a language satisfies its encoding
 as the older schema, and every value its encoding as the newer schema
 admits is a member."""
+import argparse
 import decimal
 import random
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 import pytest
@@ -143,8 +145,11 @@ def _past_z3(values):
     """Text past z3's characters: such a record reads, to the encoding, as
     one with that character replaced (see the smt module), so it is not
     evaluated directly."""
-    return any(isinstance(v, str) and any(ord(c) > smt._Z3_MAX_CHAR for c in v)
-               for v in values.values())
+    def past(v):
+        if isinstance(v, (list, tuple)):
+            return any(past(item) for item in v)
+        return isinstance(v, str) and any(ord(c) > smt._Z3_MAX_CHAR for c in v)
+    return any(past(v) for v in values.values())
 
 
 def _values(language, row):
@@ -217,3 +222,115 @@ def test_a_decimal_limit_the_neutral_model_cannot_carry_is_unknown():
 
     result = smt._schema_inclusion(Digits, Digits)
     assert result.verdict == "unknown" and "decimal digits on .rate" in result.reason
+
+
+def tool_v1() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tool")
+    p.add_argument("--verbose", action="store_true")
+    sub = p.add_subparsers(dest="command", required=True)
+    run = sub.add_parser("run")
+    run.add_argument("target")
+    run.add_argument("--retries", type=int, default=1)
+    run.add_argument("--mode", choices=["fast", "safe"], default="safe")
+    run.add_argument("--tag", action="append", choices=["a", "b"])
+    export = sub.add_parser("export")
+    export.add_argument("--to", type=Path, default=Path("out.csv"))
+    export.add_argument("files", nargs="+")
+    return p
+
+
+def tool_with_status() -> argparse.ArgumentParser:
+    p = tool_v1()
+    sub = next(a for a in p._actions if isinstance(a, argparse._SubParsersAction))
+    sub.add_parser("status")
+    return p
+
+
+def tool_without_fast() -> argparse.ArgumentParser:
+    p = tool_v1()
+    sub = next(a for a in p._actions if isinstance(a, argparse._SubParsersAction))
+    mode = next(a for a in sub.choices["run"]._actions if a.dest == "mode")
+    mode.choices = ["safe"]
+    return p
+
+
+def tool_without_export() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="tool")
+    p.add_argument("--verbose", action="store_true")
+    sub = p.add_subparsers(dest="command", required=True)
+    run = sub.add_parser("run")
+    run.add_argument("target")
+    run.add_argument("--retries", type=int, default=1)
+    run.add_argument("--mode", choices=["fast", "safe"], default="safe")
+    run.add_argument("--tag", action="append", choices=["a", "b"])
+    return p
+
+
+def tool_any_files() -> argparse.ArgumentParser:
+    p = tool_v1()
+    sub = next(a for a in p._actions if isinstance(a, argparse._SubParsersAction))
+    files = next(a for a in sub.choices["export"]._actions if a.dest == "files")
+    files.nargs = "*"
+    return p
+
+
+@pytest.mark.parametrize("older, newer, verdict, witness", [
+    (tool_v1, tool_v1, "proven", None),
+    (tool_v1, tool_with_status, "proven", None),
+    (tool_v1, tool_any_files, "proven", None),
+    (tool_with_status, tool_v1, "falsified", {"command": "status"}),
+    (tool_v1, tool_without_fast, "falsified", {"command": "run", "mode": "fast"}),
+    (tool_v1, tool_without_export, "falsified", {"command": "export"}),
+    (tool_any_files, tool_v1, "falsified", {"command": "export", "files": []}),
+], ids=lambda v: getattr(v, "__name__", v if isinstance(v, str) else ""))
+def test_inclusion_between_command_line_versions(older, newer, verdict, witness):
+    from mathema_language.schema.adaptors.cli_argparse import adapt
+    result = smt._schema_inclusion(adapt(older()), adapt(newer()))
+    assert result.verdict == verdict, str(result)
+    if witness:
+        assert witness.items() <= result.witness.items(), result.witness
+
+
+def test_a_command_line_type_the_encoding_does_not_read_is_unknown():
+    from mathema_language.schema.adaptors.cli_argparse import adapt
+    p = argparse.ArgumentParser(prog="t")
+    p.add_argument("--when", type=lambda s: s.upper())
+    result = smt._schema_inclusion(adapt(p), adapt(p))
+    assert result.verdict == "unknown" and "the type" in result.reason
+
+
+@pytest.mark.parametrize("build", [tool_v1, tool_any_files])
+def test_the_encoding_of_a_command_line_never_admits_less_than_older_or_more_than_newer(build):
+    from mathema_language.schema.adaptors.cli_argparse import adapt
+    language = adapt(build())
+    rng = random.Random(3)
+    names = list(smt._fields(language))
+    for _ in range(80):
+        ns = language.sample(rng)
+        values = {n: str(v) if isinstance(v, Path) else v for n, v in vars(ns).items() if n in names}
+        if _past_z3(values):
+            continue
+        assert _satisfies_language(language, values, "older"), values
+    for _ in range(80):
+        ns = language.outside(rng)
+        if ns is None:
+            continue
+        values = {n: str(v) if isinstance(v, Path) else v for n, v in vars(ns).items()}
+        if _past_z3(values):
+            continue
+        try:
+            newer = _satisfies_language(language, values, "newer")
+        except smt.Untranslated:
+            continue
+        if newer:
+            assert smt._admits(language, values), values
+
+
+def _satisfies_language(language, values, side):
+    enc = smt.MembershipEncoding(z3)
+    names = list(dict.fromkeys([*smt._fields(language), *values]))
+    solver = z3.Solver()
+    solver.add(enc.language(language, names, side))
+    for name in names:
+        solver.add(enc.var(name) == (enc.const(values[name]) if name in values else enc.V.absent))
+    return solver.check() == z3.sat
