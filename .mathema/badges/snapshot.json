@@ -665,6 +665,31 @@
       "intent": 44,
       "clarity": 29
     },
+    "mathema_language.openapi._resolve": {
+      "implementation": 91,
+      "intent": 33,
+      "clarity": 17
+    },
+    "mathema_language.openapi._find": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 19
+    },
+    "mathema_language.openapi.operation_ids": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 14
+    },
+    "mathema_language.openapi.request_schema": {
+      "implementation": 96,
+      "intent": 35,
+      "clarity": 11
+    },
+    "mathema_language.openapi.operation": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 13
+    },
     "mathema_language.refinements._range": {
       "implementation": 100,
       "intent": 50,
@@ -1106,7 +1131,7 @@
       "clarity": 16
     },
     "mathema_language.schema.checks._Walker._row": {
-      "implementation": 89,
+      "implementation": 100,
       "intent": 40,
       "clarity": 22
     },
@@ -1131,7 +1156,7 @@
       "clarity": 36
     },
     "mathema_language.schema.checks._read": {
-      "implementation": 80,
+      "implementation": 100,
       "intent": 50,
       "clarity": 23
     },
@@ -1556,7 +1581,7 @@
       "clarity": 22
     },
     "mathema_language.schema.generate.outside": {
-      "implementation": 89,
+      "implementation": 91,
       "intent": 49,
       "clarity": 10
     },
@@ -1861,7 +1886,7 @@
       "clarity": 19
     },
     "mathema_language.smt.MembershipEncoding.member": {
-      "implementation": 79,
+      "implementation": 82,
       "intent": 33,
       "clarity": 12
     },
@@ -1878,7 +1903,7 @@
     "mathema_language.smt.MembershipEncoding.row": {
       "implementation": 92,
       "intent": 38,
-      "clarity": 22
+      "clarity": 21
     },
     "mathema_language.smt._Regex.translate": {
       "implementation": 87,
@@ -1925,6 +1950,21 @@
       "intent": 45,
       "clarity": 13
     },
+    "mathema_language.smt._names": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 13
+    },
+    "mathema_language.smt._field_at": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 18
+    },
+    "mathema_language.smt._nest": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 16
+    },
     "mathema_language.smt.untranslated": {
       "implementation": 93,
       "intent": 45,
@@ -1935,10 +1975,15 @@
       "intent": 44,
       "clarity": 21
     },
-    "mathema_language.smt._unread_keywords": {
-      "implementation": 86,
+    "mathema_language.smt._nullable_pair": {
+      "implementation": 100,
       "intent": 50,
       "clarity": 17
+    },
+    "mathema_language.smt._unread_keywords": {
+      "implementation": 77,
+      "intent": 45,
+      "clarity": 14
     },
     "mathema_language.smt._value": {
       "implementation": 100,
@@ -1946,14 +1991,14 @@
       "clarity": 23
     },
     "mathema_language.smt._scalar": {
-      "implementation": 70,
+      "implementation": 65,
       "intent": 50,
       "clarity": 28
     },
     "mathema_language.smt._admits": {
-      "implementation": 89,
-      "intent": 50,
-      "clarity": 23
+      "implementation": 90,
+      "intent": 45,
+      "clarity": 18
     },
     "mathema_language.smt._float_line": {
       "implementation": 94,
@@ -1961,19 +2006,19 @@
       "clarity": 14
     },
     "mathema_language.smt._schema_inclusion": {
-      "implementation": 88,
+      "implementation": 87,
       "intent": 31,
-      "clarity": 8
+      "clarity": 7
     },
     "mathema_language.smt._field_in": {
       "implementation": 90,
       "intent": 31,
-      "clarity": 12
+      "clarity": 11
     },
     "mathema_language.smt._received": {
-      "implementation": 89,
+      "implementation": 91,
       "intent": 45,
-      "clarity": 22
+      "clarity": 18
     },
     "mathema_language.smt._a_member": {
       "implementation": 100,
