@@ -1,0 +1,2604 @@
+{
+  "implementation": 87,
+  "intent": 43,
+  "clarity": 17,
+  "overall": 11,
+  "clarity_algo": "entropy-dimensions@1.4",
+  "per_function": {
+    "mathema_language._lexicon_models.admin.build_parser": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 7
+    },
+    "mathema_language._lexicon_models.admin.build_restock_parser": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 7
+    },
+    "mathema_language.adaptor_priority.priority": {
+      "implementation": 100,
+      "intent": 36,
+      "clarity": 23
+    },
+    "mathema_language.argv._parser_of": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 15
+    },
+    "mathema_language.argv._subparsers": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.argv._all_parsers": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 18
+    },
+    "mathema_language.argv._value": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.argv._count": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.argv._abbreviations": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.argv._option_tokens": {
+      "implementation": 96,
+      "intent": 48,
+      "clarity": 15
+    },
+    "mathema_language.argv._draw_parser": {
+      "implementation": 94,
+      "intent": 48,
+      "clarity": 15
+    },
+    "mathema_language.argv._label": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.argv._takes_values": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.argv._converts": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.argv._convert": {
+      "implementation": 83,
+      "intent": 50,
+      "clarity": 22
+    },
+    "mathema_language.argv._action_notes": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 5
+    },
+    "mathema_language.argv._shared_dests": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 8
+    },
+    "mathema_language.argv.parser_notes": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 5
+    },
+    "mathema_language.argv.warn_parser_notes": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 24
+    },
+    "mathema_language.argv.ArgvLanguage._parse": {
+      "implementation": 90,
+      "intent": 50,
+      "clarity": 15
+    },
+    "mathema_language.argv.ArgvLanguage.explain": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 12
+    },
+    "mathema_language.argv.ArgvLanguage.contains": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.argv.ArgvLanguage.sample": {
+      "implementation": 80,
+      "intent": 50,
+      "clarity": 16
+    },
+    "mathema_language.argv.ArgvLanguage._draw": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 11
+    },
+    "mathema_language.argv.ArgvLanguage._simplest": {
+      "implementation": 96,
+      "intent": 48,
+      "clarity": 10
+    },
+    "mathema_language.argv.ArgvLanguage.members": {
+      "implementation": 100,
+      "intent": 36,
+      "clarity": 21
+    },
+    "mathema_language.argv.ArgvLanguage.hazards": {
+      "implementation": 96,
+      "intent": 32,
+      "clarity": 1
+    },
+    "mathema_language.argv.ArgvLanguage.outside": {
+      "implementation": 95,
+      "intent": 45,
+      "clarity": 9
+    },
+    "mathema_language.argv.ArgvLanguage.shrink": {
+      "implementation": 91,
+      "intent": 50,
+      "clarity": 17
+    },
+    "mathema_language.argv.ArgvLanguage.fields": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 7
+    },
+    "mathema_language.argv.ArgvLanguage.render": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.argv.ArgvLanguage.to_json": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.argv.argv_language": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 12
+    },
+    "mathema_language.conformance._validator": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 14
+    },
+    "mathema_language.conformance._fields_problems": {
+      "implementation": 72,
+      "intent": 50,
+      "clarity": 11
+    },
+    "mathema_language.conformance.record_adaptor_problems": {
+      "implementation": 71,
+      "intent": 36,
+      "clarity": 15
+    },
+    "mathema_language.conformance.foreign_object_problems": {
+      "implementation": 87,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.families._languages": {
+      "implementation": 100,
+      "intent": 54,
+      "clarity": 18
+    },
+    "mathema_language.families._contains": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.families._key": {
+      "implementation": 75,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.families._hazard_values": {
+      "implementation": 100,
+      "intent": 54,
+      "clarity": 16
+    },
+    "mathema_language.families._raised_by_the_body": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 12
+    },
+    "mathema_language.families._codecs_named": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 11
+    },
+    "mathema_language.families._decline": {
+      "implementation": 100,
+      "intent": 31,
+      "clarity": 39
+    },
+    "mathema_language.families._string_params": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.families._describe": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 18
+    },
+    "mathema_language.families._article": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.families._probe_over": {
+      "implementation": 97,
+      "intent": 50,
+      "clarity": 10
+    },
+    "mathema_language.families._long_members": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.families._codec_boundaries": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 20
+    },
+    "mathema_language.induction._deepest_provable": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 6
+    },
+    "mathema_language.induction._function_ast": {
+      "implementation": 88,
+      "intent": 38,
+      "clarity": 11
+    },
+    "mathema_language.induction._Reader.fold": {
+      "implementation": 85,
+      "intent": 31,
+      "clarity": 6
+    },
+    "mathema_language.induction._Reader._aggregate": {
+      "implementation": 81,
+      "intent": 33,
+      "clarity": 9
+    },
+    "mathema_language.induction._Reader._expr": {
+      "implementation": 94,
+      "intent": 33,
+      "clarity": 13
+    },
+    "mathema_language.induction._Reader._canonical": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 13
+    },
+    "mathema_language.induction._Reader.claim_side": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 28
+    },
+    "mathema_language.induction._Reader._side": {
+      "implementation": 92,
+      "intent": 38,
+      "clarity": 11
+    },
+    "mathema_language.induction._field_symbols": {
+      "implementation": 89,
+      "intent": 50,
+      "clarity": 11
+    },
+    "mathema_language.induction._holds": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 15
+    },
+    "mathema_language.induction.prove": {
+      "implementation": 89,
+      "intent": 29,
+      "clarity": 20
+    },
+    "mathema_language.induction._induct": {
+      "implementation": 86,
+      "intent": 35,
+      "clarity": 17
+    },
+    "mathema_language.lexicon.collapse_spaces": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.escape_angle": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.unescape_angle": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.digits_to_int": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.ascii_only": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.loads": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 18
+    },
+    "mathema_language.lexicon.headline": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.slugify": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.render_count": {
+      "implementation": 100,
+      "intent": 31,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.escape_html": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.line_total": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 30
+    },
+    "mathema_language.lexicon.line_width": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 30
+    },
+    "mathema_language.lexicon.is_slug": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.lexicon.first": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.accent": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.largest_qty": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 30
+    },
+    "mathema_language.lexicon.zip_width": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.lexicon.has_zip": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.lexicon.tree_size": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 30
+    },
+    "mathema_language.lexicon.tree_twice": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 30
+    },
+    "mathema_language.lexicon.tree_height": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 30
+    },
+    "mathema_language.lexicon.widest": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 30
+    },
+    "mathema_language.lexicon.read_yaml_1_1": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 16
+    },
+    "mathema_language.lexicon.normalise_path": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.toml_as_json": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 14
+    },
+    "mathema_language.lexicon.canonical_json": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 18
+    },
+    "mathema_language.lexicon.log_line": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.lexicon.capitalise_word": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.attribute_name": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.normalise_order_id": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.parse_order_id": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.normalise_date": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 18
+    },
+    "mathema_language.lexicon.normalise_timestamp": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 18
+    },
+    "mathema_language.lexicon.anonymise_ip": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.reencode_token": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.normalise_colour": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.delete_command": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.lexicon.note_header": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.is_blank": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.lexicon.strip_accents": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.lexicon.to_bytes": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.username_key": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.js_length": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.shout": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.short_title": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 22
+    },
+    "mathema_language.lexicon.years_until_eighteen": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.lexicon.order_total": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.lexicon.review_weight": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.lexicon.processing_fee": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.lexicon.queue_for": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.lexicon.rank": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.lexicon.po_line_total": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.lexicon.cases_ordered": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.lexicon.units_ordered": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 20
+    },
+    "mathema_language.narrowing._call": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 31
+    },
+    "mathema_language.narrowing._key": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.narrowing.refused_inputs": {
+      "implementation": 100,
+      "intent": 35,
+      "clarity": 21
+    },
+    "mathema_language.narrowing.NarrowedLanguage._refusal": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 14
+    },
+    "mathema_language.narrowing.NarrowedLanguage.contains": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.narrowing.NarrowedLanguage.explain": {
+      "implementation": 71,
+      "intent": 50,
+      "clarity": 12
+    },
+    "mathema_language.narrowing.NarrowedLanguage.sample": {
+      "implementation": 80,
+      "intent": 38,
+      "clarity": 16
+    },
+    "mathema_language.narrowing.NarrowedLanguage.members": {
+      "implementation": 75,
+      "intent": 36,
+      "clarity": 16
+    },
+    "mathema_language.narrowing.NarrowedLanguage.hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 4
+    },
+    "mathema_language.narrowing.NarrowedLanguage._refused_members": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 3
+    },
+    "mathema_language.narrowing.NarrowedLanguage.outside": {
+      "implementation": 75,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.narrowing.NarrowedLanguage.shrink": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.narrowing.NarrowedLanguage.fields": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 7
+    },
+    "mathema_language.narrowing.NarrowedLanguage.render": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.narrowing.NarrowedLanguage.to_json": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 7
+    },
+    "mathema_language.narrowing.narrow_language": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 29
+    },
+    "mathema_language.openapi._resolve": {
+      "implementation": 91,
+      "intent": 33,
+      "clarity": 17
+    },
+    "mathema_language.openapi._find": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 19
+    },
+    "mathema_language.openapi.operation_ids": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 14
+    },
+    "mathema_language.openapi.request_schema": {
+      "implementation": 96,
+      "intent": 35,
+      "clarity": 11
+    },
+    "mathema_language.openapi.operation": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 13
+    },
+    "mathema_language.refinements._range": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 17
+    },
+    "mathema_language.refinements.length": {
+      "implementation": 74,
+      "intent": 45,
+      "clarity": 13
+    },
+    "mathema_language.refinements._changes_length": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.refinements._LengthLanguage.hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 6
+    },
+    "mathema_language.refinements.length_bound": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 19
+    },
+    "mathema_language.refinements._denotes_json": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.refinements._structure_measure": {
+      "implementation": 92,
+      "intent": 32,
+      "clarity": 9
+    },
+    "mathema_language.refinements._row_base": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 16
+    },
+    "mathema_language.refinements._json_plain": {
+      "implementation": 100,
+      "intent": 36,
+      "clarity": 21
+    },
+    "mathema_language.refinements._json_build": {
+      "implementation": 38,
+      "intent": 36,
+      "clarity": 23
+    },
+    "mathema_language.refinements._row_member": {
+      "implementation": 94,
+      "intent": 38,
+      "clarity": 18
+    },
+    "mathema_language.refinements._json_object": {
+      "implementation": 92,
+      "intent": 36,
+      "clarity": 20
+    },
+    "mathema_language.refinements._JsonStructureLanguage.hazards": {
+      "implementation": 86,
+      "intent": 29,
+      "clarity": 2
+    },
+    "mathema_language.refinements.structure": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 6
+    },
+    "mathema_language.refinements.depth": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 9
+    },
+    "mathema_language.refinements.nodes": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 9
+    },
+    "mathema_language.refinements.width": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 9
+    },
+    "mathema_language.schema.adaptors.adapt_row": {
+      "implementation": 100,
+      "intent": 42,
+      "clarity": 12
+    },
+    "mathema_language.schema.adaptors._hints.constraints_of": {
+      "implementation": 89,
+      "intent": 44,
+      "clarity": 12
+    },
+    "mathema_language.schema.adaptors._hints._decimal_digits": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 20
+    },
+    "mathema_language.schema.adaptors._hints.field_of": {
+      "implementation": 96,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.schema.adaptors._hints.record_name": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 5
+    },
+    "mathema_language.schema.adaptors._hints._construct_of": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.schema.adaptors._hints._record_fields": {
+      "implementation": 100,
+      "intent": 28,
+      "clarity": 2
+    },
+    "mathema_language.schema.adaptors._hints.read_record": {
+      "implementation": 100,
+      "intent": 33,
+      "clarity": 1
+    },
+    "mathema_language.schema.adaptors._hints._record_type": {
+      "implementation": 100,
+      "intent": 42,
+      "clarity": 8
+    },
+    "mathema_language.schema.adaptors._hints.type_of": {
+      "implementation": 81,
+      "intent": 39,
+      "clarity": 6
+    },
+    "mathema_language.schema.adaptors._hints.dataclass_fields": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 3
+    },
+    "mathema_language.schema.adaptors._hints.typeddict_fields": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 3
+    },
+    "mathema_language.schema.adaptors._hints.pydantic_fields": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 2
+    },
+    "mathema_language.schema.adaptors.cli_argparse._builds_a_parser": {
+      "implementation": 78,
+      "intent": 50,
+      "clarity": 15
+    },
+    "mathema_language.schema.adaptors.cli_argparse._scalar": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 15
+    },
+    "mathema_language.schema.adaptors.cli_argparse._default": {
+      "implementation": 83,
+      "intent": 50,
+      "clarity": 15
+    },
+    "mathema_language.schema.adaptors.cli_argparse._field": {
+      "implementation": 93,
+      "intent": 45,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.cli_argparse._set_defaults": {
+      "implementation": 83,
+      "intent": 50,
+      "clarity": 14
+    },
+    "mathema_language.schema.adaptors.cli_argparse._own_fields": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 16
+    },
+    "mathema_language.schema.adaptors.cli_argparse._subparsers": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.schema.adaptors.cli_argparse._shapes": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 18
+    },
+    "mathema_language.schema.adaptors.cli_argparse._language": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 6
+    },
+    "mathema_language.schema.adaptors.cli_argparse.schema_shapes": {
+      "implementation": 75,
+      "intent": 45,
+      "clarity": 13
+    },
+    "mathema_language.schema.adaptors.cli_argparse.adapt": {
+      "implementation": 100,
+      "intent": 47,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.dataclass.schema_of": {
+      "implementation": 100,
+      "intent": 20,
+      "clarity": 2
+    },
+    "mathema_language.schema.adaptors.dataclass.adapt": {
+      "implementation": 100,
+      "intent": 49,
+      "clarity": 8
+    },
+    "mathema_language.schema.adaptors.django._is_model": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 14
+    },
+    "mathema_language.schema.adaptors.django._validator_constraints": {
+      "implementation": 94,
+      "intent": 50,
+      "clarity": 13
+    },
+    "mathema_language.schema.adaptors.django._field_of": {
+      "implementation": 71,
+      "intent": 40,
+      "clarity": 5
+    },
+    "mathema_language.schema.adaptors.django._row_schema_of": {
+      "implementation": 100,
+      "intent": 39,
+      "clarity": 12
+    },
+    "mathema_language.schema.adaptors.django.adapt": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.jsonschema._looks_like_row_schema": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.schema.adaptors.jsonschema._ref_type": {
+      "implementation": 86,
+      "intent": 32,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.jsonschema._type_of": {
+      "implementation": 73,
+      "intent": 49,
+      "clarity": 5
+    },
+    "mathema_language.schema.adaptors.jsonschema._constraints": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 13
+    },
+    "mathema_language.schema.adaptors.jsonschema._fields": {
+      "implementation": 88,
+      "intent": 45,
+      "clarity": 8
+    },
+    "mathema_language.schema.adaptors.jsonschema.schema_of": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 10
+    },
+    "mathema_language.schema.adaptors.jsonschema.adapt": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.pydantic._is_model": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 15
+    },
+    "mathema_language.schema.adaptors.pydantic.schema_of": {
+      "implementation": 100,
+      "intent": 42,
+      "clarity": 8
+    },
+    "mathema_language.schema.adaptors.pydantic.adapt": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.spark._looks_like_spark_json": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.schema.adaptors.spark._is_struct_type": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.schema.adaptors.spark.type_of": {
+      "implementation": 87,
+      "intent": 45,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.spark._max_length": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.schema.adaptors.spark._fields": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.spark.schema_of": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.spark.adapt": {
+      "implementation": 100,
+      "intent": 47,
+      "clarity": 6
+    },
+    "mathema_language.schema.adaptors.sqlalchemy._sa": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.schema.adaptors.sqlalchemy._table_of": {
+      "implementation": 89,
+      "intent": 41,
+      "clarity": 11
+    },
+    "mathema_language.schema.adaptors.sqlalchemy._number": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.schema.adaptors.sqlalchemy._check_bounds": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 9
+    },
+    "mathema_language.schema.adaptors.sqlalchemy._type_of": {
+      "implementation": 72,
+      "intent": 41,
+      "clarity": 6
+    },
+    "mathema_language.schema.adaptors.sqlalchemy._row_schema_of": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 5
+    },
+    "mathema_language.schema.adaptors.sqlalchemy.adapt": {
+      "implementation": 100,
+      "intent": 49,
+      "clarity": 7
+    },
+    "mathema_language.schema.adaptors.typeddict.schema_of": {
+      "implementation": 83,
+      "intent": 15,
+      "clarity": 2
+    },
+    "mathema_language.schema.adaptors.typeddict.adapt": {
+      "implementation": 100,
+      "intent": 49,
+      "clarity": 9
+    },
+    "mathema_language.schema.checks._is_int": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.schema.checks._decimal_problems": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.schema.checks._scalar_problems": {
+      "implementation": 79,
+      "intent": 45,
+      "clarity": 13
+    },
+    "mathema_language.schema.checks.type_problems": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 35
+    },
+    "mathema_language.schema.checks._record_class": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.schema.checks._Walker.run": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 8
+    },
+    "mathema_language.schema.checks._Walker.push_type": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 38
+    },
+    "mathema_language.schema.checks._Walker.push_row": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 33
+    },
+    "mathema_language.schema.checks._Walker.push_field": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 36
+    },
+    "mathema_language.schema.checks._Walker._leave": {
+      "implementation": 100,
+      "intent": 31,
+      "clarity": 21
+    },
+    "mathema_language.schema.checks._Walker._enter": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.schema.checks._Walker._constraints": {
+      "implementation": 100,
+      "intent": 31,
+      "clarity": 30
+    },
+    "mathema_language.schema.checks._Walker._field": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 26
+    },
+    "mathema_language.schema.checks._Walker._type": {
+      "implementation": 67,
+      "intent": 40,
+      "clarity": 16
+    },
+    "mathema_language.schema.checks._Walker._row": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 22
+    },
+    "mathema_language.schema.checks._Walker._missing": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 15
+    },
+    "mathema_language.schema.checks._Walker._extras": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 28
+    },
+    "mathema_language.schema.checks.constraint_problems": {
+      "implementation": 97,
+      "intent": 50,
+      "clarity": 14
+    },
+    "mathema_language.schema.checks.field_problems": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 36
+    },
+    "mathema_language.schema.checks._read": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 23
+    },
+    "mathema_language.schema.checks._columns_of": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.schema.checks.row_problems": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.schema.checks.check_problems": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 22
+    },
+    "mathema_language.schema.checks._hashable": {
+      "implementation": 75,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.schema.checks.json_schema": {
+      "implementation": 90,
+      "intent": 44,
+      "clarity": 4
+    },
+    "mathema_language.schema.ecosystems._base.Ecosystem.accepts": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.ecosystems._base.Ecosystem.to_model": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 31
+    },
+    "mathema_language.schema.ecosystems._base.Ecosystem.build_row": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 44
+    },
+    "mathema_language.schema.ecosystems._base.Ecosystem.validate_row": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 33
+    },
+    "mathema_language.schema.ecosystems.django.DjangoEcosystem.accepts": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.ecosystems.django.DjangoEcosystem.to_model": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 16
+    },
+    "mathema_language.schema.ecosystems.django.DjangoEcosystem._attnames": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 6
+    },
+    "mathema_language.schema.ecosystems.django.DjangoEcosystem._relation_names": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 4
+    },
+    "mathema_language.schema.ecosystems.django.DjangoEcosystem.build_row": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 36
+    },
+    "mathema_language.schema.ecosystems.django.DjangoEcosystem.values": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.schema.ecosystems.django.DjangoEcosystem.refusal": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.schema.ecosystems.django.DjangoEcosystem.validate_row": {
+      "implementation": 94,
+      "intent": 45,
+      "clarity": 16
+    },
+    "mathema_language.schema.ecosystems.jsonschema._path": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.schema.ecosystems.jsonschema.JsonSchemaEcosystem.accepts": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.ecosystems.jsonschema.JsonSchemaEcosystem.to_model": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 16
+    },
+    "mathema_language.schema.ecosystems.jsonschema.JsonSchemaEcosystem.build_row": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 36
+    },
+    "mathema_language.schema.ecosystems.jsonschema.JsonSchemaEcosystem._validator_for": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 2
+    },
+    "mathema_language.schema.ecosystems.jsonschema.JsonSchemaEcosystem.refusal": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.schema.ecosystems.jsonschema.JsonSchemaEcosystem.validate_row": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 18
+    },
+    "mathema_language.schema.ecosystems.namespace._converted": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.ecosystems.namespace.NamespaceEcosystem.accepts": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.ecosystems.namespace.NamespaceEcosystem.to_model": {
+      "implementation": 33,
+      "intent": 38,
+      "clarity": 12
+    },
+    "mathema_language.schema.ecosystems.namespace.NamespaceEcosystem.build_row": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 19
+    },
+    "mathema_language.schema.ecosystems.namespace.NamespaceEcosystem.validate_row": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 15
+    },
+    "mathema_language.schema.ecosystems.plain.PlainEcosystem.accepts": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.ecosystems.plain.PlainEcosystem.to_model": {
+      "implementation": 33,
+      "intent": 38,
+      "clarity": 12
+    },
+    "mathema_language.schema.ecosystems.plain.PlainEcosystem.build_row": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 36
+    },
+    "mathema_language.schema.ecosystems.plain.PlainEcosystem.validate_row": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 18
+    },
+    "mathema_language.schema.ecosystems.plain.AttributeEcosystem.accepts": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.ecosystems.plain.AttributeEcosystem.to_model": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 16
+    },
+    "mathema_language.schema.ecosystems.plain.AttributeEcosystem.build_row": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 36
+    },
+    "mathema_language.schema.ecosystems.plain.AttributeEcosystem.validate_row": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 18
+    },
+    "mathema_language.schema.ecosystems.pydantic._path": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.schema.ecosystems.pydantic.PydanticEcosystem.accepts": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.ecosystems.pydantic.PydanticEcosystem.to_model": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 16
+    },
+    "mathema_language.schema.ecosystems.pydantic.PydanticEcosystem.build_row": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 36
+    },
+    "mathema_language.schema.ecosystems.pydantic.PydanticEcosystem._values": {
+      "implementation": 75,
+      "intent": 50,
+      "clarity": 16
+    },
+    "mathema_language.schema.ecosystems.pydantic.PydanticEcosystem.refusal": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.schema.ecosystems.pydantic.PydanticEcosystem.validate_row": {
+      "implementation": 73,
+      "intent": 45,
+      "clarity": 17
+    },
+    "mathema_language.schema.ecosystems.sqlalchemy._problem_from": {
+      "implementation": 86,
+      "intent": 44,
+      "clarity": 20
+    },
+    "mathema_language.schema.ecosystems.sqlalchemy._unstorable": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 12
+    },
+    "mathema_language.schema.ecosystems.sqlalchemy.SqlAlchemyEcosystem.accepts": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.schema.ecosystems.sqlalchemy.SqlAlchemyEcosystem.to_model": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 16
+    },
+    "mathema_language.schema.ecosystems.sqlalchemy.SqlAlchemyEcosystem.build_row": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 31
+    },
+    "mathema_language.schema.ecosystems.sqlalchemy.SqlAlchemyEcosystem.values": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.schema.ecosystems.sqlalchemy.SqlAlchemyEcosystem._engine": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 2
+    },
+    "mathema_language.schema.ecosystems.sqlalchemy.SqlAlchemyEcosystem._insert": {
+      "implementation": 90,
+      "intent": 54,
+      "clarity": 9
+    },
+    "mathema_language.schema.ecosystems.sqlalchemy.SqlAlchemyEcosystem.validate_row": {
+      "implementation": 78,
+      "intent": 45,
+      "clarity": 14
+    },
+    "mathema_language.schema.emptiness._number": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.schema.emptiness._numeric_candidates": {
+      "implementation": 89,
+      "intent": 40,
+      "clarity": 15
+    },
+    "mathema_language.schema.emptiness._shortest_match": {
+      "implementation": 46,
+      "intent": 45,
+      "clarity": 10
+    },
+    "mathema_language.schema.emptiness._in_char": {
+      "implementation": 42,
+      "intent": 44,
+      "clarity": 10
+    },
+    "mathema_language.schema.emptiness._class_text": {
+      "implementation": 0,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.schema.emptiness._text_candidates": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 16
+    },
+    "mathema_language.schema.emptiness._candidates": {
+      "implementation": 57,
+      "intent": 29,
+      "clarity": 11
+    },
+    "mathema_language.schema.emptiness._member": {
+      "implementation": 83,
+      "intent": 34,
+      "clarity": 18
+    },
+    "mathema_language.schema.emptiness.not_empty": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 22
+    },
+    "mathema_language.schema.generate.drawing_within": {
+      "implementation": 0,
+      "intent": 31,
+      "clarity": 43
+    },
+    "mathema_language.schema.generate._definitions": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 5
+    },
+    "mathema_language.schema.generate._room": {
+      "implementation": 75,
+      "intent": 32,
+      "clarity": 7
+    },
+    "mathema_language.schema.generate._deeper": {
+      "implementation": 0,
+      "intent": 21,
+      "clarity": 6
+    },
+    "mathema_language.schema.generate.build": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.schema.generate._record": {
+      "implementation": 100,
+      "intent": 39,
+      "clarity": 18
+    },
+    "mathema_language.schema.generate._reaches_a_record": {
+      "implementation": 83,
+      "intent": 50,
+      "clarity": 23
+    },
+    "mathema_language.schema.generate._zone": {
+      "implementation": 0,
+      "intent": 44,
+      "clarity": 21
+    },
+    "mathema_language.schema.generate._int_range": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 17
+    },
+    "mathema_language.schema.generate._float_range": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.schema.generate._decimal_range": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 16
+    },
+    "mathema_language.schema.generate._wide": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.schema.generate._decimal_step": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 24
+    },
+    "mathema_language.schema.generate._length_range": {
+      "implementation": 100,
+      "intent": 36,
+      "clarity": 22
+    },
+    "mathema_language.schema.generate._draw_string": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 14
+    },
+    "mathema_language.schema.generate.draw_raw": {
+      "implementation": 85,
+      "intent": 46,
+      "clarity": 5
+    },
+    "mathema_language.schema.generate.draw": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 11
+    },
+    "mathema_language.schema.generate.simpler": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 13
+    },
+    "mathema_language.schema.generate._simplest_candidates": {
+      "implementation": 88,
+      "intent": 45,
+      "clarity": 4
+    },
+    "mathema_language.schema.generate.simplest": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 9
+    },
+    "mathema_language.schema.generate.hazards": {
+      "implementation": 89,
+      "intent": 46,
+      "clarity": 6
+    },
+    "mathema_language.schema.generate._same": {
+      "implementation": 60,
+      "intent": 50,
+      "clarity": 22
+    },
+    "mathema_language.schema.generate.outside": {
+      "implementation": 91,
+      "intent": 49,
+      "clarity": 10
+    },
+    "mathema_language.schema.languages._field_bound": {
+      "implementation": 96,
+      "intent": 50,
+      "clarity": 6
+    },
+    "mathema_language.schema.languages._within_budget": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 10
+    },
+    "mathema_language.schema.languages._ladder": {
+      "implementation": 100,
+      "intent": 36,
+      "clarity": 17
+    },
+    "mathema_language.schema.languages.RowLanguage.explain": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 12
+    },
+    "mathema_language.schema.languages.RowLanguage.contains": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.languages.RowLanguage._build": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.schema.languages.RowLanguage.draw_values": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 12
+    },
+    "mathema_language.schema.languages.RowLanguage.sample": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 15
+    },
+    "mathema_language.schema.languages.RowLanguage._sample": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 10
+    },
+    "mathema_language.schema.languages.RowLanguage.members": {
+      "implementation": 89,
+      "intent": 36,
+      "clarity": 10
+    },
+    "mathema_language.schema.languages.RowLanguage.hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 4
+    },
+    "mathema_language.schema.languages.RowLanguage._field_hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 2
+    },
+    "mathema_language.schema.languages.RowLanguage.outside": {
+      "implementation": 96,
+      "intent": 50,
+      "clarity": 8
+    },
+    "mathema_language.schema.languages.RowLanguage._record_type": {
+      "implementation": 88,
+      "intent": 50,
+      "clarity": 13
+    },
+    "mathema_language.schema.languages.RowLanguage._simpler_records": {
+      "implementation": 86,
+      "intent": 45,
+      "clarity": 12
+    },
+    "mathema_language.schema.languages.RowLanguage.shrink": {
+      "implementation": 92,
+      "intent": 45,
+      "clarity": 11
+    },
+    "mathema_language.schema.languages.RowLanguage.fields": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 3
+    },
+    "mathema_language.schema.languages.RowLanguage.derive": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 28
+    },
+    "mathema_language.schema.languages.RowLanguage.render": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.schema.languages.RowLanguage._edge": {
+      "implementation": 89,
+      "intent": 31,
+      "clarity": 2
+    },
+    "mathema_language.schema.languages.RowLanguage._simplest_values": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.schema.languages.RowLanguage._record": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 27
+    },
+    "mathema_language.schema.languages.RowLanguage._spine": {
+      "implementation": 90,
+      "intent": 36,
+      "clarity": 19
+    },
+    "mathema_language.schema.languages.RowLanguage._wide": {
+      "implementation": 88,
+      "intent": 36,
+      "clarity": 18
+    },
+    "mathema_language.schema.languages.RowLanguage._wrap": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.schema.languages.RowLanguage._structure_hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 4
+    },
+    "mathema_language.schema.languages.RowLanguage._validator_spine_limit": {
+      "implementation": 100,
+      "intent": 24,
+      "clarity": 4
+    },
+    "mathema_language.schema.languages.RowLanguage.to_json": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 3
+    },
+    "mathema_language.schema.languages._qual": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 30
+    },
+    "mathema_language.schema.languages._read": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.schema.model._in_range": {
+      "implementation": 100,
+      "intent": 25,
+      "clarity": 20
+    },
+    "mathema_language.schema.model.NeutralType.decimal_bound": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 5
+    },
+    "mathema_language.schema.model.NeutralType.render": {
+      "implementation": 94,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.schema.model.Constraints.render": {
+      "implementation": 88,
+      "intent": 21,
+      "clarity": 5
+    },
+    "mathema_language.schema.model.Field.render": {
+      "implementation": 17,
+      "intent": 32,
+      "clarity": 4
+    },
+    "mathema_language.schema.model.RowSchema.definition": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 16
+    },
+    "mathema_language.schema.model.RowSchema.field": {
+      "implementation": 75,
+      "intent": 38,
+      "clarity": 17
+    },
+    "mathema_language.schema.model.RowSchema.render": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 14
+    },
+    "mathema_language.schema.structure._value_of": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 26
+    },
+    "mathema_language.schema.structure._records_in": {
+      "implementation": 82,
+      "intent": 50,
+      "clarity": 23
+    },
+    "mathema_language.schema.structure.record_structure": {
+      "implementation": 95,
+      "intent": 55,
+      "clarity": 18
+    },
+    "mathema_language.schema.structure.record_measures": {
+      "implementation": 100,
+      "intent": 47,
+      "clarity": 25
+    },
+    "mathema_language.schema.union.UnionLanguage._branch": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.schema.union.UnionLanguage.explain": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 13
+    },
+    "mathema_language.schema.union.UnionLanguage.contains": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.schema.union.UnionLanguage.sample": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.schema.union.UnionLanguage.members": {
+      "implementation": 71,
+      "intent": 36,
+      "clarity": 18
+    },
+    "mathema_language.schema.union.UnionLanguage.hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 4
+    },
+    "mathema_language.schema.union.UnionLanguage.outside": {
+      "implementation": 86,
+      "intent": 50,
+      "clarity": 16
+    },
+    "mathema_language.schema.union.UnionLanguage.shrink": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 17
+    },
+    "mathema_language.schema.union.UnionLanguage.fields": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 4
+    },
+    "mathema_language.schema.union.UnionLanguage.render": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.schema.union.UnionLanguage.to_json": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.smt._z3": {
+      "implementation": 75,
+      "intent": 22,
+      "clarity": 4
+    },
+    "mathema_language.smt.MembershipEncoding.var": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 15
+    },
+    "mathema_language.smt.MembershipEncoding.const": {
+      "implementation": 85,
+      "intent": 38,
+      "clarity": 10
+    },
+    "mathema_language.smt.MembershipEncoding._real": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.smt.MembershipEncoding._number": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 29
+    },
+    "mathema_language.smt.MembershipEncoding._bounds": {
+      "implementation": 89,
+      "intent": 38,
+      "clarity": 19
+    },
+    "mathema_language.smt.MembershipEncoding._regex": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.smt.MembershipEncoding.member": {
+      "implementation": 82,
+      "intent": 33,
+      "clarity": 12
+    },
+    "mathema_language.smt.MembershipEncoding.text": {
+      "implementation": 100,
+      "intent": 33,
+      "clarity": 18
+    },
+    "mathema_language.smt.MembershipEncoding.language": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 22
+    },
+    "mathema_language.smt.MembershipEncoding.row": {
+      "implementation": 92,
+      "intent": 38,
+      "clarity": 21
+    },
+    "mathema_language.smt._Regex.translate": {
+      "implementation": 87,
+      "intent": 33,
+      "clarity": 9
+    },
+    "mathema_language.smt._Regex._seq": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 24
+    },
+    "mathema_language.smt._Regex._item": {
+      "implementation": 82,
+      "intent": 34,
+      "clarity": 16
+    },
+    "mathema_language.smt._Regex._char": {
+      "implementation": 67,
+      "intent": 25,
+      "clarity": 16
+    },
+    "mathema_language.smt._Regex._category": {
+      "implementation": 86,
+      "intent": 33,
+      "clarity": 15
+    },
+    "mathema_language.smt._Regex._class": {
+      "implementation": 94,
+      "intent": 38,
+      "clarity": 16
+    },
+    "mathema_language.smt.sre_maxrepeat": {
+      "implementation": 67,
+      "intent": 32,
+      "clarity": 5
+    },
+    "mathema_language.smt._branches": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 17
+    },
+    "mathema_language.smt._fields": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 13
+    },
+    "mathema_language.smt._names": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 13
+    },
+    "mathema_language.smt._field_at": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 18
+    },
+    "mathema_language.smt._nest": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 16
+    },
+    "mathema_language.smt.untranslated": {
+      "implementation": 93,
+      "intent": 45,
+      "clarity": 6
+    },
+    "mathema_language.smt._unread_pydantic": {
+      "implementation": 88,
+      "intent": 44,
+      "clarity": 21
+    },
+    "mathema_language.smt._nullable_pair": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 17
+    },
+    "mathema_language.smt._unread_keywords": {
+      "implementation": 77,
+      "intent": 45,
+      "clarity": 14
+    },
+    "mathema_language.smt._value": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 23
+    },
+    "mathema_language.smt._scalar": {
+      "implementation": 65,
+      "intent": 50,
+      "clarity": 28
+    },
+    "mathema_language.smt._admits": {
+      "implementation": 90,
+      "intent": 45,
+      "clarity": 18
+    },
+    "mathema_language.smt._float_line": {
+      "implementation": 94,
+      "intent": 45,
+      "clarity": 14
+    },
+    "mathema_language.smt._schema_inclusion": {
+      "implementation": 87,
+      "intent": 31,
+      "clarity": 7
+    },
+    "mathema_language.smt._field_in": {
+      "implementation": 90,
+      "intent": 31,
+      "clarity": 11
+    },
+    "mathema_language.smt._received": {
+      "implementation": 91,
+      "intent": 45,
+      "clarity": 18
+    },
+    "mathema_language.smt._a_member": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 8
+    },
+    "mathema_language.spark.holes.HoleOutcome.sentence": {
+      "implementation": 67,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.spark.holes._Evaluation._column_of": {
+      "implementation": 75,
+      "intent": 44,
+      "clarity": 8
+    },
+    "mathema_language.spark.holes._Evaluation.value": {
+      "implementation": 81,
+      "intent": 44,
+      "clarity": 5
+    },
+    "mathema_language.spark.holes._Evaluation.compare": {
+      "implementation": 80,
+      "intent": 50,
+      "clarity": 13
+    },
+    "mathema_language.spark.holes._Evaluation.condition": {
+      "implementation": 66,
+      "intent": 44,
+      "clarity": 4
+    },
+    "mathema_language.spark.holes._chain": {
+      "implementation": 100,
+      "intent": 54,
+      "clarity": 9
+    },
+    "mathema_language.spark.holes._outcome": {
+      "implementation": 88,
+      "intent": 40,
+      "clarity": 8
+    },
+    "mathema_language.spark.holes.holes": {
+      "implementation": 96,
+      "intent": 36,
+      "clarity": 11
+    },
+    "mathema_language.spark.lower._source": {
+      "implementation": 58,
+      "intent": 38,
+      "clarity": 8
+    },
+    "mathema_language.spark.lower._constants": {
+      "implementation": 86,
+      "intent": 50,
+      "clarity": 14
+    },
+    "mathema_language.spark.lower._function": {
+      "implementation": 75,
+      "intent": 38,
+      "clarity": 18
+    },
+    "mathema_language.spark.lower._defaults": {
+      "implementation": 58,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.spark.lower._call_name": {
+      "implementation": 86,
+      "intent": 44,
+      "clarity": 15
+    },
+    "mathema_language.spark.lower._columns_set": {
+      "implementation": 91,
+      "intent": 38,
+      "clarity": 14
+    },
+    "mathema_language.spark.lower._text": {
+      "implementation": 100,
+      "intent": 37,
+      "clarity": 14
+    },
+    "mathema_language.spark.lower._Lowering.column": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 7
+    },
+    "mathema_language.spark.lower._Lowering._kind": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 20
+    },
+    "mathema_language.spark.lower._Lowering.literal": {
+      "implementation": 60,
+      "intent": 50,
+      "clarity": 15
+    },
+    "mathema_language.spark.lower._Lowering.value": {
+      "implementation": 62,
+      "intent": 39,
+      "clarity": 4
+    },
+    "mathema_language.spark.lower._Lowering._nan_aware": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 22
+    },
+    "mathema_language.spark.lower._Lowering.compare": {
+      "implementation": 52,
+      "intent": 38,
+      "clarity": 17
+    },
+    "mathema_language.spark.lower._Lowering.condition": {
+      "implementation": 46,
+      "intent": 44,
+      "clarity": 5
+    },
+    "mathema_language.spark.lower._Lowering.column_body": {
+      "implementation": 78,
+      "intent": 54,
+      "clarity": 16
+    },
+    "mathema_language.spark.lower.rule": {
+      "implementation": 100,
+      "intent": 35,
+      "clarity": 12
+    },
+    "mathema_language.text.adapt": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 8
+    },
+    "mathema_language.text._kit.TextLanguage.hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 4
+    },
+    "mathema_language.text._kit.TextLanguage.sample": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 12
+    },
+    "mathema_language.text._kit.TextLanguage.shrink": {
+      "implementation": 94,
+      "intent": 44,
+      "clarity": 18
+    },
+    "mathema_language.text.alphabets._every_str": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_ascii": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_latin1": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_printable": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_digit": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_alpha": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_alnum": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_c0": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_format": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_combining": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_surrogate": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._folds_under_nfkc": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.alphabets._is_non_bmp": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.generate.draw_char": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 27
+    },
+    "mathema_language.text.generate.draw_length": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.text.generate.draw": {
+      "implementation": 100,
+      "intent": 31,
+      "clarity": 24
+    },
+    "mathema_language.text.json_structure.scan": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 11
+    },
+    "mathema_language.text.path_language._normal_root": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 10
+    },
+    "mathema_language.text.path_language.within_pattern": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 15
+    },
+    "mathema_language.text.path_language.PathLanguage.contains": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.text.path_language.PathLanguage.hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 14
+    },
+    "mathema_language.text.path_language.PathLanguage.outside": {
+      "implementation": 83,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.text.path_language._generate": {
+      "implementation": 91,
+      "intent": 50,
+      "clarity": 20
+    },
+    "mathema_language.text.path_language.path_within": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 8
+    },
+    "mathema_language.text.predicates._is_json": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 29
+    },
+    "mathema_language.text.predicates._is_uuid": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.text.predicates._is_iso_date": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.text.predicates._is_iso_datetime": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.text.predicates._is_ipv4": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.text.predicates._is_ipv6": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.text.predicates._is_base64": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.text.predicates._is_hex": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.text.predicates._is_slug": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.text.predicates._is_shell_safe": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.text.predicates._generate_identifier": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 25
+    },
+    "mathema_language.text.predicates._generate_json": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 16
+    },
+    "mathema_language.text.predicates._generate_uuid": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.predicates._generate_iso_date": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.predicates._generate_iso_datetime": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.predicates._generate_ipv4": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.predicates._generate_ipv6": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.predicates._generate_base64": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.predicates._generate_hex": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 25
+    },
+    "mathema_language.text.predicates._generate_slug": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 25
+    },
+    "mathema_language.text.predicates._generate_shell_safe": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.predicates._accepted": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.text.regex._category": {
+      "implementation": 100,
+      "intent": 33,
+      "clarity": 16
+    },
+    "mathema_language.text.regex._class_pool": {
+      "implementation": 94,
+      "intent": 38,
+      "clarity": 12
+    },
+    "mathema_language.text.regex._emit": {
+      "implementation": 57,
+      "intent": 38,
+      "clarity": 14
+    },
+    "mathema_language.text.regex.draw_matching": {
+      "implementation": 90,
+      "intent": 33,
+      "clarity": 22
+    },
+    "mathema_language.text.toml_language.load": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.toml_language._is_toml": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.text.toml_language._generate_toml": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.text.toml_language.TomlLanguage.hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 14
+    },
+    "mathema_language.text.toml_language.TomlLanguage.outside": {
+      "implementation": 83,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.text.yaml_language.load": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.yaml_language._is_yaml": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.text.yaml_language._generate_yaml": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.text.yaml_language.YamlLanguage.hazards": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 14
+    },
+    "mathema_language.text.yaml_language.YamlLanguage.outside": {
+      "implementation": 83,
+      "intent": 50,
+      "clarity": 18
+    },
+    "mathema_language.vocabulary.text.nfc": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 57
+    },
+    "mathema_language.vocabulary.text.nfd": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 56
+    },
+    "mathema_language.vocabulary.text.nfkc": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 56
+    },
+    "mathema_language.vocabulary.text.nfkd": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 56
+    },
+    "mathema_language.vocabulary.text.casefold": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 57
+    },
+    "mathema_language.vocabulary.text.lower": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 56
+    },
+    "mathema_language.vocabulary.text.upper": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 56
+    },
+    "mathema_language.vocabulary.text.count": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 36
+    },
+    "mathema_language.vocabulary.text.startswith": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 54
+    },
+    "mathema_language.vocabulary.text.endswith": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 54
+    },
+    "mathema_language.vocabulary.text.strip": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 57
+    },
+    "mathema_language.vocabulary.text.splitlines": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 26
+    },
+    "mathema_language.vocabulary.text.nfc_len": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.vocabulary.text.utf8_len": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 34
+    },
+    "mathema_language.vocabulary.text._fn": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 23
+    },
+    "mathema_language.vocabulary.tree.children_of": {
+      "implementation": 50,
+      "intent": 50,
+      "clarity": 13
+    },
+    "mathema_language.vocabulary.tree._walk": {
+      "implementation": 100,
+      "intent": 37,
+      "clarity": 13
+    },
+    "mathema_language.vocabulary.tree._measure": {
+      "implementation": 100,
+      "intent": 43,
+      "clarity": 8
+    },
+    "mathema_language.vocabulary.tree.depth": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 16
+    },
+    "mathema_language.vocabulary.tree.nodes": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 16
+    },
+    "mathema_language.vocabulary.tree.width": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 16
+    },
+    "mathema_language.vocabulary.tree.leaves": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 16
+    },
+    "mathema_language.vocabulary.tree._fn": {
+      "implementation": 100,
+      "intent": 45,
+      "clarity": 16
+    }
+  },
+  "capped": [
+    [
+      "mathema_language.schema.checks._Walker._type",
+      [
+        "implementation"
+      ]
+    ],
+    [
+      "mathema_language.schema.emptiness._candidates",
+      [
+        "implementation"
+      ]
+    ],
+    [
+      "mathema_language.schema.generate._zone",
+      [
+        "implementation"
+      ]
+    ]
+  ]
+}
