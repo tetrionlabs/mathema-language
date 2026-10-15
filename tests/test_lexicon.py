@@ -48,6 +48,7 @@ EXPECTED = {
     "language_idempotent": "holds",
     "language_yaml_reading": ("falsified", " vs "),
     "language_toml_json": ("falsified", "raised TypeError"),
+    "language_path_normalise": "holds",
     "language_length_bound_identity": "holds",
     "language_length_bound_one_past": ("falsified", "s = '" + "a" * 81 + "':"),
     "in_target_language": ("falsified", "s = '': '' is not in L[slug]"),

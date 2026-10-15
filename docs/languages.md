@@ -56,6 +56,7 @@ Python.
 | `L[json]` | what `json.loads` accepts, the bare `NaN` included | `json.loads` | [JSON](json.md) |
 | `L[yaml]` | one YAML document, read as YAML 1.2 | ruamel.yaml's safe loader (the `[yaml]` extra) | [YAML](yaml.md) |
 | `L[toml]` | one TOML 1.0 document | `tomllib` (`tomli` before Python 3.11, the `[toml]` extra) | [TOML](toml.md) |
+| `L[path]` | non-empty path text without a NUL; `L[path, within "/root"]` confines it to a root | a regular expression, read in full | [Paths](path.md) |
 | `L[uuid]` | every spelling `uuid.UUID` reads | `uuid.UUID` | [Formats](formats.md) |
 | `L[iso_date]` | ISO 8601 dates | `date.fromisoformat` | [Formats](formats.md) |
 | `L[iso_datetime]` | ISO 8601 date-times | `datetime.fromisoformat` | [Formats](formats.md) |

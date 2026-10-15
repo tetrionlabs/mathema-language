@@ -34,6 +34,11 @@
   "unicode": "assuming f is defined, let reference = mathema_language.text.yaml_language.load, ∀ text ∈ L[yaml], f(text) = reference(text)",
   "ascii": "assuming f is defined, let reference = mathema_language.text.yaml_language.load, for text in L[yaml], f(text) = reference(text)"
  },
+ "language_path_normalise": {
+  "input": "for p in L[path], f(f(p)) == f(p)",
+  "unicode": "∀ p ∈ L[path], f(f(p)) = f(p)",
+  "ascii": "for p in L[path], f(f(p)) = f(p)"
+ },
  "language_toml_json": {
   "input": "for text in L[toml], is_language_defined(text)",
   "unicode": "∀ text ∈ L[toml], text is language defined",

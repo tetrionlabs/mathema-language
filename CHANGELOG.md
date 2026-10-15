@@ -13,6 +13,12 @@ release onward.
 - A positional argument taking several values (`nargs="+"`, `"*"` or a
   count) is never `None` in the argparse namespace language, as
   argparse never gives it one; it was read as nullable.
+- `L[path]` is path text, with the paths code gets wrong as its hazards
+  (`..` climbs, absolute paths, a leading dash, `~`, `.git/config`), and
+  `mathema_language.text.path_language.path_within(root)` the paths
+  confined to a root (no `..` segment; an absolute path only at or under
+  the root), rendered `L[path, within "/root"]`. Both are defined by a
+  regular expression the z3 encoding reads exactly.
 
 ## 0.2.1
 

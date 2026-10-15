@@ -19,6 +19,7 @@ nav:
       - JSON: json.md
       - YAML: yaml.md
       - TOML: toml.md
+      - Paths: path.md
   - Records and schemas:
       - Records and schemas: records.md
       - Trees: trees.md
