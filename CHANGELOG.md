@@ -19,6 +19,15 @@ release onward.
   confined to a root (no `..` segment; an absolute path only at or under
   the root), rendered `L[path, within "/root"]`. Both are defined by a
   regular expression the z3 encoding reads exactly.
+- `mathema_language.openapi.operation(spec, operation_id)` reads an
+  OpenAPI 3 operation as the language of the requests it accepts: a
+  record of its path, query, header and cookie parameters and its JSON
+  body, written as one JSON Schema (`request_schema`), with what its
+  HTTP method says about it (`read_only`, `idempotent`, `destructive`).
+- The z3 encoding reads nested records (each field a variable under its
+  dotted name), and treats only the JSON Schema keywords `jsonschema`
+  enforces and the adaptor does not read as unread: `format`, which the
+  validator does not check, no longer stops it.
 
 ## 0.2.1
 
