@@ -3,7 +3,9 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
-## Unreleased
+## 0.2.1
+
+For mathema 0.6.2 (`mathema>=0.6.2,<0.7`).
 
 - A field of a referenced record type checked with no definitions to
   resolve the reference is a problem; it accepted every value before.

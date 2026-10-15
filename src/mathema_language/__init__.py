@@ -11,7 +11,7 @@ installing the package is the whole configuration.
 """
 from ._surface import EXTENSION_API_VERSION
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 SUPPORTED_EXTENSION_API = (1,)
 if EXTENSION_API_VERSION not in SUPPORTED_EXTENSION_API:
