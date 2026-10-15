@@ -88,6 +88,7 @@ compatibility = "mathema_language.text:COMPATIBILITY"
 astral = "mathema_language.text:ASTRAL"
 yaml = "mathema_language.text.yaml_language:YAML_TEXT"
 toml = "mathema_language.text.toml_language:TOML_TEXT"
+path = "mathema_language.text.path_language:PATH"
 
 [project.entry-points."mathema.claim_families"]
 is_length_safe = "mathema_language.families:LENGTH_SAFE"
