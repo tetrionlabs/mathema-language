@@ -119,3 +119,20 @@ def test_claims_over_the_namespaces():
     from mathema.conjecture import check_conjectures, claim
     (p,) = check_conjectures(units, [claim("for args in L[tests.test_adaptor_argparse.build_parser], f(args) >= 0")])
     assert p.verdict == "holds"
+
+
+@pytest.mark.parametrize("nargs", ["+", "*", 2])
+def test_a_positional_list_is_never_none(nargs):
+    p = argparse.ArgumentParser(prog="t")
+    p.add_argument("files", nargs=nargs)
+    (files,) = adapt(p).schema.fields
+    assert not files.nullable
+    assert not adapt(p).contains(argparse.Namespace(files=None))
+
+
+def test_an_optional_list_left_out_is_none():
+    p = argparse.ArgumentParser(prog="t")
+    p.add_argument("--tag", action="append")
+    p.add_argument("--many", nargs="*")
+    assert adapt(p).contains(p.parse_args([]))
+    assert p.parse_args([]).many is None

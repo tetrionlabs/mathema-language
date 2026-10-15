@@ -106,7 +106,10 @@ def _field(action: argparse.Action, converters: dict[str, Any]) -> Field | None:
     if many:
         lengths = Constraints(min_len=1 if nargs == "+" else nargs if isinstance(nargs, int) else None,
                               max_len=nargs if isinstance(nargs, int) else None)
-        return Field(dest, NeutralType("list", item=item), nullable=nullable or nargs == "*",
+        # a positional always receives a list (an empty one for `*`); only an
+        # option left off the command line keeps its default of None
+        left_out = bool(action.option_strings) and not action.required
+        return Field(dest, NeutralType("list", item=item), nullable=left_out and nullable,
                      required=not suppressed, constraints=lengths)
     optional_value = nargs == "?" or (action.option_strings and not action.required)
     return Field(dest, item, nullable=bool(optional_value and nullable),

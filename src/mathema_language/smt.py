@@ -48,7 +48,12 @@ from .schema.model import NO_DEFAULT, Field, RowSchema
 
 #: the ecosystems whose records the encoding reads, and whether a record
 #: is a mapping that may leave a key out
-_SUPPORTED = {"plain": True, "jsonschema": True, "attribute": False, "pydantic": False}
+_SUPPORTED = {"plain": True, "jsonschema": True, "attribute": False, "pydantic": False,
+              "argparse": False}
+
+#: the argparse `type=` converters whose value is read as its text: every
+#: string converts, and the encoding holds the text it came from
+_TEXT_CONVERTERS = {"Path", "PurePath", "PosixPath", "PurePosixPath", "str"}
 
 #: the JSON Schema keywords the adaptor reads into the neutral model;
 #: `jsonschema` enforces every other one, which the encoding cannot see
@@ -63,7 +68,7 @@ _JSON_SCHEMA_READ = {
 _Z3_MAX_CHAR = 0x2FFFF
 
 #: the scalar types the encoding reads
-_READ_BASES = {"bool", "int", "float", "decimal", "string", "categorical", "any"}
+_READ_BASES = {"bool", "int", "float", "decimal", "string", "categorical", "list", "any"}
 
 
 class Untranslated(Exception):
@@ -103,6 +108,16 @@ class MembershipEncoding:
 
     def __init__(self, z3: Any) -> None:
         self.z3 = z3
+        # an item of a list holds the same scalars as a field, and a field
+        # may also be absent or hold a list of items
+        item = z3.Datatype("Item")
+        for tag in ("null", "nan", "pinf", "ninf"):
+            item.declare(tag)
+        item.declare("b", ("bv", z3.BoolSort()))
+        item.declare("i", ("iv", z3.IntSort()))
+        item.declare("r", ("rv", z3.RealSort()))
+        item.declare("s", ("sv", z3.StringSort()))
+        self.I = item.create()
         v = z3.Datatype("Value")
         for tag in ("absent", "null", "nan", "pinf", "ninf"):
             v.declare(tag)
@@ -110,6 +125,7 @@ class MembershipEncoding:
         v.declare("i", ("iv", z3.IntSort()))
         v.declare("r", ("rv", z3.RealSort()))
         v.declare("s", ("sv", z3.StringSort()))
+        v.declare("seq", ("items", z3.SeqSort(self.I)))
         self.V = v.create()
         self.vars: dict[str, Any] = {}
         self.extra: list[Any] = []
@@ -119,9 +135,14 @@ class MembershipEncoding:
             self.vars[name] = self.z3.Const(f"f_{len(self.vars)}_{name}", self.V)
         return self.vars[name]
 
-    def const(self, value: Any) -> Any:
-        """A Python value as a z3 Value."""
-        V = self.V
+    def const(self, value: Any, D: Any = None) -> Any:
+        """A Python value as a z3 Value (or as a list Item, with `D`)."""
+        V = D if D is not None else self.V
+        if isinstance(value, (list, tuple)) and V is self.V:
+            items = [self.z3.Unit(self.const(v, self.I)) for v in value]
+            if not items:
+                return V.seq(self.z3.Empty(self.z3.SeqSort(self.I)))
+            return V.seq(items[0] if len(items) == 1 else self.z3.Concat(*items))
         if value is None:
             return V.null
         if isinstance(value, bool):
@@ -148,9 +169,8 @@ class MembershipEncoding:
         q = Fraction(value)
         return self.z3.RealVal(f"{q.numerator}/{q.denominator}")
 
-    def _number(self, x: Any) -> tuple[Any, Any]:
+    def _number(self, x: Any, V: Any) -> tuple[Any, Any]:
         """`(is a finite number, its real value)`."""
-        V = self.V
         return (self.z3.Or(V.is_i(x), V.is_r(x)),
                 self.z3.If(V.is_i(x), self.z3.ToReal(V.iv(x)), V.rv(x)))
 
@@ -181,13 +201,14 @@ class MembershipEncoding:
         parts.append(z3.Option(z3.Re(z3.StringVal("\n"))) if regex.anchored_end else anything)
         return z3.Concat(*parts)
 
-    def member(self, f: Field, x: Any, side: str, mapping: bool) -> Any:
+    def member(self, f: Field, x: Any, side: str, mapping: bool, D: Any = None) -> Any:
         """The formula: `x` is a value field `f` admits. `side` is
         `older` (admit at least what the library admits) or `newer`
-        (admit at most)."""
-        z3, V, c, t = self.z3, self.V, f.constraints, f.type
+        (admit at most). With `D`, `x` is a list item of that type."""
+        z3, c, t = self.z3, f.constraints, f.type
+        V = D if D is not None else self.V
         options = []
-        if mapping and not f.required:
+        if mapping and not f.required and V is self.V:
             options.append(V.is_absent(x))
         if f.nullable:
             options.append(V.is_null(x))
@@ -196,7 +217,7 @@ class MembershipEncoding:
         if t.base == "any":
             if side == "newer":
                 raise Untranslated(f"the field .{f.name} of no type the encoding reads")
-            options.append(z3.Not(V.is_absent(x)))
+            options.append(z3.Not(V.is_absent(x)) if V is self.V else z3.BoolVal(True))
             return z3.Or(*options)
         if c.regex is not None and t.base != "string":
             raise Untranslated(f"a pattern on the {t.base} field .{f.name}")
@@ -217,7 +238,7 @@ class MembershipEncoding:
                     raise Untranslated(f"the divisor {c.multiple_of!r} on .{f.name}")
                 conds.append(n % c.multiple_of == 0)
         elif t.base in ("float", "decimal"):
-            is_num, real = self._number(x)
+            is_num, real = self._number(x, V)
             num = [is_num, *self._bounds(f, real)]
             if c.multiple_of is not None:
                 raise Untranslated(f"the divisor on the {t.base} field .{f.name}")
@@ -249,15 +270,40 @@ class MembershipEncoding:
                 conds.append(z3.Length(s) <= c.max_len)
             if c.regex is not None:
                 conds.append(z3.InRe(s, self._regex(c.regex, side)))
+        elif t.base == "list":
+            item_t = t.item
+            if V is not self.V or item_t is None or item_t.base not in _READ_BASES - {"any", "list"}:
+                raise Untranslated(f"the list field .{f.name} of "
+                                   f"{item_t.base if item_t else 'unstated'} items")
+            conds.append(V.is_seq(x))
+            items = V.items(x)
+            n = z3.Length(items)
+            if c.min_len is not None:
+                conds.append(n >= c.min_len)
+            if c.max_len is not None:
+                conds.append(n <= c.max_len)
+            k = z3.Int(f"k_{len(self.extra)}_{f.name}")
+            self.extra.append(k)
+            item = Field("item", item_t, nullable=f.type.nullable_items)
+            conds.append(z3.ForAll([k], z3.Implies(z3.And(k >= 0, k < n),
+                                                   self.member(item, items[k], side, False, self.I))))
         elif t.base == "categorical":
-            conds.append(z3.Or(*[x == self.const(level) for level in (t.levels or ())]) if t.levels
+            conds.append(z3.Or(*[x == self.const(level, D) for level in (t.levels or ())]) if t.levels
                          else z3.BoolVal(False))
         if c.enum is not None:
-            conds.append(z3.Or(*[x == self.const(e) for e in c.enum]) if c.enum else z3.BoolVal(False))
+            conds.append(z3.Or(*[x == self.const(e, D) for e in c.enum]) if c.enum else z3.BoolVal(False))
         if c.const is not NO_DEFAULT:
-            conds.append(x == self.const(c.const))
+            conds.append(x == self.const(c.const, D))
         options.append(z3.And(*conds))
         return z3.Or(*options)
+
+    def language(self, language: Any, names: list[str], side: str) -> Any:
+        """The formula: the values of `names` make a member of `language`,
+        one of its shapes when it has several (a command line's
+        subcommands)."""
+        shapes = [self.row(b.schema, names, side, _SUPPORTED[b.ecosystem.name])
+                  for b in _branches(language)]
+        return shapes[0] if len(shapes) == 1 else self.z3.Or(*shapes)
 
     def row(self, schema: RowSchema, names: list[str], side: str, mapping: bool) -> Any:
         """The formula: the values of `names` make a record `schema`
@@ -387,8 +433,30 @@ def sre_maxrepeat() -> int:
     return int(sre_constants.MAXREPEAT)
 
 
+def _branches(language: Any) -> list[Any]:
+    """The record languages a language is the union of: its shapes, or
+    itself."""
+    return list(getattr(language, "branches", None) or [language])
+
+
+def _fields(language: Any) -> dict[str, Field]:
+    """Every field of a language's shapes, by name, the first shape
+    naming it deciding."""
+    out: dict[str, Field] = {}
+    for branch in _branches(language):
+        for f in branch.schema.fields:
+            out.setdefault(f.name, f)
+    return out
+
+
 def untranslated(language: Any) -> str | None:
     """Why a language's records cannot be encoded, or None."""
+    if language is not None and getattr(language, "branches", None):
+        for branch in language.branches:
+            why = untranslated(branch)
+            if why:
+                return why
+        return None
     ecosystem = getattr(language, "ecosystem", None)
     schema = getattr(language, "schema", None)
     if language is None or ecosystem is None or schema is None:
@@ -402,6 +470,11 @@ def untranslated(language: Any) -> str | None:
         unread = _unread_pydantic(ecosystem.model, schema)
         if unread:
             return f"{language.name}: {unread}"
+    if ecosystem.name == "argparse":
+        for dest, convert in (getattr(ecosystem, "converters", None) or {}).items():
+            if dest in {f.name for f in schema.fields} \
+                    and getattr(convert, "__name__", "") not in _TEXT_CONVERTERS:
+                return f"{language.name}: the type {getattr(convert, '__name__', convert)!r} of {dest}"
     if ecosystem.name == "jsonschema":
         keywords = _unread_keywords(ecosystem.schema)
         if keywords:
@@ -453,33 +526,48 @@ def _value(enc: MembershipEncoding, model: Any, x: Any, f: Field | None) -> tupl
     v = model.eval(x, model_completion=True)
     if z3.is_true(model.eval(V.is_absent(v))):
         return False, None
-    if z3.is_true(model.eval(V.is_null(v))):
-        return True, None
+    if z3.is_true(model.eval(V.is_seq(v))):
+        items = model.eval(V.items(v), model_completion=True)
+        n = model.eval(z3.Length(items)).as_long()
+        item_f = Field("item", f.type.item) if f is not None and f.type.item is not None else None
+        return True, [_scalar(enc, model, model.eval(items[k], model_completion=True), enc.I, item_f)
+                      for k in range(n)]
+    return True, _scalar(enc, model, v, V, f)
+
+
+def _scalar(enc: MembershipEncoding, model: Any, v: Any, D: Any, f: Field | None) -> Any:
+    """The Python value of one z3 scalar, of the field's own type."""
+    z3 = enc.z3
+    if z3.is_true(model.eval(D.is_null(v))):
+        return None
     for tag, val in (("nan", math.nan), ("pinf", math.inf), ("ninf", -math.inf)):
-        if z3.is_true(model.eval(getattr(V, f"is_{tag}")(v))):
-            return True, val
-    if z3.is_true(model.eval(V.is_b(v))):
-        return True, z3.is_true(model.eval(V.bv(v)))
-    if z3.is_true(model.eval(V.is_i(v))):
-        n = model.eval(V.iv(v)).as_long()
+        if z3.is_true(model.eval(getattr(D, f"is_{tag}")(v))):
+            return val
+    if z3.is_true(model.eval(D.is_b(v))):
+        return z3.is_true(model.eval(D.bv(v)))
+    if z3.is_true(model.eval(D.is_i(v))):
+        n = model.eval(D.iv(v)).as_long()
         if f is not None and f.type.base == "float":
-            return True, float(n)
+            return float(n)
         if f is not None and f.type.base == "decimal":
-            return True, decimal.Decimal(n)
-        return True, n
-    if z3.is_true(model.eval(V.is_r(v))):
-        r = model.eval(V.rv(v))
+            return decimal.Decimal(n)
+        return n
+    if z3.is_true(model.eval(D.is_r(v))):
+        r = model.eval(D.rv(v))
         q = Fraction(r.numerator_as_long(), r.denominator_as_long())
         if f is not None and f.type.base == "decimal":
-            return True, decimal.Decimal(q.numerator) / decimal.Decimal(q.denominator)
-        return True, float(q)
-    text = model.eval(V.sv(v)).as_string()
-    return True, re.sub(r"\\u\{([0-9a-fA-F]+)\}", lambda m: chr(int(m.group(1), 16)), text)
+            return decimal.Decimal(q.numerator) / decimal.Decimal(q.denominator)
+        return float(q)
+    text = model.eval(D.sv(v)).as_string()
+    return re.sub(r"\\u\{([0-9a-fA-F]+)\}", lambda m: chr(int(m.group(1), 16)), text)
 
 
 def _admits(language: Any, values: dict[str, Any]) -> bool:
     """Whether the record built from `values` is a member, the language's
-    own validation deciding; a record its class refuses to build is not."""
+    own validation deciding; a record its class refuses to build is not.
+    A language of several shapes admits it when one of them does."""
+    if getattr(language, "branches", None):
+        return any(_admits(branch, values) for branch in language.branches)
     names = {f.name for f in language.schema.fields}
     mapping = _SUPPORTED.get(language.ecosystem.name, True)
     given = values if mapping or language.schema.column_policy == "exact" \
@@ -498,8 +586,8 @@ def _float_line(older: Any, newer: Any, base: dict[str, Any] | None) -> tuple[li
     tried: list[str] = []
     if base is None:
         return tried, None
-    fields = {f.name: f for f in older.schema.fields}
-    for f in [*older.schema.fields, *newer.schema.fields]:
+    fields = _fields(older)
+    for f in [*fields.values(), *_fields(newer).values()]:
         if f.type.base != "float" or f.name not in fields:
             continue
         c = f.constraints
@@ -523,17 +611,17 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     `L[...]` resolves (a model class, a JSON Schema dict)."""
     z3 = _z3()
     from .schema.adaptors import adapt_row
-    older, newer = (x if hasattr(x, "ecosystem") else adapt_row(x) for x in (older, newer))
+    older, newer = (x if hasattr(x, "ecosystem") or getattr(x, "branches", None) else adapt_row(x)
+                    for x in (older, newer))
     for language in (older, newer):
         why = untranslated(language)
         if why:
             return _InclusionResult("unknown", f"not translated: {why}")
     enc = MembershipEncoding(z3)
-    names = list(dict.fromkeys([f.name for f in older.schema.fields]
-                               + [f.name for f in newer.schema.fields]))
+    names = list(dict.fromkeys([*_fields(older), *_fields(newer)]))
     try:
-        m_older = enc.row(older.schema, names, "older", _SUPPORTED[older.ecosystem.name])
-        m_newer = enc.row(newer.schema, names, "newer", _SUPPORTED[newer.ecosystem.name])
+        m_older = enc.language(older, names, "older")
+        m_newer = enc.language(newer, names, "newer")
     except Untranslated as e:
         return _InclusionResult("unknown", f"not translated: {e}")
     solver = z3.Solver()
@@ -541,7 +629,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     solver.add(m_older, z3.Not(m_newer))
     # a witness reads best with the keys `older` does not declare left out,
     # so those are tried absent first and allowed only if they must be
-    own = {f.name for f in older.schema.fields}
+    own = set(_fields(older))
     undeclared = [enc.V.is_absent(enc.var(n)) for n in names if n not in own]
     answer = solver.check(*undeclared) if undeclared else solver.check()
     if answer != z3.sat and undeclared:
@@ -558,8 +646,8 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         return _InclusionResult("proven", f"every record {older.name} admits, {newer.name} admits",
                                float_line=tried)
     model = solver.model()
-    fields = {f.name: f for f in [*newer.schema.fields, *older.schema.fields]}
-    older_fields = {f.name: f for f in older.schema.fields}
+    fields = {**_fields(newer), **_fields(older)}
+    older_fields = _fields(older)
     values: dict[str, Any] = {}
     for name in names:
         present, value = _value(enc, model, enc.var(name), older_fields.get(name, fields.get(name)))
@@ -580,7 +668,7 @@ def _a_member(language: Any) -> dict[str, Any] | None:
     except Exception:
         return None
     out = {}
-    for f in language.schema.fields:
+    for f in _fields(language).values():
         if isinstance(row, dict):
             if f.name in row:
                 out[f.name] = row[f.name]
