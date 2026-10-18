@@ -120,7 +120,7 @@ def test_the_encoding_of_a_request_never_admits_less_than_older_or_more_than_new
     z3 = pytest.importorskip("z3")
     from mathema_language import smt
     language = openapi.operation(V1, op_id).language
-    names = smt._names(language)
+    names = smt.field_names(language)
 
     def flat(request, prefix=""):
         out = {}

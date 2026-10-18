@@ -335,6 +335,32 @@ class MembershipEncoding:
         options.append(z3.And(*conds))
         return z3.Or(*options)
 
+    def present(self, name: str) -> Any:
+        """The formula: field `name` is there (not absent, not null)."""
+        x = self.var(name)
+        return self.z3.And(self.z3.Not(self.V.is_absent(x)), self.z3.Not(self.V.is_null(x)))
+
+    def number(self, name: str) -> tuple[Any, Any]:
+        """`(holds a finite number, its exact real value)` for field
+        `name`, the terms a relation over a numeric field is written in:
+        `x.qty <= 10` is `Implies(is_number, value <= 10)`."""
+        return self._number(self.var(name), self.V)
+
+    def string(self, name: str) -> tuple[Any, Any]:
+        """`(holds text, the z3 string)` for field `name`."""
+        x = self.var(name)
+        return self.V.is_s(x), self.V.sv(x)
+
+    def decode(self, model: Any, language: Any, names: list[str]) -> dict[str, Any]:
+        """A z3 model of this encoding as the nested value of `language`
+        it describes, absent fields left out."""
+        values: dict[str, Any] = {}
+        for name in names:
+            present, value = _value(self, model, self.var(name), _field_at(language, name))
+            if present:
+                values[name] = value
+        return _nest(language, values)
+
     def text(self, language: Any, x: Any, side: str) -> Any:
         """The formula: the z3 string `x` is a member of a text language
         defined by a regular expression read in full (its `pattern`, as
@@ -545,11 +571,11 @@ def _fields(language: Any) -> dict[str, Field]:
     return out
 
 
-def _names(language: Any) -> list[str]:
-    """Intent:
-        Returns every field name of a language once, a nested record's fields by their dotted
-        name after the record's own.
-    """
+def field_names(language: Any) -> list[str]:
+    """Every field name of a language once, a nested record's fields by
+    their dotted name after the record's own: the variables an encoding
+    of the language uses, and the union two languages share when one is
+    checked against the other."""
     out: list[str] = []
 
     def walk(fields: Any, prefix: str) -> None:
@@ -739,6 +765,29 @@ def _scalar(enc: MembershipEncoding, model: Any, v: Any, D: Any, f: Field | None
     return re.sub(r"\\u\{([0-9a-fA-F]+)\}", lambda m: chr(int(m.group(1), 16)), text)
 
 
+def new_encoding(z3: Any = None) -> MembershipEncoding:
+    """A fresh encoding context, one per claim: every language encoded in
+    it shares one z3 variable per field name."""
+    return MembershipEncoding(z3 if z3 is not None else _z3())
+
+
+def build(language: Any, values: dict[str, Any]) -> Any:
+    """The record `language` builds from `values` (nested, or by dotted
+    name): the first of its shapes whose record it admits, else the first
+    record a shape builds, else None when no shape's class builds one.
+    A caller confirms a candidate with `language.contains(build(...))`."""
+    built = []
+    for branch in _branches(language):
+        try:
+            row = branch.ecosystem.build_row(branch.schema, _nest(branch, values))
+        except Exception:
+            continue
+        if branch.contains(row):
+            return row
+        built.append(row)
+    return built[0] if built else None
+
+
 def _admits(language: Any, values: dict[str, Any]) -> bool:
     """Intent:
         Whether the record built from `values` is a member, the language's own validation
@@ -806,7 +855,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         if why:
             return _InclusionResult("unknown", f"not translated: {why}")
     enc = MembershipEncoding(z3)
-    names = list(dict.fromkeys([*_names(older), *_names(newer)]))
+    names = list(dict.fromkeys([*field_names(older), *field_names(newer)]))
     try:
         m_older = enc.language(older, names, "older")
         m_newer = enc.language(newer, names, "newer")
@@ -817,7 +866,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     solver.add(m_older, z3.Not(m_newer))
     # a witness reads best with the keys `older` does not declare left out,
     # so those are tried absent first and allowed only if they must be
-    own = set(_names(older))
+    own = set(field_names(older))
     undeclared = [enc.V.is_absent(enc.var(n)) for n in names if n not in own]
     answer = solver.check(*undeclared) if undeclared else solver.check()
     if answer != z3.sat and undeclared:
@@ -859,7 +908,7 @@ def _field_in(language: Any, name: str, text_language: Any, *,
     if why:
         return _InclusionResult("unknown", f"not translated: {why}")
     enc = MembershipEncoding(z3)
-    names = _names(language)
+    names = field_names(language)
     try:
         member = enc.language(language, names, "older")
         x = enc.var(name)
@@ -927,4 +976,5 @@ def _a_member(language: Any) -> dict[str, Any] | None:
     return out
 
 
-__all__ = ["MembershipEncoding", "Untranslated", "untranslated"]
+__all__ = ["MembershipEncoding", "Untranslated", "build", "field_names", "new_encoding",
+           "untranslated"]

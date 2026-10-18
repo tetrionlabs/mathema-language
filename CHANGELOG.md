@@ -28,6 +28,14 @@ release onward.
   dotted name), and treats only the JSON Schema keywords `jsonschema`
   enforces and the adaptor does not read as unread: `format`, which the
   validator does not check, no longer stops it.
+- `mathema_language.smt` states its surface for a prover: `untranslated`,
+  `field_names`, `new_encoding` (an encoding whose `language` and
+  `text` give membership formulas, `number`, `string` and `present` the
+  terms a relation over a field is written in, and `decode` a model as
+  the value it describes) and `build`, the record a candidate makes, for
+  confirming it with the language's own membership.
+- A claim names an OpenAPI operation by the dotted path of a module
+  attribute holding one (`L[app.api.create_order]`).
 
 ## 0.2.1
 
