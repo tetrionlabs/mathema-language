@@ -1556,7 +1556,7 @@
       "clarity": 14
     },
     "mathema_language.schema.generate.draw_raw": {
-      "implementation": 82,
+      "implementation": 85,
       "intent": 54,
       "clarity": 5
     },
@@ -2635,31 +2635,7 @@
       ]
     ],
     [
-      "mathema_language.schema.emptiness._shortest_match",
-      [
-        "implementation"
-      ]
-    ],
-    [
       "mathema_language.schema.generate._zone",
-      [
-        "implementation"
-      ]
-    ],
-    [
-      "mathema_language.schema.generate.draw_raw",
-      [
-        "implementation"
-      ]
-    ],
-    [
-      "mathema_language.schema.generate.outside",
-      [
-        "implementation"
-      ]
-    ],
-    [
-      "mathema_language.schema.languages._field_bound",
       [
         "implementation"
       ]
