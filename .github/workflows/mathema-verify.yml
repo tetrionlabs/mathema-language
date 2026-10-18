@@ -49,5 +49,14 @@ jobs:
           python -m pytest -q -p no:cacheprovider --cov=mathema_language --cov-report=
           mathema coverage --stamp --root .
       - run: mathema badges mathema_language --root . --out .mathema/badges
+      # the badges this run made, to commit when they differ: a function's
+      # step stops at a wall-clock cap, so a run on a loaded machine can
+      # cap more functions than this one, and the files this run makes are
+      # the ones to keep
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: badges
+          path: .mathema/badges/
       - name: The committed badges are current
         run: git diff --exit-code .mathema/badges/

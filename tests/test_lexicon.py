@@ -128,7 +128,7 @@ EXPECTED = {
 
 #: the library an adaptor row's records need, by the row's adaptor
 _ADAPTOR_LIBRARY = {"pydantic": "pydantic", "sqlalchemy": "sqlalchemy",
-                    "django": "django", "jsonschema": "jsonschema"}
+                    "django": "django", "jsonschema": "jsonschema", "openapi": "jsonschema"}
 
 
 #: rows that need libraries beyond their adaptor's
