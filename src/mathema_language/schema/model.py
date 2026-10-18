@@ -40,7 +40,13 @@ NO_DEFAULT: Any = type("NoDefault", (), {"__repr__": lambda self: "NO_DEFAULT"})
 
 
 def _in_range(name: str, value: Any, low: int, high: int | None) -> None:
-    """Refuse an int attribute outside `[low, high]`; None is unset."""
+    """Intent:
+        Checks that an int attribute lies in `[low, high]`; None means unset and passes, and a
+        `high` of None means no upper bound.
+
+    Raises:
+        ValueError: the value is not an int (or is a bool) or lies outside the range.
+    """
     if value is None:
         return
     if not isinstance(value, int) or isinstance(value, bool) or value < low \

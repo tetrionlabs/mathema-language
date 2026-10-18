@@ -20,7 +20,10 @@ _CHECK = re.compile(r"CHECK constraint failed: ([^\n]+?)\s*(?:\n|$)")
 
 
 def _problem_from(message: str, value: Any) -> Problem:
-    """The SQLite integrity message as a problem in the path grammar."""
+    """Intent:
+        A SQLite integrity error message as a problem: a NOT NULL failure at the column's path,
+        a CHECK failure naming the check, or the message itself otherwise.
+    """
     m = _NOT_NULL.search(message)
     if m:
         return Problem(f".{m.group(1)}", "not null", None)
@@ -31,8 +34,10 @@ def _problem_from(message: str, value: Any) -> Problem:
 
 
 def _unstorable(values: dict[str, Any]) -> list[Problem]:
-    """Text the database cannot store: a lone surrogate has no UTF-8
-    encoding, so it is not a member of any text column."""
+    """Intent:
+        A problem for each string value with no UTF-8 encoding (one holding a lone surrogate),
+        which the database cannot store in any text column.
+    """
     out: list[Problem] = []
     for name, value in values.items():
         if isinstance(value, str):
@@ -69,8 +74,10 @@ class SqlAlchemyEcosystem:
         return {c.name: getattr(row, c.name, None) for c in self.table.columns}
 
     def _engine(self) -> Any:
-        """An in-memory database holding every table of the metadata,
-        made once."""
+        """Intent:
+            An in-memory SQLite engine holding every table of the table's metadata, created on
+            first use and reused after.
+        """
         if self._database is None:
             import sqlalchemy as sa
             self._database = sa.create_engine("sqlite://")
@@ -78,8 +85,10 @@ class SqlAlchemyEcosystem:
         return self._database
 
     def _insert(self, row: dict[str, Any]) -> list[Problem]:
-        """Insert `row` in a transaction that is always rolled back; an
-        integrity error is the problem."""
+        """Intent:
+            Inserts `row` in a transaction that is always rolled back, returning the problem an
+            integrity or statement error describes, or an empty list when the insert succeeds.
+        """
         import sqlalchemy as sa
         from sqlalchemy.exc import IntegrityError, StatementError
         with self._engine().connect() as conn:

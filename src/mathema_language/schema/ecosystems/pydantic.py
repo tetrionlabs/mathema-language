@@ -13,6 +13,10 @@ from ..model import RowSchema
 
 
 def _path(loc: tuple[Any, ...]) -> str:
+    """Intent:
+        A pydantic error location in the path grammar: `[i]` for an index, `.name` for a field,
+        joined in order (`.items[0].sku`).
+    """
     out = ""
     for part in loc:
         out += f"[{part}]" if isinstance(part, int) else f".{part}"
@@ -40,10 +44,15 @@ class PydanticEcosystem:
         return self.model.model_construct(**values)  # type: ignore[attr-defined]
 
     def _values(self, row: Any) -> dict[str, Any] | None:
-        """The row as the data a caller would hand the model, nested
-        models dumped too, so every level is validated; extras kept, so
-        a column the model forbids is still refused. None when the row
-        is too deep for pydantic to dump."""
+        """Intent:
+            The row as the data a caller would hand the model, nested models dumped too and
+            extra attributes kept, or None when the row is too deep for pydantic to dump.
+
+        Notes:
+            Dumping nested models means every level is validated, and keeping extras means a
+            column the model forbids is still refused. A row that fails to dump falls back to
+            its `__dict__`.
+        """
         try:
             values: dict[str, Any] = dict(row.model_dump(mode="python", warnings=False))
         except RecursionError:

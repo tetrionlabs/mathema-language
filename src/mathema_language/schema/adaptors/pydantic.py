@@ -17,8 +17,10 @@ from ._hints import _construct_of, read_record
 
 
 def _is_model(obj: Any) -> bool:
-    """Whether `obj` is a pydantic model class, decided without
-    importing pydantic: no import means no model can exist."""
+    """Intent:
+        Whether `obj` is a pydantic model class. False whenever pydantic has not already been
+        imported, since no model can exist without it.
+    """
     pydantic = sys.modules.get("pydantic")
     if pydantic is None or not isinstance(obj, type):
         return False

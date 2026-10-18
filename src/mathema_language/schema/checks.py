@@ -22,13 +22,20 @@ from .model import NO_DEFAULT, Constraints, Field, NeutralType, RowSchema
 
 
 def _is_int(value: object) -> bool:
+    """Intent:
+        Whether the value is an int and not a bool.
+    """
     return isinstance(value, int) and not isinstance(value, bool)
 
 
 def _decimal_problems(value: decimal.Decimal, t: NeutralType, path: str) -> list[Problem]:
-    """How a decimal fails `decimal(p, s)`: not finite, more places after
-    the point than `s`, or more than `p - s` digits before it. Without a
-    precision any decimal is a member."""
+    """Intent:
+        How a decimal fails `decimal(p, s)`: not finite, more places after the point than `s`, or
+        more than `p - s` digits before it.
+
+    Notes:
+        Without a precision any decimal is a member.
+    """
     bound = t.decimal_bound()
     if bound is None:
         return []
@@ -47,8 +54,10 @@ def _decimal_problems(value: decimal.Decimal, t: NeutralType, path: str) -> list
 
 def _scalar_problems(value: Any, t: NeutralType, path: str,
                      nan_allowed: bool) -> list[Problem]:
-    """Every way `value` fails a scalar type `t`; containers are the
-    walker's."""
+    """Intent:
+        Every way `value` fails a scalar type `t`, with NaN a float member only when `nan_allowed`.
+        Containers and records are checked by the walker.
+    """
     base = t.base
     if base == "any":
         return []
@@ -107,9 +116,11 @@ def type_problems(value: Any, t: NeutralType, path: str = "",
 
 
 def _record_class(construct: Any) -> type | None:
-    """The class every record of a schema is an instance of, when its
-    records are dataclass instances; None where a record may be any
-    mapping or object with the fields (a TypedDict, a JSON Schema)."""
+    """Intent:
+        The class every record of a schema is an instance of, when its records are dataclass
+        instances; None where a record may be any mapping or object with the fields (a TypedDict, a
+        JSON Schema).
+    """
     if isinstance(construct, type) and dataclasses.is_dataclass(construct):
         return construct
     return None
@@ -149,10 +160,16 @@ class _Walker:
         self.stack.append(("field", value, f, path))
 
     def _leave(self, value_id: int) -> None:
+        """Intent:
+            Take a container off the current path once everything inside it is checked.
+        """
         self.on_path.pop(value_id, None)
 
     def _enter(self, value: Any, path: str) -> bool:
-        """Mark a container on the current path; False for a cycle."""
+        """Intent:
+            Mark a container on the current path and queue its removal. False, with a cycle problem
+            recorded, when it is already on the path.
+        """
         seen = self.on_path.get(id(value))
         if seen is not None:
             self.out.append(Problem(path, f"acyclic: this is the value at {seen or 'the root'}",
@@ -163,10 +180,18 @@ class _Walker:
         return True
 
     def _constraints(self, value: Any, f: Field, path: str, before: int) -> None:
+        """Intent:
+            Add the field's constraint problems for `value`, only when no problem was recorded since
+            `before`, the problem count when its check began.
+        """
         if len(self.out) == before:
             self.out.extend(constraint_problems(value, f.constraints, path))
 
     def _field(self, value: Any, f: Field, path: str) -> None:
+        """Intent:
+            Check a field's value: null against its nullability, else its type and then, when the
+            type holds, its constraints.
+        """
         if value is None:
             if not f.nullable:
                 self.out.append(Problem(path, "not null", value))
@@ -175,6 +200,13 @@ class _Walker:
         self.push_type(value, f.type, path, f.nan_allowed)
 
     def _type(self, value: Any, t: NeutralType, path: str, nan_allowed: bool) -> None:
+        """Intent:
+            Check `value` against type `t`: queue each item of a list or entry of a map, queue a
+            struct or resolved `ref` as a row, and check a scalar directly.
+
+        Notes:
+            A shallow pass stops at every nested record.
+        """
         base = t.base
         if base == "list":
             if not isinstance(value, (list, tuple)):
@@ -226,6 +258,11 @@ class _Walker:
     def _row(self, schema: RowSchema, row: Any, path: str,
              read: Callable[[Any, str], tuple[bool, Any]],
              columns: Callable[[Any], tuple[str, ...] | None]) -> None:
+        """Intent:
+            Check a row against a record schema: that it is a record (of the schema's dataclass,
+            when there is one), then queue each present field, each missing required column and,
+            under the exact policy, the extras check.
+        """
         if (not isinstance(row, (dict, list, tuple, set)) and not hasattr(row, "__dict__")
                 and not hasattr(row, "__slots__")
                 and not any(read(row, f.name)[0] for f in schema.fields)):
@@ -248,10 +285,17 @@ class _Walker:
             self.push_field(value, f, f"{path}.{f.name}")
 
     def _missing(self, path: str) -> None:
+        """Intent:
+            Record a required column absent at `path`.
+        """
         self.out.append(Problem(path, "present", None))
 
     def _extras(self, schema: RowSchema, row: Any, path: str,
                 columns: Callable[[Any], tuple[str, ...] | None]) -> None:
+        """Intent:
+            Record each column the row carries that the schema does not name, when the row's columns
+            can be read.
+        """
         names = columns(row)
         if names is not None:
             for extra in names:
@@ -316,7 +360,9 @@ def field_problems(value: Any, field: Field, path: str = "",
 
 
 def _read(row: Any, name: str) -> tuple[bool, Any]:
-    """`(present, value)` for a column of a mapping or an attribute row."""
+    """Intent:
+        `(present, value)` for a column of a mapping or an attribute row.
+    """
     if isinstance(row, dict):
         return (name in row, row.get(name))
     if hasattr(row, name):
@@ -325,8 +371,10 @@ def _read(row: Any, name: str) -> tuple[bool, Any]:
 
 
 def _columns_of(row: Any) -> tuple[str, ...] | None:
-    """The column names a row carries, or None when they cannot be
-    read (an attribute row's extras are not observable)."""
+    """Intent:
+        The column names a row carries, or None when they cannot be read (an attribute row's extras
+        are not observable).
+    """
     if isinstance(row, dict):
         return tuple(str(k) for k in row)
     return None
@@ -360,6 +408,9 @@ def check_problems(checks: Iterable[Callable[[Any], bool]], value: Any, path: st
 
 
 def _hashable(value: Any) -> Any:
+    """Intent:
+        The value itself when it is hashable, else its `repr`.
+    """
     try:
         hash(value)
         return value

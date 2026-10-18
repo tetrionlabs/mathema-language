@@ -86,6 +86,10 @@ class _Evaluation:
         self.null_compared = False
 
     def _column_of(self, node: ast.AST) -> str | None:
+        """Intent:
+            The column name `node` refers to (`col("x")`, `df.x` or `df["x"]`), or None when it
+            is not a column reference.
+        """
         name = _call_name(node)
         if name in _COL and isinstance(node, ast.Call):
             return _text(node.args[0], self.fn)
@@ -209,7 +213,10 @@ class _Evaluation:
 
 
 def _chain(node: ast.AST) -> tuple[list[tuple[ast.AST, ast.AST]], ast.AST | None, bool]:
-    """`(branches in order, otherwise or None, whether it is a when chain)`."""
+    """Intent:
+        Splits a `when(...).when(...).otherwise(...)` expression into `(branches in order,
+        otherwise or None, whether it is a when chain)`; `([], None, False)` for anything else.
+    """
     branches: list[tuple[ast.AST, ast.AST]] = []
     otherwise = None
     current = node
@@ -231,6 +238,11 @@ def _chain(node: ast.AST) -> tuple[list[tuple[ast.AST, ast.AST]], ast.AST | None
 
 
 def _outcome(evaluation: _Evaluation, expression: ast.AST) -> HoleOutcome:
+    """Intent:
+        What the column expression gives with the evaluation's column a hole: the output, and
+        whether the code handled the hole explicitly, the engine decided it implicitly, or it
+        depends on another column.
+    """
     column, member = evaluation.column, evaluation.member
     branches, otherwise, is_chain = _chain(expression)
     if not is_chain:

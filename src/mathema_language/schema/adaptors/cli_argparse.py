@@ -32,8 +32,10 @@ _SKIPPED = (argparse._HelpAction, argparse._VersionAction)
 
 
 def _builds_a_parser(obj: Any) -> bool:
-    """A function of no arguments whose return annotation names
-    `ArgumentParser`."""
+    """Intent:
+        Whether `obj` is a function callable with no arguments whose return annotation names
+        `ArgumentParser`.
+    """
     if not inspect.isfunction(obj):
         return False
     try:
@@ -49,8 +51,14 @@ def _builds_a_parser(obj: Any) -> bool:
 
 
 def _scalar(action: argparse.Action, converters: dict[str, Any]) -> NeutralType:
-    """The type one value of the action has once argparse has applied
-    `type` to it."""
+    """Intent:
+        The type one value of the action has once argparse has applied `type` to it: categorical
+        over its choices, string, int, float or bool.
+
+    Notes:
+        Any other callable `type` is recorded in `converters` under the action's `dest`, and the
+        value is typed as a string.
+    """
     if action.choices is not None and not isinstance(action, argparse._SubParsersAction):
         return NeutralType("categorical", levels=tuple(action.choices))
     convert = action.type
@@ -64,8 +72,10 @@ def _scalar(action: argparse.Action, converters: dict[str, Any]) -> NeutralType:
 
 
 def _default(action: argparse.Action) -> Any:
-    """The default as the namespace holds it: argparse applies `type` to
-    a default given as text."""
+    """Intent:
+        The action's default as the namespace holds it: a text default converted by the action's
+        `type`, left as text when the conversion fails.
+    """
     default = action.default
     if isinstance(default, str) and callable(action.type) and action.type is not str:
         try:
@@ -76,8 +86,10 @@ def _default(action: argparse.Action) -> Any:
 
 
 def _field(action: argparse.Action, converters: dict[str, Any]) -> Field | None:
-    """The namespace field one action writes, or None for help and
-    version, which end the program instead."""
+    """Intent:
+        The namespace field one action writes, or None for help and version, which end the program
+        instead, and for the subcommand action.
+    """
     if isinstance(action, (*_SKIPPED, argparse._SubParsersAction)):
         return None
     dest = action.dest
@@ -118,8 +130,10 @@ def _field(action: argparse.Action, converters: dict[str, Any]) -> Field | None:
 
 
 def _set_defaults(parser: argparse.ArgumentParser, taken: set[str]) -> list[Field]:
-    """`set_defaults` entries no action writes, each a constant field
-    (`func=handler` is the usual one)."""
+    """Intent:
+        The `set_defaults` entries no action in `taken` writes, each a constant field
+        (`func=handler` is the usual one).
+    """
     out: list[Field] = []
     for name, value in parser._defaults.items():
         if name in taken:
@@ -129,6 +143,10 @@ def _set_defaults(parser: argparse.ArgumentParser, taken: set[str]) -> list[Fiel
 
 
 def _own_fields(parser: argparse.ArgumentParser, converters: dict[str, Any]) -> list[Field]:
+    """Intent:
+        The fields a parser's own actions write, the first action keeping each name, followed by its
+        `set_defaults` constants.
+    """
     fields: dict[str, Field] = {}
     for action in parser._actions:
         f = _field(action, converters)
@@ -138,6 +156,9 @@ def _own_fields(parser: argparse.ArgumentParser, converters: dict[str, Any]) -> 
 
 
 def _subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAction[argparse.ArgumentParser] | None:
+    """Intent:
+        The parser's subcommand action, or None when it has no subcommands.
+    """
     for action in parser._actions:
         if isinstance(action, argparse._SubParsersAction):
             return action
@@ -146,9 +167,11 @@ def _subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAction[a
 
 def _shapes(parser: argparse.ArgumentParser, inherited: list[Field],
             converters: dict[str, Any], path: str) -> list[tuple[str, list[Field]]]:
-    """`(name, fields)` for every namespace shape the parser can return:
-    one per subcommand, recursively, or the parser's own fields when it
-    has none."""
+    """Intent:
+        `(name, fields)` for every namespace shape the parser can return: one per subcommand,
+        recursively, plus one without a subcommand when it is optional, or the parser's own fields
+        when it has none.
+    """
     own = inherited + _own_fields(parser, converters)
     sub = _subparsers(parser)
     if sub is None:
@@ -172,6 +195,10 @@ def _shapes(parser: argparse.ArgumentParser, inherited: list[Field],
 
 
 def _language(parser: argparse.ArgumentParser) -> RowLanguage | UnionLanguage:
+    """Intent:
+        The language of the namespaces a parser returns: one row language with exact columns, or a
+        union with one branch per namespace shape.
+    """
     converters: dict[str, Any] = {}
     shapes = _shapes(parser, [], converters, parser.prog)
     ecosystem = NamespaceEcosystem(converters)

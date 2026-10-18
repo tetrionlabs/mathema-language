@@ -3,7 +3,9 @@
 """A JSON Schema (a dict with `type: object` and `properties`) as a
 row schema: property types, `required`, `additionalProperties`,
 bounds, lengths, `pattern`, `enum` and `const` read into the neutral
-model; members are dicts validated by `jsonschema`. A `$ref` is
+model; members are dicts validated by `jsonschema`. A local `$ref`
+(`#`, `#/$defs/<name>`, `#/definitions/<name>`) reads as a reference to
+that definition, so a schema may refer to itself; any other `$ref` is
 refused at adaptation."""
 from __future__ import annotations
 
@@ -21,6 +23,10 @@ _BASES: dict[str, Base] = {"boolean": "bool", "integer": "int", "number": "float
 
 
 def _looks_like_row_schema(obj: Any) -> bool:
+    """Intent:
+        Whether `obj` is a dict with `type: object` and a `properties` dict, the shape of a JSON
+        Schema read as a row schema.
+    """
     return isinstance(obj, dict) and obj.get("type") == "object" and isinstance(obj.get("properties"), dict)
 
 
@@ -29,8 +35,14 @@ _CONTEXT: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar
 
 
 def _ref_type(ref: str) -> NeutralType:
-    """A local `$ref` (`#`, `#/$defs/<name>`, `#/definitions/<name>`)
-    as a `ref` to a named definition, read the first time it is met."""
+    """Intent:
+        A local `$ref` (`#`, `#/$defs/<name>`, `#/definitions/<name>`) as a `ref` to a named
+        definition, reading that definition into the schema's definitions the first time it is met.
+
+    Raises:
+        ValueError: no schema is being read, the reference names no definition, or it is not a
+            local reference of one of those forms.
+    """
     context = _CONTEXT.get()
     if context is None:
         raise ValueError(f"$ref {ref!r} outside a schema being read")
@@ -56,7 +68,10 @@ def _ref_type(ref: str) -> NeutralType:
 
 
 def _type_of(prop: dict[str, Any]) -> tuple[NeutralType, bool]:
-    """`(type, nullable)` of one property."""
+    """Intent:
+        The `(type, nullable)` of one property, read from its `$ref`, `enum`, `anyOf`/`oneOf`
+        or `type` (with `items`, `properties` or `additionalProperties` for containers).
+    """
     if "$ref" in prop:
         return _ref_type(str(prop["$ref"])), False
     if "enum" in prop and "type" not in prop:
@@ -92,6 +107,10 @@ def _type_of(prop: dict[str, Any]) -> tuple[NeutralType, bool]:
 
 
 def _constraints(prop: dict[str, Any]) -> Constraints:
+    """Intent:
+        The neutral constraints one property spells: bounds, lengths or item counts, `pattern`,
+        `enum` alongside a `type`, `const` and `multipleOf`.
+    """
     return Constraints(min=prop.get("minimum"), max=prop.get("maximum"),
                        exclusive_min=prop.get("exclusiveMinimum"),
                        exclusive_max=prop.get("exclusiveMaximum"),
@@ -103,6 +122,10 @@ def _constraints(prop: dict[str, Any]) -> Constraints:
 
 
 def _fields(schema: dict[str, Any]) -> list[Field]:
+    """Intent:
+        One neutral field per entry in the object schema's `properties`, with its type,
+        nullability, constraints, default, and whether `required` lists it.
+    """
     required = set(schema.get("required", ()))
     out: list[Field] = []
     for name, prop in schema["properties"].items():

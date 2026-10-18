@@ -36,7 +36,12 @@ class Refusal:
 
 def _call(fn: Callable[[Any], Any], value: Any,
           errors: tuple[type[BaseException], ...]) -> BaseException | None:
-    """The refusal `fn` raises at `value`, or None when it returns."""
+    """Intent:
+        The exception among `errors` that `fn` raises at `value`, or None when it returns.
+
+    Notes:
+        Any other exception propagates.
+    """
     try:
         fn(value)
     except errors as e:
@@ -45,6 +50,10 @@ def _call(fn: Callable[[Any], Any], value: Any,
 
 
 def _key(value: Any) -> str:
+    """Intent:
+        A text key for `value`, its type name and repr, so equal values of different types
+        stay distinct.
+    """
     return f"{type(value).__name__}:{value!r}"
 
 
@@ -87,6 +96,10 @@ class NarrowedLanguage:
         self._refused: list[Any] | None = None
 
     def _refusal(self, value: Any) -> BaseException | None:
+        """Intent:
+            The refusal `fn` raises at `value`, or None when it accepts it or crashes with an
+            exception outside `errors`.
+        """
         try:
             return _call(self.fn, value, self.errors)
         except Exception:
@@ -122,6 +135,9 @@ class NarrowedLanguage:
         return tuple(h for h in self.base.hazards() if self._refusal(h.value) is None)
 
     def _refused_members(self) -> list[Any]:
+        """Intent:
+            The base language's hazards that `fn` refuses, computed once and cached.
+        """
         if self._refused is None:
             self._refused = [h.value for h in self.base.hazards()
                              if self._refusal(h.value) is not None]

@@ -45,6 +45,13 @@ _FLAGS = (argparse._StoreTrueAction, argparse._StoreFalseAction, argparse._Store
 
 
 def _parser_of(obj: Any) -> argparse.ArgumentParser:
+    """Intent:
+        The parser `obj` is, or the parser `obj` returns when it is a function called with no
+        arguments.
+
+    Raises:
+        TypeError: `obj` is neither a parser nor a function returning one.
+    """
     if isinstance(obj, argparse.ArgumentParser):
         return obj
     if inspect.isfunction(obj):
@@ -55,6 +62,9 @@ def _parser_of(obj: Any) -> argparse.ArgumentParser:
 
 
 def _subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAction[argparse.ArgumentParser] | None:
+    """Intent:
+        The parser's subcommand action, or None when it has no subcommands.
+    """
     for action in parser._actions:
         if isinstance(action, argparse._SubParsersAction):
             return action
@@ -62,8 +72,10 @@ def _subparsers(parser: argparse.ArgumentParser) -> argparse._SubParsersAction[a
 
 
 def _all_parsers(parser: argparse.ArgumentParser, path: tuple[str, ...] = ()) -> list[tuple[tuple[str, ...], argparse.ArgumentParser]]:
-    """Every parser reachable through subcommands, with the words that
-    reach it."""
+    """Intent:
+        Every parser reachable through subcommands, the given one first, each paired with the
+        subcommand words that reach it. A parser named by several aliases appears once.
+    """
     out = [(path, parser)]
     sub = _subparsers(parser)
     if sub is not None:
@@ -77,8 +89,11 @@ def _all_parsers(parser: argparse.ArgumentParser, path: tuple[str, ...] = ()) ->
 
 
 def _value(rng: random.Random, action: argparse.Action, plain: bool = False) -> str:
-    """One value for the action, as text on the command line; with
-    `plain`, the simplest one (the first choice, `1`, `a`)."""
+    """Intent:
+        One value for the action as command-line text: one of its choices, a number for an int or
+        float type, or text that does not start with a dash. With `plain`, the simplest one (the
+        first choice, `1`, `a`).
+    """
     if action.choices is not None and not isinstance(action, argparse._SubParsersAction):
         return str(next(iter(action.choices))) if plain else str(rng.choice(list(action.choices)))
     if plain:
@@ -92,6 +107,10 @@ def _value(rng: random.Random, action: argparse.Action, plain: bool = False) -> 
 
 
 def _count(nargs: Any, rng: random.Random) -> int:
+    """Intent:
+        How many values to draw for an action with this `nargs`: one when it is None, the number
+        itself when it is an int, a random count in the range `?`, `*` or `+` allows.
+    """
     if nargs is None:
         return 1
     if isinstance(nargs, int):
@@ -100,8 +119,10 @@ def _count(nargs: Any, rng: random.Random) -> int:
 
 
 def _abbreviations(parser: argparse.ArgumentParser, option: str) -> list[str]:
-    """Prefixes of a long option that name it alone, when the parser
-    allows abbreviation."""
+    """Intent:
+        The prefixes of a long option, three characters or longer, that name it alone among the
+        parser's long options; empty when the parser does not allow abbreviation.
+    """
     if not parser.allow_abbrev or not option.startswith("--"):
         return []
     longs = [o for a in parser._actions for o in a.option_strings if o.startswith("--")]
@@ -115,7 +136,11 @@ def _abbreviations(parser: argparse.ArgumentParser, option: str) -> list[str]:
 
 def _option_tokens(rng: random.Random, parser: argparse.ArgumentParser,
                    action: argparse.Action) -> list[str]:
-    """The tokens for one optional action, in a random spelling."""
+    """Intent:
+        The command-line tokens for one optional action in a random spelling: an abbreviation,
+        `--opt=value`, a short option with its value attached, combined count flags, or a repeated
+        append.
+    """
     options = list(action.option_strings)
     option = rng.choice(options)
     if rng.random() < 0.2:
@@ -145,6 +170,11 @@ def _option_tokens(rng: random.Random, parser: argparse.ArgumentParser,
 
 
 def _draw_parser(rng: random.Random, parser: argparse.ArgumentParser) -> list[str]:
+    """Intent:
+        A random command line for one parser's own arguments: required options always and others
+        half the time, in shuffled order, with the positionals after or before them, and `--` before
+        a positional starting with a dash.
+    """
     optionals: list[list[str]] = []
     positionals: list[str] = []
     for action in parser._actions:
@@ -187,23 +217,35 @@ class ParserNote:
 
 
 def _label(action: argparse.Action) -> str:
+    """Intent:
+        The name a note gives an action: its option strings joined with `/`, or its `dest` for a
+        positional.
+    """
     return "/".join(action.option_strings) if action.option_strings else action.dest
 
 
 def _takes_values(action: argparse.Action) -> bool:
+    """Intent:
+        Whether the action reads values from the command line, unlike help, version, a flag, a
+        boolean option, subcommands or `nargs=0`.
+    """
     return not isinstance(action, (*_SKIPPED, *_FLAGS, argparse.BooleanOptionalAction,
                                    argparse._SubParsersAction)) and action.nargs != 0
 
 
 def _converts(action: argparse.Action) -> bool:
-    """The action has a `type` that changes the text it is given."""
+    """Intent:
+        Whether the action has a `type` that changes the text it is given (anything callable other
+        than `str` and `argparse.FileType`).
+    """
     return callable(action.type) and action.type is not str \
         and not isinstance(action.type, argparse.FileType)
 
 
 def _convert(action: argparse.Action, text: str) -> tuple[bool, Any]:
-    """`(True, value)` when the action's type reads `text`, else
-    `(False, the error message)`."""
+    """Intent:
+        `(True, value)` when the action's type reads `text`, else `(False, the error message)`.
+    """
     convert = action.type
     if not callable(convert):
         return False, f"{convert!r} is not callable"
@@ -214,6 +256,10 @@ def _convert(action: argparse.Action, text: str) -> tuple[bool, Any]:
 
 
 def _action_notes(action: argparse.Action) -> list[str]:
+    """Intent:
+        The defects argparse accepts in one action that takes values: `type=bool`, a text default
+        its type refuses, a default outside its choices, and choices its type can never produce.
+    """
     if not _takes_values(action):
         return []
     out = []
@@ -252,8 +298,10 @@ def _action_notes(action: argparse.Action) -> list[str]:
 
 
 def _shared_dests(parser: argparse.ArgumentParser) -> list[ParserNote]:
-    """Options that store a value into the same name outside a mutually
-    exclusive group, where the last one given wins."""
+    """Intent:
+        One note per name that several store actions write outside a mutually exclusive group, where
+        the last one given wins.
+    """
     by_dest: dict[str, list[argparse.Action]] = {}
     for action in parser._actions:
         if type(action) is argparse._StoreAction and action.dest is not argparse.SUPPRESS:
@@ -321,7 +369,10 @@ class ArgvLanguage:
     # ---- membership
 
     def _parse(self, argv: list[str]) -> str | None:
-        """None when the parser accepts `argv`, else its own message."""
+        """Intent:
+            None when the parser accepts `argv` (`--help` and `--version` included), else the
+            parser's own error message, the last line it writes to stderr.
+        """
         out, err = io.StringIO(), io.StringIO()
         try:
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
@@ -354,6 +405,10 @@ class ArgvLanguage:
         return self._simplest()
 
     def _draw(self, rng: random.Random) -> list[str]:
+        """Intent:
+            A random command line: the top parser's arguments, then a random subcommand and its
+            arguments at each level, stopping one time in five where a subcommand is optional.
+        """
         tokens = _draw_parser(rng, self.parser)
         parser = self.parser
         while True:
@@ -365,9 +420,11 @@ class ArgvLanguage:
             tokens = tokens + [name] + _draw_parser(rng, parser)
 
     def _simplest(self, path: tuple[str, ...] | None = None, extra: tuple[str, ...] = ()) -> list[str]:
-        """The shortest command line through the subcommands `path` (the
-        first one at each level when None), with `extra` placed among the
-        last parser's own arguments, before its positionals."""
+        """Intent:
+            The shortest command line through the subcommands `path` (the first at each level when
+            None), with `extra` placed among the last parser's own arguments, before its
+            positionals.
+        """
         rng = random.Random(0)
         tokens: list[str] = []
         parser = self.parser

@@ -39,6 +39,9 @@ def load(text: str) -> Any:
 
 
 def _is_yaml(text: str) -> bool:
+    """Intent:
+        Whether the YAML 1.2 safe loader reads `text` as one document.
+    """
     try:
         _LOADER.load(text)
     except Exception:
@@ -57,8 +60,10 @@ _KEYS = ("name", "on", "version", "mode", "a", "key")
 
 
 def _generate_yaml(rng: random.Random) -> str:
-    """A small document written the way people write YAML: block
-    mappings and lists, unquoted scalars, sometimes a comment."""
+    """Intent:
+        A small document written the way people write YAML: block mappings and lists,
+        unquoted scalars, sometimes a comment.
+    """
     lines: list[str] = []
     keys = rng.sample(_KEYS, rng.randint(1, 4))
     for key in keys:

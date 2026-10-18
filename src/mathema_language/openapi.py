@@ -57,8 +57,14 @@ class Operation:
 
 
 def _resolve(spec: dict[str, Any], node: Any, seen: tuple[str, ...] = ()) -> Any:
-    """`node` with every local `$ref` inlined; a reference met again
-    inside itself is refused."""
+    """Intent:
+        `node` with every local `$ref` inlined, and OpenAPI 3.0's `nullable: true` read as a type
+        that also admits null.
+
+    Raises:
+        ValueError: a reference is not local, refers to itself, or names nothing in the
+        specification.
+    """
     if isinstance(node, list):
         return [_resolve(spec, item, seen) for item in node]
     if not isinstance(node, dict):
@@ -84,6 +90,12 @@ def _resolve(spec: dict[str, Any], node: Any, seen: tuple[str, ...] = ()) -> Any
 
 
 def _find(spec: dict[str, Any], operation_id: str) -> tuple[str, str, dict[str, Any], dict[str, Any]]:
+    """Intent:
+        `(path, method, path item, operation)` for the operation with this id.
+
+    Raises:
+        KeyError: no operation in the specification has that id.
+    """
     for path, item in (spec.get("paths") or {}).items():
         for method in _METHODS:
             op = (item or {}).get(method)

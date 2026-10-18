@@ -44,10 +44,13 @@ def constraints_of(markers: tuple[Any, ...]) -> Constraints:
 
 
 def _decimal_digits(t: NeutralType, markers: tuple[Any, ...]) -> NeutralType:
-    """A decimal's total digits and places (pydantic's `max_digits` and
-    `decimal_places`) as its precision and scale, when both are given;
-    one alone has no neutral spelling and is left to the library's own
-    validation."""
+    """Intent:
+        The decimal type with the markers' total digits and places (pydantic's `max_digits` and
+        `decimal_places`) as its precision and scale, or `t` unchanged when both are not given.
+
+    Notes:
+        One of the two alone has no neutral spelling and is left to the library's own validation.
+    """
     digits = places = None
     for marker in markers:
         if getattr(marker, "max_digits", None) is not None:
@@ -104,7 +107,10 @@ def record_name(cls: Any) -> str:
 
 
 def _construct_of(cls: Any) -> Any:
-    """How a struct of this record type is built from its field values."""
+    """Intent:
+        The callable that builds an instance of this record type from its field values: the
+        dataclass itself, a pydantic model's `model_construct`, or None for any other type.
+    """
     if isinstance(cls, type) and dataclasses.is_dataclass(cls):
         return cls
     if isinstance(cls, type) and isinstance(getattr(cls, "model_fields", None), dict):
@@ -113,6 +119,9 @@ def _construct_of(cls: Any) -> Any:
 
 
 def _record_fields(cls: Any) -> list[Field] | None:
+    """Intent:
+        The fields of a dataclass, TypedDict or pydantic model, or None for any other type.
+    """
     if isinstance(cls, type) and dataclasses.is_dataclass(cls):
         return dataclass_fields(cls)
     if typing.is_typeddict(cls):
@@ -148,6 +157,10 @@ def read_record(cls: Any) -> tuple[list[Field], tuple[tuple[str, RowSchema], ...
 
 
 def _record_type(hint: Any) -> NeutralType:
+    """Intent:
+        The neutral type of a record type hint: a `ref` to it when it is already being read
+        (a schema that refers to itself), otherwise a `struct` of its fields.
+    """
     reading = _READING.get()
     if reading is not None and hint in reading:
         return NeutralType("ref", ref=reading[hint], construct=_construct_of(hint))

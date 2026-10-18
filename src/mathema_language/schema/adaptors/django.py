@@ -25,8 +25,10 @@ _UUID = r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 
 
 def _is_model(obj: Any) -> bool:
-    """Whether `obj` is a concrete Django model class, decided
-    without importing Django."""
+    """Intent:
+        Whether `obj` is a concrete (non-abstract) Django model class. False whenever
+        `django.db.models` has not already been imported.
+    """
     models = sys.modules.get("django.db.models")
     if models is None or not isinstance(obj, type):
         return False
@@ -34,6 +36,10 @@ def _is_model(obj: Any) -> bool:
 
 
 def _validator_constraints(validators: Any) -> dict[str, Any]:
+    """Intent:
+        The neutral constraints Django's value, length and regex validators spell, read from
+        each validator's `code`, `limit_value` and `regex`.
+    """
     out: dict[str, Any] = {}
     for v in validators:
         code = getattr(v, "code", "")
@@ -53,6 +59,14 @@ def _validator_constraints(validators: Any) -> dict[str, Any]:
 
 
 def _field_of(f: Any) -> Field:
+    """Intent:
+        One neutral field from a Django model field: its type from the internal field type, with
+        `null`, `blank`, `unique`, `choices`, `max_length` and validators read into the field.
+
+    Notes:
+        A foreign key becomes a 64-bit int column under its `attname` (`<name>_id`). An auto field
+        is nullable and not required. A non-blank string field gets a minimum length of 1.
+    """
     kind = f.get_internal_type()
     constraints: dict[str, Any] = {}
     auto = kind in ("AutoField", "BigAutoField", "SmallAutoField")
@@ -106,7 +120,9 @@ def _field_of(f: Any) -> Field:
 
 
 def _row_schema_of(model: type) -> RowSchema:
-    """The record schema of a Django model."""
+    """Intent:
+        The record schema of a Django model, one field per concrete field in `_meta.fields`.
+    """
     fields = [_field_of(f) for f in model._meta.fields]  # type: ignore[attr-defined]
     return RowSchema(model.__name__, tuple(fields))
 

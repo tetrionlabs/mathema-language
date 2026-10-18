@@ -49,7 +49,9 @@ def load(text: str) -> dict[str, Any]:
 
 
 def _is_toml(text: str) -> bool:
-    """Whether the installed reader reads `text`."""
+    """Intent:
+        Whether the installed TOML reader reads `text`.
+    """
     try:
         tomllib.loads(text)
     except tomllib.TOMLDecodeError:
@@ -70,9 +72,10 @@ _KEYS = ("name", "version", "port", "debug", "owner", "a", '"a.b"', "server.host
 
 
 def _generate_toml(rng: random.Random) -> str:
-    """A small document written the way people write config files: keys
-    at the top, then a table or an array of tables, sometimes a
-    comment."""
+    """Intent:
+        A small document written the way people write config files: keys at the top, then a
+        table or an array of tables, sometimes a comment.
+    """
     lines: list[str] = []
     for key in rng.sample(_KEYS, rng.randint(1, 3)):
         comment = "  # set by ops" if rng.random() < 0.15 else ""

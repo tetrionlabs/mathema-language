@@ -64,6 +64,13 @@ _HAZARDS = (
 
 
 def _normal_root(root: str) -> str:
+    """Intent:
+        The normalised form of `root`, an absolute POSIX path with no `..` segment.
+
+    Raises:
+        ValueError: `root` is not a string, is not absolute, holds a NUL, or names a `..`
+            segment.
+    """
     if not isinstance(root, str) or not root.startswith("/") or "\x00" in root:
         raise ValueError(f"a root is an absolute path, not {root!r}")
     if ".." in root.split("/"):
@@ -108,6 +115,10 @@ _POOL = "abc.xyz/-_ 0é"
 
 
 def _generate(pattern: str) -> Any:
+    """Intent:
+        A generator of random paths matching `pattern` in full: one to four short segments,
+        sometimes absolute, falling back to `a` after forty misses.
+    """
     def draw(rng: random.Random) -> str:
         for _ in range(40):
             depth = rng.randint(1, 4)

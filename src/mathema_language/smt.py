@@ -100,6 +100,12 @@ class _InclusionResult:
 
 
 def _z3() -> Any:
+    """Intent:
+        Returns the imported `z3` module.
+
+    Raises:
+        ImportError: z3 is not installed (the optional `[smt]` extra).
+    """
     try:
         import z3
     except ImportError as e:
@@ -171,15 +177,28 @@ class MembershipEncoding:
         raise Untranslated(f"the value {value!r}")
 
     def _real(self, value: Any) -> Any:
+        """Intent:
+            Returns a finite Python number as an exact z3 real, its numerator over its denominator.
+        """
         q = Fraction(value)
         return self.z3.RealVal(f"{q.numerator}/{q.denominator}")
 
     def _number(self, x: Any, V: Any) -> tuple[Any, Any]:
-        """`(is a finite number, its real value)`."""
+        """Intent:
+            Returns `(is a finite number, its real value)` for the z3 value `x` of datatype `V`,
+            an int read as a real.
+        """
         return (self.z3.Or(V.is_i(x), V.is_r(x)),
                 self.z3.If(V.is_i(x), self.z3.ToReal(V.iv(x)), V.rv(x)))
 
     def _bounds(self, f: Field, real: Any) -> list[Any]:
+        """Intent:
+            Returns one z3 condition on `real` per numeric bound (inclusive or exclusive minimum
+            and maximum) field `f` states.
+
+        Raises:
+            Untranslated: a bound is a bool or not a number.
+        """
         c, out = f.constraints, []
         for bound, op in ((c.min, ">="), (c.max, "<="), (c.exclusive_min, ">"), (c.exclusive_max, "<")):
             if bound is None:
@@ -191,8 +210,10 @@ class MembershipEncoding:
         return out
 
     def _regex(self, pattern: str, side: str) -> Any:
-        """`pattern` as a z3 regular expression: a full match on the
-        newer side, a search (anything around it) on the older side."""
+        """Intent:
+            Returns `pattern` as a z3 regular expression: a full match on the newer side, a search
+            (anything around it, honouring its anchors) on the older side.
+        """
         z3 = self.z3
         regex = _Regex(z3, widen=side == "older")
         body = regex.translate(pattern)
@@ -393,6 +414,10 @@ class _Regex:
         return self._seq(items, pattern)
 
     def _seq(self, items: Any, pattern: str) -> Any:
+        """Intent:
+            Returns a parsed sequence of regex items as the z3 concatenation of their translations,
+            the empty string when there are none.
+        """
         z3 = self.z3
         parts = [self._item(op, arg, pattern) for op, arg in items]
         parts = [p for p in parts if p is not None]
@@ -401,6 +426,13 @@ class _Regex:
         return parts[0] if len(parts) == 1 else z3.Concat(*parts)
 
     def _item(self, op: Any, arg: Any, pattern: str) -> Any:
+        """Intent:
+            Returns one parsed regex item (a literal, `.`, a class, a repeat, a group, an
+            alternation or a category) as a z3 regular expression.
+
+        Raises:
+            Untranslated: the item is any other construct.
+        """
         z3, name = self.z3, str(op)
         if name == "LITERAL":
             return z3.Re(z3.StringVal(self._char(arg, pattern)))
@@ -425,14 +457,28 @@ class _Regex:
         raise Untranslated(f"the pattern {pattern!r} ({name.lower()})")
 
     def _char(self, code: int, pattern: str) -> str:
+        """Intent:
+            Returns the character with code point `code`.
+
+        Raises:
+            Untranslated: the code point is past the last character z3's strings hold.
+        """
         if code > _Z3_MAX_CHAR:
             raise Untranslated(f"the pattern {pattern!r}, past the characters z3 holds")
         return chr(code)
 
     def _category(self, name: str, pattern: str) -> Any:
-        """`\\d` or `\\w`. Python reads them over all of Unicode; the ASCII
-        ranges admit less, which is what the newer side needs, and the
-        older side widens them to any character."""
+        """Intent:
+            Returns `\\d` or `\\w` as a z3 regular expression: their ASCII ranges, or any
+            character when widening for the older side.
+
+        Raises:
+            Untranslated: the category is neither `\\d` nor `\\w`.
+
+        Notes:
+            Python reads both over all of Unicode, so the ASCII ranges admit less than Python
+            does and any character admits more.
+        """
         z3 = self.z3
         if self.widen and name in ("CATEGORY_DIGIT", "CATEGORY_WORD"):
             return z3.AllChar(self.R)
@@ -444,6 +490,13 @@ class _Regex:
             else z3.Range(*ranges[name][0])
 
     def _class(self, items: Any, pattern: str) -> Any:
+        """Intent:
+            Returns a character class (`[...]`, possibly negated) as a z3 regular expression, the
+            union of its literals, ranges and categories.
+
+        Raises:
+            Untranslated: the class holds any other construct.
+        """
         z3 = self.z3
         negate = False
         parts = []
@@ -474,14 +527,17 @@ def sre_maxrepeat() -> int:
 
 
 def _branches(language: Any) -> list[Any]:
-    """The record languages a language is the union of: its shapes, or
-    itself."""
+    """Intent:
+        Returns the record languages a language is the union of: its shapes, or itself.
+    """
     return list(getattr(language, "branches", None) or [language])
 
 
 def _fields(language: Any) -> dict[str, Field]:
-    """Every field of a language's shapes, by name, the first shape
-    naming it deciding."""
+    """Intent:
+        Returns every top-level field of a language's shapes by name, the first shape naming a
+        field deciding which one.
+    """
     out: dict[str, Field] = {}
     for branch in _branches(language):
         for f in branch.schema.fields:
@@ -490,8 +546,10 @@ def _fields(language: Any) -> dict[str, Field]:
 
 
 def _names(language: Any) -> list[str]:
-    """Every field name of a language, a nested record's fields by their
-    dotted name after the record's own."""
+    """Intent:
+        Returns every field name of a language once, a nested record's fields by their dotted
+        name after the record's own.
+    """
     out: list[str] = []
 
     def walk(fields: Any, prefix: str) -> None:
@@ -506,7 +564,9 @@ def _names(language: Any) -> list[str]:
 
 
 def _field_at(language: Any, name: str) -> Field | None:
-    """The field a dotted name names, or None."""
+    """Intent:
+        Returns the field a dotted name names in any of the language's shapes, or None.
+    """
     fields: Any = [f for b in _branches(language) for f in b.schema.fields]
     found = None
     for part in name.split("."):
@@ -518,8 +578,10 @@ def _field_at(language: Any, name: str) -> Field | None:
 
 
 def _nest(language: Any, values: dict[str, Any]) -> dict[str, Any]:
-    """Values by dotted name as the nested record they describe: a record
-    that is there holds its fields, one that is null is None."""
+    """Intent:
+        Returns values keyed by dotted name as the nested record they describe: a record that is
+        there holds its fields, one that is null is None.
+    """
     out: dict[str, Any] = {}
     for name in sorted(values, key=lambda n: n.count(".")):
         f = _field_at(language, name)
@@ -575,8 +637,10 @@ _PYDANTIC_SETTINGS = {"pattern", "max_digits", "decimal_places", "allow_inf_nan"
 
 
 def _unread_pydantic(model: Any, schema: RowSchema) -> str | None:
-    """The first piece of pydantic field metadata the neutral model does
-    not carry, named, or None."""
+    """Intent:
+        Names the first piece of a pydantic model's field metadata the neutral model does not
+        carry, or returns None.
+    """
     fields = {f.name: f for f in schema.fields}
     for name, info in getattr(model, "model_fields", {}).items():
         for marker in getattr(info, "metadata", ()) or ():
@@ -596,15 +660,22 @@ def _unread_pydantic(model: Any, schema: RowSchema) -> str | None:
 
 
 def _nullable_pair(options: Any) -> bool:
-    """`anyOf` or `oneOf` of one type and `null`, the one shape of either
-    the adaptor reads (as a nullable field)."""
+    """Intent:
+        Whether an `anyOf` or `oneOf` list is one type and `null`, the one shape of either the
+        adaptor reads (as a nullable field).
+    """
     return isinstance(options, list) and len(options) == 2 \
         and sum(1 for o in options if isinstance(o, dict) and o.get("type") == "null") == 1
 
 
 def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
-    """The keywords of a JSON Schema the neutral model does not carry;
-    `additionalProperties` is carried at the top only."""
+    """Intent:
+        Returns the keywords of a JSON Schema, and of its properties, that the validator enforces
+        and the neutral model does not carry.
+
+    Notes:
+        `additionalProperties` is carried at the top only, so `nested` marks a property's schema.
+    """
     out: set[str] = set()
     if not isinstance(schema, dict):
         return out
@@ -621,7 +692,10 @@ def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
 
 
 def _value(enc: MembershipEncoding, model: Any, x: Any, f: Field | None) -> tuple[bool, Any]:
-    """`(present, value)` for one field of z3's model."""
+    """Intent:
+        Returns `(present, value)` for the z3 variable `x` of one field in z3's model, a list as
+        the Python list of its items.
+    """
     z3, V = enc.z3, enc.V
     v = model.eval(x, model_completion=True)
     if z3.is_true(model.eval(V.is_absent(v))):
@@ -636,7 +710,10 @@ def _value(enc: MembershipEncoding, model: Any, x: Any, f: Field | None) -> tupl
 
 
 def _scalar(enc: MembershipEncoding, model: Any, v: Any, D: Any, f: Field | None) -> Any:
-    """The Python value of one z3 scalar, of the field's own type."""
+    """Intent:
+        Returns the Python value of one z3 scalar in the model, a number as the field's own type
+        (float or decimal) and text with z3's escapes undone.
+    """
     z3 = enc.z3
     if z3.is_true(model.eval(D.is_null(v))):
         return None
@@ -663,9 +740,13 @@ def _scalar(enc: MembershipEncoding, model: Any, v: Any, D: Any, f: Field | None
 
 
 def _admits(language: Any, values: dict[str, Any]) -> bool:
-    """Whether the record built from `values` is a member, the language's
-    own validation deciding; a record its class refuses to build is not.
-    A language of several shapes admits it when one of them does."""
+    """Intent:
+        Whether the record built from `values` is a member, the language's own validation
+        deciding; a record its class refuses to build is not.
+
+    Notes:
+        A language of several shapes admits the record when one of them does.
+    """
     if getattr(language, "branches", None):
         return any(_admits(branch, values) for branch in language.branches)
     names = {f.name for f in language.schema.fields}
@@ -681,9 +762,11 @@ def _admits(language: Any, values: dict[str, Any]) -> bool:
 
 
 def _float_line(older: Any, newer: Any, base: dict[str, Any] | None) -> tuple[list[str], dict[str, Any] | None]:
-    """Each float bound's neighbouring doubles run through both
-    validations, on a member of `older`; the first one `older` admits and
-    `newer` refuses, if any."""
+    """Intent:
+        Runs each float bound and its neighbouring doubles through both validations on the member
+        `base` of `older`, returning the points tried and the first record `older` admits and
+        `newer` refuses, if any.
+    """
     tried: list[str] = []
     if base is None:
         return tried, None
@@ -705,11 +788,15 @@ def _float_line(older: Any, newer: Any, base: dict[str, Any] | None) -> tuple[li
 
 
 def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _InclusionResult:
-    """Whether `newer` admits every record `older` admits, read field by
-    field: `proven`, `falsified` with a record `older` admits and `newer`
-    refuses (built and confirmed by both validations), or `unknown` with
-    the reason. `older` and `newer` are record languages, or anything
-    `L[...]` resolves (a model class, a JSON Schema dict)."""
+    """Intent:
+        Decides whether `newer` admits every record `older` admits: `proven`, `falsified` with a
+        record both validations confirm `older` admits and `newer` refuses, or `unknown`.
+
+    Notes:
+        `older` and `newer` are record languages, or anything `L[...]` resolves (a model class,
+        a JSON Schema dict). A proof is followed by a run at each float bound's neighbouring
+        doubles, which can still falsify it.
+    """
     z3 = _z3()
     from .schema.adaptors import adapt_row
     older, newer = (x if hasattr(x, "ecosystem") or getattr(x, "branches", None) else adapt_row(x)
@@ -763,9 +850,10 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
 
 def _field_in(language: Any, name: str, text_language: Any, *,
               timeout_ms: int = 5000) -> _InclusionResult:
-    """Whether every member of `language` has field `name` in
-    `text_language` (when the field holds text): the harness the tests
-    hold the text encoding to."""
+    """Intent:
+        Decides whether every member of `language` whose field `name` holds text has that text in
+        `text_language`: `proven`, `falsified` with a confirmed record, or `unknown`.
+    """
     z3 = _z3()
     why = untranslated(language)
     if why:
@@ -801,8 +889,10 @@ def _field_in(language: Any, name: str, text_language: Any, *,
 
 
 def _received(language: Any, values: dict[str, Any], name: str) -> Any:
-    """Field `name` of the record a member's shape builds from `values`,
-    as a program receives it, a path as its text."""
+    """Intent:
+        Returns field `name` of the record the first admitting shape builds from `values`, as a
+        program receives it (a path as its text), or None when no shape admits it.
+    """
     for branch in _branches(language):
         try:
             row = branch.ecosystem.build_row(branch.schema, _nest(branch, values))
@@ -818,6 +908,10 @@ def _received(language: Any, values: dict[str, Any], name: str) -> Any:
 
 
 def _a_member(language: Any) -> dict[str, Any] | None:
+    """Intent:
+        Returns the top-level field values of one member the language samples with a fixed seed,
+        or None when it cannot sample one.
+    """
     import random
     try:
         row = language.sample(random.Random(0))
