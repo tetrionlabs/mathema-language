@@ -28,6 +28,10 @@ _SIMPLE = ("a", "0", "x", "A", " ")
 
 
 def _range(interval: Any) -> tuple[int, int | None]:
+    """Intent:
+        The integer bounds an interval admits, (first, last), with last None when the
+        interval is unbounded above; an open end moves the bound inward by one.
+    """
     lo, hi = interval[0], interval[1]
     first = int(lo) if getattr(interval, "closed_lo", True) else int(lo) + 1
     if hi == float("inf"):
@@ -68,8 +72,9 @@ def length(language: Any, interval: Any) -> Any:
 
 
 def _changes_length(s: str) -> bool:
-    """Whether case mapping or a Unicode normal form changes the length
-    of `s`."""
+    """Intent:
+        Whether case mapping or a Unicode normal form changes the length of `s`.
+    """
     import unicodedata
     forms = (s.upper(), s.lower(), s.casefold(),
              *(unicodedata.normalize(f, s) for f in ("NFC", "NFD", "NFKC", "NFKD")))
@@ -109,6 +114,9 @@ _STRUCTURE_KEYS = {"depth": 0, "nodes": 1, "width": 2}
 
 
 def _denotes_json(language: Any) -> bool:
+    """Intent:
+        Whether the language beneath any refinements of `language` is `L[json]`.
+    """
     base = language
     while hasattr(base, "base"):
         base = base.base
@@ -116,7 +124,15 @@ def _denotes_json(language: Any) -> bool:
 
 
 def _structure_measure(language: Any, key: str) -> Any:
-    """The measure `key` takes of a member of `language`."""
+    """Intent:
+        The function that takes the `key` measure (depth, nodes or width) of a member of
+        `language`: off the text for `L[json]`, in records for a row language, else in
+        containers and values.
+
+    Raises:
+        ValueError: `language` is a language of plain text, which has no structure to
+            measure.
+    """
     from .text.json_structure import scan
     from .vocabulary.tree import _walk
 
@@ -136,7 +152,10 @@ def _structure_measure(language: Any, key: str) -> Any:
 
 
 def _row_base(language: Any) -> Any:
-    """The row language beneath any refinements, or None."""
+    """Intent:
+        The row language beneath any refinements of `language`, or None when it is not a row
+        language with a schema.
+    """
     base = language
     while hasattr(base, "base"):
         base = base.base
@@ -144,6 +163,14 @@ def _row_base(language: Any) -> Any:
 
 
 def _json_plain(key: str, n: int) -> str | None:
+    """Intent:
+        The simplest JSON document whose `key` measure is exactly `n`, or None when no
+        document has it.
+
+    Notes:
+        Depth n is n nested empty arrays (`0` at depth 0); nodes and width use one flat
+        array of zeros.
+    """
     if n < 0:
         return None
     if key == "depth":
@@ -154,7 +181,10 @@ def _json_plain(key: str, n: int) -> str | None:
 
 
 def _json_build(key: str, rng: random.Random, n: int) -> str | None:
-    """A random JSON document whose `key` measure is exactly `n`."""
+    """Intent:
+        A random JSON document whose `key` measure (depth, nodes or width) is `n`; None only
+        for a node count below one, which no document has.
+    """
     import json
 
     def scalar() -> Any:
@@ -192,9 +222,11 @@ def _json_build(key: str, rng: random.Random, n: int) -> str | None:
 
 
 def _row_member(language: Any, key: str, n: int) -> Any:
-    """A member of a recursive row language whose `key` measure is
-    exactly `n`, from its one-chain spines and its single wide node, or
-    None when neither shape has that measure."""
+    """Intent:
+        A member of a recursive row language whose `key` measure is exactly `n`, from its
+        one-chain spines and its single wide node, or None when neither shape has that
+        measure.
+    """
     base = _row_base(language)
     if n < 0 or base is None or not hasattr(base, "_spine"):
         return None
@@ -216,9 +248,11 @@ def _row_member(language: Any, key: str, n: int) -> Any:
 
 
 def _json_object(key: str, n: int) -> str | None:
-    """A JSON document made of objects whose `key` measure is exactly
-    `n`: nested one key deep for `depth`, and one flat object for
-    `nodes` (itself and its values) and `width` (its keys)."""
+    """Intent:
+        A JSON document made of objects whose `key` measure is exactly `n`, or None when
+        none has it: nested one key deep for depth, one flat object for nodes (itself and
+        its values) and width (its keys).
+    """
     import json
 
     if key == "depth":

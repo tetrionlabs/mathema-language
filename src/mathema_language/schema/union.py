@@ -35,6 +35,9 @@ class UnionLanguage:
         return f"UnionLanguage({self.name!r}, {len(self.branches)} branches)"
 
     def _branch(self, value: Any) -> RowLanguage | None:
+        """Intent:
+            Returns the branch `pick` assigns a value to, or None when it belongs to none.
+        """
         index = self.pick(value)
         return self.branches[index] if index is not None else None
 

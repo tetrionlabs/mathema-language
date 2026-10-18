@@ -53,7 +53,10 @@ _FRAMES_PER_LEVEL = 2
 
 
 def _deepest_provable() -> int:
-    """The largest record depth whose recursion stays under the limit."""
+    """Intent:
+        The largest record depth whose fold recursion stays under the interpreter's recursion
+        limit, allowing a fixed frame margin. Always at least 1.
+    """
     return max(1, (sys.getrecursionlimit() - _MARGIN) // _FRAMES_PER_LEVEL - 2)
 
 
@@ -70,6 +73,12 @@ class _Fold:
 
 
 def _function_ast(fn: Any) -> ast.FunctionDef:
+    """Intent:
+        Parses the source of `fn` and returns its first top-level function definition.
+
+    Raises:
+        _NotAFold: the source is unavailable, or it holds no plain function definition.
+    """
     try:
         source = textwrap.dedent(inspect.getsource(fn))
     except (OSError, TypeError) as e:
@@ -117,6 +126,14 @@ class _Reader:
         return placeholder
 
     def _aggregate(self, call: ast.Call, param: str, defaults: dict[str, Any]) -> Any:
+        """Intent:
+            Reads a `sum`/`max`/`min` over one fold applied to each child into a single aggregate
+            symbol, reading the inner fold and recording a `max`/`min` default in `defaults`.
+
+        Raises:
+            _NotAFold: the call is not an unfiltered aggregate of one function over the children,
+                or a `max`/`min` has no default.
+        """
         kind = call.func.id if isinstance(call.func, ast.Name) else None
         if kind not in _AGGREGATES or not call.args or not isinstance(call.args[0], ast.GeneratorExp):
             raise _NotAFold(f"{ast.unparse(call)!r} is not an aggregate over the children")
@@ -148,6 +165,13 @@ class _Reader:
         return self.aggregates[key]
 
     def _expr(self, node: ast.AST, param: str, defaults: dict[str, Any]) -> Any:
+        """Intent:
+            Translates a fold body expression into sympy: numeric constants, `+`, `-`, `*`,
+            negation, numeric fields of `param`, `len` of the children as `k`, and aggregates.
+
+        Raises:
+            _NotAFold: the expression uses anything else.
+        """
         if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) \
                 and not isinstance(node.value, bool):
             return sympy.nsimplify(node.value)
@@ -170,8 +194,10 @@ class _Reader:
         raise _NotAFold(f"{ast.unparse(node)!r} is not arithmetic over fields and children")
 
     def _canonical(self, name: str) -> str:
-        """The function's own name when the claim binds it under another
-        (`f` for `size`), so a fold and its recursive calls read as one."""
+        """Intent:
+            The function's own `__name__` when the claim binds it under another name (`f` for
+            `size`), so a fold and its recursive calls read as one; otherwise `name` unchanged.
+        """
         fn = self.functions.get(name)
         own = getattr(fn, "__name__", None)
         if own and own != name and getattr(fn, "__globals__", {}).get(own) is fn \
@@ -186,6 +212,13 @@ class _Reader:
         return self._side(node, param)
 
     def _side(self, node: ast.AST, param: str) -> Any:
+        """Intent:
+            Translates a claim side into sympy, each call of a fold on `param` becoming a symbol
+            `F_<name>`, combined by numeric constants, `+`, `-`, `*` and negation.
+
+        Raises:
+            _NotAFold: the side uses anything else.
+        """
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and len(node.args) == 1 \
                 and isinstance(node.args[0], ast.Name) and node.args[0].id == param:
             name = self._canonical(node.func.id)
@@ -204,8 +237,10 @@ class _Reader:
 
 
 def _field_symbols(language: Any) -> tuple[dict[str, Any], dict[Any, Any]]:
-    """A symbol per numeric field, and each written as its lower bound
-    plus a nonnegative amount where it has one."""
+    """Intent:
+        Returns a symbol per numeric field of the record, and a substitution writing each field
+        that has a finite lower bound as that bound plus a nonnegative amount.
+    """
     symbols: dict[str, Any] = {}
     shifts: dict[Any, Any] = {}
     for name, bound in (language.fields() or {}).items():
@@ -228,8 +263,10 @@ def _field_symbols(language: Any) -> tuple[dict[str, Any], dict[Any, Any]]:
 
 
 def _holds(expr: Any, relation: str) -> bool:
-    """Whether `expr REL 0` holds for every nonnegative value of its
-    free symbols, as sympy can settle it."""
+    """Intent:
+        Whether `expr REL 0` holds for every value of its free symbols under their assumptions,
+        as sympy can settle it. An unsettled or unknown relation gives False.
+    """
     expr = sympy.expand(expr)
     if relation == "==":
         return bool(sympy.simplify(expr) == 0)
@@ -284,8 +321,14 @@ def prove(language: Any, param: str, lhs: str, relation: str, rhs: str,
 
 
 def _induct(reader: _Reader, claim: Any, relation: str, shifts: dict[Any, Any]) -> str | None:
-    """None when the base case and the step both prove, else the reason
-    one does not."""
+    """Intent:
+        Proves the claim at a node by induction over the children: None when the base case and
+        the step both hold, otherwise a sentence giving why the induction does not go through.
+
+    Notes:
+        Reads one fold against a constant, or two folds related affinely, with the aggregate
+        restrictions described in the module docstring.
+    """
     folds = sorted((s for s in claim.free_symbols if s.name.startswith("F_")), key=lambda s: s.name)
     if not folds:
         return "the claim applies no fold to the value"

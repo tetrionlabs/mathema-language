@@ -31,9 +31,16 @@ class DjangoEcosystem:
         return _row_schema_of(obj)
 
     def _attnames(self) -> tuple[str, ...]:
+        """Intent:
+            The attribute name of each concrete field of the model, a foreign key under its
+            `<name>_id` column.
+        """
         return tuple(f.attname for f in self.model._meta.fields)  # type: ignore[attr-defined]
 
     def _relation_names(self) -> list[str]:
+        """Intent:
+            The names of the model's relation fields, which `full_clean` is told to exclude.
+        """
         return [f.name for f in self.model._meta.fields if f.is_relation]  # type: ignore[attr-defined]
 
     def build_row(self, schema: RowSchema, values: dict[str, Any]) -> Any:

@@ -43,8 +43,10 @@ _LONG = 65536
 
 
 def _languages(domain: dict[str, Any], target: str) -> tuple[str, list[Any]]:
-    """`(names, languages)` the target is declared over, or the unicode
-    language when the claim declares none."""
+    """Intent:
+        Returns `(names, languages)`: the languages the target is declared over in the claim's
+        domain, or the unicode language when the claim declares none.
+    """
     bound = domain.get(target)
     if bound is None or getattr(bound, "base_type", None) != "L":
         return "unicode", [UNICODE]
@@ -53,12 +55,17 @@ def _languages(domain: dict[str, Any], target: str) -> tuple[str, list[Any]]:
 
 
 def _contains(languages: list[Any], value: object) -> bool:
+    """Intent:
+        Whether `value` is a member of at least one of `languages`.
+    """
     return any(language.contains(value) for language in languages)
 
 
 def _key(value: object) -> object:
-    """A hashable stand-in for deduplication: the value itself, or
-    its repr when it does not hash (a record, a table)."""
+    """Intent:
+        A hashable stand-in for deduplication: the value itself, or its repr when it does not
+        hash (a record, a table).
+    """
     try:
         hash(value)
         return value
@@ -67,8 +74,10 @@ def _key(value: object) -> object:
 
 
 def _hazard_values(languages: list[Any], kinds: tuple[str, ...] | None = None) -> list[Any]:
-    """The hazard members of `languages`, of `kinds` or of every kind,
-    each once, in corpus order."""
+    """Intent:
+        The hazard members of `languages`, restricted to `kinds` or of every kind when `kinds`
+        is None, each listed once in corpus order.
+    """
     out: list[Any] = []
     seen: set[object] = set()
     for language in languages:
@@ -81,8 +90,10 @@ def _hazard_values(languages: list[Any], kinds: tuple[str, ...] | None = None) -
 
 
 def _raised_by_the_body(tree: ast.AST | None) -> frozenset[str]:
-    """The exception type names the body raises on purpose, which are
-    then rejections rather than crashes when they arrive."""
+    """Intent:
+        The exception type names the parsed body raises explicitly. An exception of one of
+        these types counts as a deliberate rejection rather than a crash.
+    """
     if tree is None:
         return frozenset()
     names: set[str] = set()
@@ -95,7 +106,10 @@ def _raised_by_the_body(tree: ast.AST | None) -> frozenset[str]:
 
 
 def _codecs_named(tree: ast.AST | None) -> list[str]:
-    """The codec names the body encodes or decodes with, as written."""
+    """Intent:
+        The codec names passed as string literals to `.encode()` or `.decode()` calls in the
+        parsed body, as written.
+    """
     if tree is None:
         return []
     out: list[str] = []
@@ -120,19 +134,25 @@ _CODEC_BOUNDARIES: dict[str, str] = {
 def _decline(fn: Any, facts: Any, lhs_src: str, rhs_src: str, relation: str,
              domain: dict[str, Any] | None = None,
              tolerance: float | None = None) -> None:
-    """The structural half of both members: nothing about a crash on a
-    hazard input is established symbolically, so the trials decide."""
+    """Intent:
+        The derive half of both hazard families. It always returns None, leaving the verdict to
+        the probe trials, since nothing about a crash on a hazard input is derived symbolically.
+    """
     return None
 
 
 def _string_params(fn: Any, facts: Any) -> set[str]:
-    """The suggestion gate: every parameter the body treats as text."""
+    """Intent:
+        The parameters the body treats as text, which are the targets these families suggest.
+    """
     return {p for p in facts.params if facts.param_kinds.get(p) == "string"}
 
 
 def _describe(value: str) -> str:
-    """A member for a witness: its repr and, for a single character,
-    its Unicode name and category."""
+    """Intent:
+        Renders a member for a witness message: its repr, plus the Unicode name and category
+        for a single character, or a truncated repr and length for a string over 40 characters.
+    """
     if len(value) == 1:
         name = unicodedata.name(value, "unnamed")
         return f"{value!r} ({name}, category {unicodedata.category(value)})"
@@ -142,16 +162,23 @@ def _describe(value: str) -> str:
 
 
 def _article(word: str) -> str:
-    """`word` with the indefinite article its first letter takes."""
+    """Intent:
+        Returns `word` prefixed with "a" or "an", chosen by whether its first letter is a vowel.
+    """
     return f"{'an' if word[:1].lower() in 'aeiou' else 'a'} {word}"
 
 
 def _probe_over(kinds: tuple[str, ...], extra: Callable[..., list[str]],
                 crashes: tuple[type[BaseException], ...],
                 what: str) -> Callable[..., Any]:
-    """Build a probe half feeding the target the language's hazards of
-    `kinds` plus `extra(languages, facts)` members, counting `crashes`
-    the body does not raise itself as falsifications."""
+    """Intent:
+        Builds a probe half that feeds the target the language's hazards of `kinds` plus the
+        in-language members `extra(languages, facts)` returns, and falsifies on any of `crashes`.
+
+    Notes:
+        An exception type the body raises itself is treated as a rejection and not counted. A
+        crashing input is shrunk to a minimal witness that stays inside the language.
+    """
 
     def probe(fn: Any, facts: Any, cj: Any, domain: dict[str, Any],
               rng: random.Random, trials: int) -> Any:
@@ -203,8 +230,10 @@ def _probe_over(kinds: tuple[str, ...], extra: Callable[..., list[str]],
 
 
 def _long_members(languages: list[Any], facts: Any) -> list[str]:
-    """A sixty-four kibibyte member of each language, from its own
-    first pool character."""
+    """Intent:
+        One sixty-four kibibyte member per language, the language's first pool character
+        repeated. A language with an empty pool contributes nothing.
+    """
     out: list[str] = []
     for language in languages:
         pool = getattr(language, "pool", "") or ""
@@ -214,7 +243,10 @@ def _long_members(languages: list[Any], facts: Any) -> list[str]:
 
 
 def _codec_boundaries(languages: list[Any], facts: Any) -> list[str]:
-    """The member past each codec boundary the body names."""
+    """Intent:
+        For each codec the body names that has a known boundary, the first character that codec
+        cannot encode.
+    """
     return [_CODEC_BOUNDARIES[codec.lower()]
             for codec in _codecs_named(facts.tree)
             if codec.lower() in _CODEC_BOUNDARIES]

@@ -20,12 +20,17 @@ _COMPARE = re.compile(r"(\w+)\s*(>=|<=|>|<)\s*(-?\d+(?:\.\d+)?)")
 
 
 def _sa() -> Any:
+    """Intent:
+        The `sqlalchemy` module if it has already been imported, otherwise None.
+    """
     return sys.modules.get("sqlalchemy")
 
 
 def _table_of(obj: Any) -> tuple[Any, type | None] | None:
-    """`(table, class)` for a `Table` or a declarative class, decided
-    without importing SQLAlchemy."""
+    """Intent:
+        Returns `(table, class)` for a declarative class, `(table, None)` for a `Table`, or None
+        for anything else, including whenever SQLAlchemy has not already been imported.
+    """
     sa = _sa()
     if sa is None:
         return None
@@ -38,13 +43,20 @@ def _table_of(obj: Any) -> tuple[Any, type | None] | None:
 
 
 def _number(text: str) -> float | int:
+    """Intent:
+        The numeral `text` as a float when it has a decimal point, otherwise as an int.
+    """
     return float(text) if "." in text else int(text)
 
 
 def _check_bounds(table: Any) -> dict[str, dict[str, Any]]:
-    """Per column, the bounds its CHECK constraints spell as plain
-    comparisons or BETWEEN, whether written on the table or on the
-    column itself; anything else is left to the database."""
+    """Intent:
+        Per column name, the bounds its CHECK constraints spell as plain numeric comparisons or
+        BETWEEN, whether written on the table or on the column itself.
+
+    Notes:
+        Any other CHECK expression is not read and is left to the database to enforce.
+    """
     sa = _sa()
     out: dict[str, dict[str, Any]] = {}
     on_columns = [c for col in table.columns for c in col.constraints]
@@ -63,7 +75,10 @@ def _check_bounds(table: Any) -> dict[str, dict[str, Any]]:
 
 
 def _type_of(col_type: Any) -> tuple[NeutralType, dict[str, Any]]:
-    """`(neutral type, constraint keywords)` of a column type."""
+    """Intent:
+        The `(neutral type, constraint keywords)` of a SQLAlchemy column type; a string type
+        with a length gives a `max_len` keyword.
+    """
     sa = _sa()
     t = col_type
     if isinstance(t, sa.Boolean):
@@ -96,7 +111,17 @@ def _type_of(col_type: Any) -> tuple[NeutralType, dict[str, Any]]:
 
 
 def _row_schema_of(obj: Any) -> RowSchema:
-    """The record schema of a `Table` or a declarative class."""
+    """Intent:
+        The record schema of a `Table` or a declarative class: per column its type, nullability,
+        whether it is required and unique, and constraints including CHECK bounds.
+
+    Raises:
+        TypeError: `obj` is neither a SQLAlchemy table nor a declarative class.
+
+    Notes:
+        An autoincrementing integer primary key is nullable and not required, since the
+        database assigns it on insert.
+    """
     found = _table_of(obj)
     if found is None:
         raise TypeError(f"not a SQLAlchemy table or declarative class: {obj!r}")

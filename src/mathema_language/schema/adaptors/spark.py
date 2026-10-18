@@ -38,12 +38,18 @@ _CHAR_VARCHAR_KEY = "__CHAR_VARCHAR_TYPE_STRING"
 
 
 def _looks_like_spark_json(obj: Any) -> bool:
+    """Intent:
+        Whether `obj` is a dict with `type: struct` and a `fields` list, the JSON form Spark
+        writes for a struct schema.
+    """
     return isinstance(obj, dict) and obj.get("type") == "struct" and isinstance(obj.get("fields"), list)
 
 
 def _is_struct_type(obj: Any) -> bool:
-    """Whether `obj` is pyspark's `StructType`, known by its class and
-    module so that pyspark is never imported to ask."""
+    """Intent:
+        Whether `obj` is pyspark's `StructType`, recognised by its class name, its `pyspark.`
+        module and a callable `jsonValue`, without importing pyspark.
+    """
     cls = type(obj)
     return cls.__name__ == "StructType" and cls.__module__.startswith("pyspark.") \
         and callable(getattr(obj, "jsonValue", None))
@@ -88,8 +94,13 @@ def type_of(spark_type: Any) -> tuple[NeutralType, bool]:
 
 
 def _max_length(metadata: dict[str, Any]) -> int | None:
-    """The declared length of a CHAR or VARCHAR column, which Spark
-    keeps in the field's metadata and writes as `string`."""
+    """Intent:
+        The declared length of a CHAR or VARCHAR column, read from the field's metadata, or None
+        when the metadata declares none.
+
+    Notes:
+        Spark writes such a column's type as `string` and keeps the declared type in metadata.
+    """
     declared = metadata.get(_CHAR_VARCHAR_KEY)
     if isinstance(declared, str):
         m = _CHAR_VARCHAR.fullmatch(declared.strip().lower())
@@ -99,6 +110,10 @@ def _max_length(metadata: dict[str, Any]) -> int | None:
 
 
 def _fields(struct: dict[str, Any]) -> list[Field]:
+    """Intent:
+        One neutral field per entry of a struct's JSON `fields`, with its type, nullability,
+        whether NaN is allowed, a CHAR/VARCHAR length bound, and its metadata.
+    """
     out: list[Field] = []
     for spec in struct.get("fields", ()):
         metadata = spec.get("metadata") or {}

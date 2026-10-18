@@ -29,8 +29,12 @@ _SHELL_SAFE_CHARS = string.ascii_letters + string.digits + "@%_-+=:,./"
 
 
 def _is_json(s: str) -> bool:
-    """Whether `json.loads` reads `s`; a document nested past the
-    interpreter's recursion limit is one it does not."""
+    """Intent:
+        Whether `json.loads` reads `s`.
+
+    Notes:
+        A document nested past the interpreter's recursion limit is one it does not read.
+    """
     try:
         json.loads(s)
     except (ValueError, RecursionError):
@@ -39,6 +43,9 @@ def _is_json(s: str) -> bool:
 
 
 def _is_uuid(s: str) -> bool:
+    """Intent:
+        Whether `uuid.UUID` reads `s`, in any of its hyphenated, bare, braced or urn forms.
+    """
     try:
         uuid.UUID(s)
     except ValueError:
@@ -47,6 +54,9 @@ def _is_uuid(s: str) -> bool:
 
 
 def _is_iso_date(s: str) -> bool:
+    """Intent:
+        Whether `date.fromisoformat` reads `s` on the running Python.
+    """
     try:
         _dt.date.fromisoformat(s)
     except ValueError:
@@ -55,6 +65,9 @@ def _is_iso_date(s: str) -> bool:
 
 
 def _is_iso_datetime(s: str) -> bool:
+    """Intent:
+        Whether `datetime.fromisoformat` reads `s` on the running Python.
+    """
     try:
         _dt.datetime.fromisoformat(s)
     except ValueError:
@@ -63,6 +76,9 @@ def _is_iso_datetime(s: str) -> bool:
 
 
 def _is_ipv4(s: str) -> bool:
+    """Intent:
+        Whether `ipaddress.IPv4Address` reads `s`.
+    """
     try:
         ipaddress.IPv4Address(s)
     except ValueError:
@@ -71,6 +87,9 @@ def _is_ipv4(s: str) -> bool:
 
 
 def _is_ipv6(s: str) -> bool:
+    """Intent:
+        Whether `ipaddress.IPv6Address` reads `s`.
+    """
     try:
         ipaddress.IPv6Address(s)
     except ValueError:
@@ -79,6 +98,10 @@ def _is_ipv6(s: str) -> bool:
 
 
 def _is_base64(s: str) -> bool:
+    """Intent:
+        Whether `s` is strict base64: `b64decode(validate=True)` reads it and encoding the
+        bytes gives back exactly `s`.
+    """
     try:
         raw = base64.b64decode(s, validate=True)
     except (binascii.Error, ValueError):
@@ -87,6 +110,9 @@ def _is_base64(s: str) -> bool:
 
 
 def _is_hex(s: str) -> bool:
+    """Intent:
+        Whether `bytes.fromhex` reads `s`.
+    """
     try:
         bytes.fromhex(s)
     except ValueError:
@@ -95,14 +121,24 @@ def _is_hex(s: str) -> bool:
 
 
 def _is_slug(s: str) -> bool:
+    """Intent:
+        Whether `s` is lower-case words of letters and digits joined by single hyphens.
+    """
     return _SLUG.fullmatch(s) is not None
 
 
 def _is_shell_safe(s: str) -> bool:
+    """Intent:
+        Whether `s` is non-empty and `shlex.quote` leaves it unchanged.
+    """
     return s != "" and shlex.quote(s) == s
 
 
 def _generate_identifier(rng: random.Random) -> str:
+    """Intent:
+        A random Python identifier: an ascii letter or underscore, then up to eleven ascii
+        letters, digits or underscores.
+    """
     first = rng.choice(string.ascii_letters + "_")
     rest = "".join(rng.choice(string.ascii_letters + string.digits + "_")
                    for _ in range(rng.randint(0, 11)))
@@ -110,6 +146,10 @@ def _generate_identifier(rng: random.Random) -> str:
 
 
 def _generate_json(rng: random.Random) -> str:
+    """Intent:
+        A random JSON document of scalars, arrays and objects nested at most three levels,
+        written with non-ascii characters left unescaped.
+    """
     def value(depth: int) -> object:
         choice = rng.random()
         if depth > 1 or choice < 0.4:
@@ -123,15 +163,25 @@ def _generate_json(rng: random.Random) -> str:
 
 
 def _generate_uuid(rng: random.Random) -> str:
+    """Intent:
+        A random UUID in its hyphenated form, from 128 random bits.
+    """
     return str(uuid.UUID(int=rng.getrandbits(128)))
 
 
 def _generate_iso_date(rng: random.Random) -> str:
+    """Intent:
+        A random ISO 8601 date (`YYYY-MM-DD`) in years 1 to 9999, day at most 28.
+    """
     return _dt.date(rng.randint(1, 9999), rng.randint(1, 12),
                     rng.randint(1, 28)).isoformat()
 
 
 def _generate_iso_datetime(rng: random.Random) -> str:
+    """Intent:
+        A random ISO 8601 datetime, naive, in UTC or at a whole-hour offset, with or without
+        microseconds.
+    """
     tz = rng.choice([None, _dt.timezone.utc,
                      _dt.timezone(_dt.timedelta(hours=rng.randint(-12, 14)))])
     return _dt.datetime(rng.randint(1, 9999), rng.randint(1, 12),
@@ -142,24 +192,39 @@ def _generate_iso_datetime(rng: random.Random) -> str:
 
 
 def _generate_ipv4(rng: random.Random) -> str:
+    """Intent:
+        A random IPv4 address in dotted-decimal form.
+    """
     return str(ipaddress.IPv4Address(rng.getrandbits(32)))
 
 
 def _generate_ipv6(rng: random.Random) -> str:
+    """Intent:
+        A random IPv6 address in its compressed form.
+    """
     return str(ipaddress.IPv6Address(rng.getrandbits(128)))
 
 
 def _generate_base64(rng: random.Random) -> str:
+    """Intent:
+        The standard base64 encoding of up to 24 random bytes.
+    """
     raw = bytes(rng.getrandbits(8) for _ in range(rng.randint(0, 24)))
     return base64.b64encode(raw).decode("ascii")
 
 
 def _generate_hex(rng: random.Random) -> str:
+    """Intent:
+        An even-length string of up to 24 hex digits in mixed case.
+    """
     return "".join(rng.choice("0123456789abcdefABCDEF")
                    for _ in range(2 * rng.randint(0, 12)))
 
 
 def _generate_slug(rng: random.Random) -> str:
+    """Intent:
+        One to four random words of lower-case letters and digits, joined by hyphens.
+    """
     words = [
         "".join(rng.choice(string.ascii_lowercase + string.digits)
                 for _ in range(rng.randint(1, 8)))
@@ -168,6 +233,9 @@ def _generate_slug(rng: random.Random) -> str:
 
 
 def _generate_shell_safe(rng: random.Random) -> str:
+    """Intent:
+        A random string of one to twelve characters a shell reads literally.
+    """
     return "".join(rng.choice(_SHELL_SAFE_CHARS)
                    for _ in range(rng.randint(1, 12)))
 
@@ -212,8 +280,10 @@ UUID = TextLanguage(
 
 def _accepted(accepts: Callable[[str], bool],
               hazards: tuple[HazardValue, ...]) -> tuple[HazardValue, ...]:
-    """The hazards `accepts` takes on the running Python: a parser's
-    other spellings are members only where that parser reads them."""
+    """Intent:
+        The hazards whose text `accepts` takes on the running Python, so a parser's other
+        spellings are hazards only where that parser reads them.
+    """
     return tuple(h for h in hazards if isinstance(h.value, str) and accepts(h.value))
 
 

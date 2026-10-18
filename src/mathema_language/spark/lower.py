@@ -37,9 +37,13 @@ class NotRead(ValueError):
 
 
 def _source(target: Any) -> tuple[str, str, ast.Module]:
-    """`(function name, module name, module syntax tree)` for a function
-    object or a dotted path `pkg.mod.fn`, read from the module's file
-    without executing it."""
+    """Intent:
+        Returns `(function name, module name, module syntax tree)` for a function object or a
+        dotted path `pkg.mod.fn`, parsed from the module's file without executing it.
+
+    Raises:
+        NotRead: the function's module has no file, or the dotted path names no findable module.
+    """
     if callable(target):
         module = inspect.getmodule(target)
         if module is None or getattr(module, "__file__", None) is None:
@@ -56,7 +60,9 @@ def _source(target: Any) -> tuple[str, str, ast.Module]:
 
 
 def _constants(tree: ast.Module) -> dict[str, Any]:
-    """Module-level names bound to a literal (`THRESHOLD = 1000`)."""
+    """Intent:
+        Maps each module-level name bound to a literal (`THRESHOLD = 1000`) to its value.
+    """
     out: dict[str, Any] = {}
     for node in tree.body:
         if isinstance(node, ast.Assign) and len(node.targets) == 1 \
@@ -69,6 +75,12 @@ def _constants(tree: ast.Module) -> dict[str, Any]:
 
 
 def _function(tree: ast.Module, name: str) -> ast.FunctionDef:
+    """Intent:
+        The top-level function definition called `name` in the module tree.
+
+    Raises:
+        NotRead: the module defines no such function at its top level.
+    """
     for node in tree.body:
         if isinstance(node, ast.FunctionDef) and node.name == name:
             return node
@@ -76,7 +88,10 @@ def _function(tree: ast.Module, name: str) -> ast.FunctionDef:
 
 
 def _defaults(fn: ast.FunctionDef) -> dict[str, Any]:
-    """Each parameter's literal default (`value_col: str = "po_value"`)."""
+    """Intent:
+        Maps each parameter, positional or keyword-only, that has a literal default
+        (`value_col: str = "po_value"`) to that default.
+    """
     args = fn.args.args
     out: dict[str, Any] = {}
     for arg, default in zip(args[len(args) - len(fn.args.defaults):], fn.args.defaults, strict=True):
@@ -94,7 +109,10 @@ def _defaults(fn: ast.FunctionDef) -> dict[str, Any]:
 
 
 def _call_name(node: ast.AST) -> str | None:
-    """`when` for `when(...)` and `F.when(...)`; None for anything else."""
+    """Intent:
+        The called function's bare name, `when` for both `when(...)` and `F.when(...)`; None
+        for anything that is not such a call.
+    """
     if isinstance(node, ast.Call):
         func = node.func
         if isinstance(func, ast.Name):
@@ -105,9 +123,15 @@ def _call_name(node: ast.AST) -> str | None:
 
 
 def _columns_set(fn: ast.FunctionDef, frame: str) -> dict[str, ast.AST]:
-    """Every column the function sets with `withColumn`, in the order it
-    sets them, through a chain (`df.withColumn(a, x).withColumn(b, y)`)
-    or one statement after another (`df = df.withColumn(a, x)`)."""
+    """Intent:
+        Maps every column the function sets with `withColumn` to its expression, in the order
+        set, whether by a chain (`df.withColumn(a, x).withColumn(b, y)`) or by successive
+        statements (`df = df.withColumn(a, x)`).
+
+    Raises:
+        NotRead: a `withColumn` call has other than two arguments, or a column name that is not
+            a literal.
+    """
     out: dict[str, ast.AST] = {}
 
     def chain(node: ast.AST) -> None:
@@ -125,8 +149,13 @@ def _columns_set(fn: ast.FunctionDef, frame: str) -> dict[str, ast.AST]:
 
 
 def _text(node: ast.AST, fn: ast.FunctionDef) -> str:
-    """A column name written as a literal or as a parameter with a
-    literal default."""
+    """Intent:
+        The column name `node` spells, written as a string literal or as a parameter with a
+        literal string default.
+
+    Raises:
+        NotRead: the name is neither.
+    """
     if isinstance(node, ast.Constant) and isinstance(node.value, str):
         return node.value
     if isinstance(node, ast.Name) and node.id in _defaults(fn):
@@ -163,7 +192,10 @@ class _Lowering:
         return var, frozenset({var})
 
     def _kind(self, cols: frozenset[str], other: ast.AST) -> None:
-        """Note the Python type a lone column is compared as."""
+        """Intent:
+            Records the Python type (`bool`, `float` or `str`) a lone column is compared as,
+            from the literal it is compared with. The first type recorded for a column is kept.
+        """
         if len(cols) != 1 or not isinstance(other, ast.Constant):
             return
         (var,) = cols
@@ -212,6 +244,10 @@ class _Lowering:
     #      code true exactly when it is false); null is neither
 
     def _nan_aware(self, cols: frozenset[str]) -> bool:
+        """Intent:
+            Whether any of the parameters `cols` stands for a column that may hold NaN: one
+            named in `float_columns`, or any column at all when `float_columns` is None.
+        """
         if self.float_columns is None:
             return bool(cols)
         names = {var: name for name, var in self.read.items()}

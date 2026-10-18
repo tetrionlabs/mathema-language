@@ -32,8 +32,13 @@ class Unsupported(ValueError):
 
 
 def _category(code: Any, negate: bool) -> str:
-    """The characters a `\\d`, `\\w` or `\\s` category draws from, or its
-    negation (`\\D`, `\\W`, `\\S`, named `CATEGORY_NOT_...`)."""
+    """Intent:
+        The characters a `\\d`, `\\w` or `\\s` category draws from, or the complement within
+        the module's sample alphabet for a negated category (`\\D`, `\\W`, `\\S`).
+
+    Raises:
+        Unsupported: the category is not digit, word or space.
+    """
     if "_NOT_" in str(code):
         negate = not negate
     name = str(code).rsplit("_", 1)[-1].lower()
@@ -46,6 +51,15 @@ def _category(code: Any, negate: bool) -> str:
 
 
 def _class_pool(items: list[tuple[Any, Any]]) -> str:
+    """Intent:
+        The characters a parsed character class `[...]` draws from: its literals, ranges
+        (each cut to 201 characters) and categories, or their complement within the sample
+        alphabet when the class is negated.
+
+    Raises:
+        Unsupported: the class holds an item other than a literal, range, category or
+            negation.
+    """
     pool = ""
     negate = False
     for op, arg in items:
@@ -67,6 +81,17 @@ def _class_pool(items: list[tuple[Any, Any]]) -> str:
 
 
 def _emit(rng: random.Random, items: Any, groups: dict[int, str]) -> str:
+    """Intent:
+        A random string built from the parsed pattern `items`, recording each numbered
+        group's text in `groups` so a back-reference repeats it.
+
+    Raises:
+        Unsupported: the pattern holds a construct this module does not read.
+
+    Notes:
+        Anchors and look-arounds emit nothing, and an unbounded repeat draws at most four
+        more than its minimum.
+    """
     out = ""
     for op, arg in items:
         name = str(op).rsplit(".", 1)[-1]

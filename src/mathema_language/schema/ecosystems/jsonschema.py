@@ -13,6 +13,10 @@ from ..model import RowSchema
 
 
 def _path(parts: Any) -> str:
+    """Intent:
+        A validation error's location in the path grammar: `[i]` for an index, `.name` for a
+        key, joined in order (`.items[0].sku`).
+    """
     out = ""
     for part in parts:
         out += f"[{part}]" if isinstance(part, int) else f".{part}"
@@ -39,6 +43,10 @@ class JsonSchemaEcosystem:
         return dict(values)
 
     def _validator_for(self) -> Any:
+        """Intent:
+            The Draft 2020-12 validator for the ecosystem's schema, built on first use and
+            reused after.
+        """
         if self._validator is None:
             from jsonschema import Draft202012Validator
             self._validator = Draft202012Validator(self.schema)

@@ -42,8 +42,10 @@ _BOUND_TYPES = (
 
 
 def _validator(language: Any) -> Callable[[Any], list[Any]]:
-    """The ecosystem's own validator where the language exposes one,
-    else the language's own membership as a one-problem list."""
+    """Intent:
+        The ecosystem's own validator where the language exposes one, else the language's own
+        membership as a one-problem list.
+    """
     ecosystem, schema = getattr(language, "ecosystem", None), getattr(language, "schema", None)
     if ecosystem is not None and schema is not None and hasattr(ecosystem, "validate_row"):
         return lambda value: list(ecosystem.validate_row(schema, value))
@@ -51,6 +53,10 @@ def _validator(language: Any) -> Callable[[Any], list[Any]]:
 
 
 def _fields_problems(language: Any) -> list[str]:
+    """Intent:
+        Every way the language's `fields()` falls short: it raises, returns neither a dict nor None,
+        names a non-field of the schema, or maps a name to a bound the derive lift cannot read.
+    """
     try:
         fields = language.fields()
     except Exception as e:

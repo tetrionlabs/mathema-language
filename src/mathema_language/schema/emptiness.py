@@ -40,10 +40,22 @@ _EPOCH = _dt.datetime(1970, 1, 1)
 
 
 def _number(x: Any) -> bool:
+    """Intent:
+        Whether `x` is an int, float or decimal, a bool not counting as one.
+    """
     return isinstance(x, (int, float, decimal.Decimal)) and not isinstance(x, bool)
 
 
 def _numeric_candidates(f: Field, integral: bool) -> Iterator[Any]:
+    """Intent:
+        Yields candidate numbers for a number field: 0, 1, -1, its bounds and their nearest inside
+        neighbours, the midpoint, its bit width's extremes, and its divisor's multiples nearest the
+        bounds.
+
+    Notes:
+        With `integral`, the neighbours are whole numbers; otherwise an exclusive bound's
+        neighbour is the next double inside it.
+    """
     c = f.constraints
     yield 0
     yield 1
@@ -75,8 +87,10 @@ def _numeric_candidates(f: Field, integral: bool) -> Iterator[Any]:
 
 
 def _shortest_match(pattern: str) -> str | None:
-    """The shortest text the whole pattern matches, built from its parse,
-    or None for a construct this does not build."""
+    """Intent:
+        Returns the shortest text the whole pattern matches, built from its parse, or None for a
+        pattern that does not compile or holds a construct this does not build.
+    """
     try:
         parsed = sre_parse.parse(pattern)
     except re.error:
@@ -132,7 +146,10 @@ def _shortest_match(pattern: str) -> str | None:
 
 
 def _in_char(items: Any) -> str | None:
-    """One character a character class admits, or None."""
+    """Intent:
+        Returns one character a parsed character class admits, or None when none of the
+        characters tried is admitted.
+    """
     negate = any(str(op) == "NEGATE" for op, _ in items)
     if negate:
         excluded = set()
@@ -157,6 +174,10 @@ def _in_char(items: Any) -> str | None:
 
 
 def _class_text(items: Any) -> Iterator[str]:
+    """Intent:
+        Yields a parsed character class's negation, literals and ranges back as regex text, for
+        rebuilding the class between brackets.
+    """
     for op, arg in items:
         name = str(op)
         if name == "NEGATE":
@@ -168,6 +189,10 @@ def _class_text(items: Any) -> Iterator[str]:
 
 
 def _text_candidates(f: Field) -> Iterator[str]:
+    """Intent:
+        Yields candidate texts for a string field: the empty text, the shortest text of its
+        minimum length, and its pattern's shortest match, padded to that length when shorter.
+    """
     c = f.constraints
     lo = c.min_len if isinstance(c.min_len, int) and c.min_len > 0 else 0
     yield ""
@@ -181,6 +206,14 @@ def _text_candidates(f: Field) -> Iterator[str]:
 
 
 def _candidates(f: Field, depth: int) -> Iterator[Any]:
+    """Intent:
+        Yields candidate members built from a field's description: null when nullable, its
+        constant or enumeration when it has one, otherwise values of its type.
+
+    Notes:
+        A list or struct builds its items or fields from their own members, `depth` limiting how
+        far nested types are followed.
+    """
     c, t = f.constraints, f.type
     if f.nullable:
         yield None
@@ -253,6 +286,10 @@ _NONE = object()
 
 
 def _member(f: Field, depth: int) -> Any:
+    """Intent:
+        Returns the first candidate that passes the field's own checker, or the `_NONE` marker
+        when none does.
+    """
     for candidate in _candidates(f, depth):
         try:
             if not field_problems(candidate, f):

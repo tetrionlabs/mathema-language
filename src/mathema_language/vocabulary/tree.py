@@ -42,9 +42,13 @@ def children_of(value: Any) -> list[Any] | None:
 
 
 def _walk(value: Any) -> tuple[int, int, int, int]:
-    """(depth, nodes, width, leaves) of `value` in containers and
-    values, iteratively; a
-    container met again on its own path is a cycle."""
+    """Intent:
+        The (depth, nodes, width, leaves) of `value` counted in containers and values,
+        walked iteratively so any nesting depth is measured.
+
+    Raises:
+        ValueError: a container is met again on its own path, so the value contains itself.
+    """
     max_depth = nodes = widest = leaves = 0
     on_path: set[int] = set()
     stack: list[tuple[Any, int, bool]] = [(value, 0, False)]
@@ -74,8 +78,10 @@ def _walk(value: Any) -> tuple[int, int, int, int]:
 
 
 def _measure(value: Any) -> tuple[int, int, int, int]:
-    """(depth, nodes, width, leaves): in records for a record tree, in
-    containers and values for any other nest."""
+    """Intent:
+        The (depth, nodes, width, leaves) of `value`: counted in records when it is a
+        dataclass or pydantic record with a schema, else in containers and values.
+    """
     if dataclasses.is_dataclass(value) and not isinstance(value, type) \
             or isinstance(getattr(type(value), "model_fields", None), dict):
         from ..schema.adaptors import adapt_row

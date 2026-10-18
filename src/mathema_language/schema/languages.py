@@ -39,12 +39,14 @@ class NoMember(RuntimeError):
 
 
 def _field_bound(f: Field) -> Any:
-    """The one-deep domain of a field for the derive lift: a numeric
-    field as its interval (an integer field as an interval of `Z`),
-    one side infinite when only the other is bounded, or `Z`, `R` when
-    neither is; a string
-    field as the unicode language, refined by its length bounds
-    (`L[unicode, len <= 8]`); anything else None."""
+    """Intent:
+        Returns a field's one-deep domain for the derive lift: a number field as its interval
+        (`Z` or `R` when unbounded), a string field as the unicode language with its length bounds.
+
+    Notes:
+        An integer field's interval is over `Z`, and a side left unbounded is infinite. A string
+        field reads as `L[unicode, len <= 8]` and the like. Any other field gives None.
+    """
     t, c = f.type, f.constraints
     if t.base in ("int", "float", "decimal"):
         low, high = c.low, c.high
@@ -78,9 +80,10 @@ def _field_bound(f: Field) -> Any:
 
 
 def _within_budget(method: Any) -> Any:
-    """Run a method that draws nested values under the language's
-    draw budget, so a recursive schema's draws resolve its references
-    and always end."""
+    """Intent:
+        Wraps a method that draws nested values so it runs under the language's draw budget, and
+        a recursive schema's draws resolve its references and always end.
+    """
     @functools.wraps(method)
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
         bounds = getattr(self, "_draw_override", None) or self.sampling
@@ -94,7 +97,9 @@ def _within_budget(method: Any) -> Any:
 
 
 def _ladder(top: int) -> list[int]:
-    """Depths 1, 2, 4, ... up to and including `top`."""
+    """Intent:
+        Returns the depths 1, 2, 4, ... below `top`, then `top` itself.
+    """
     out, d = [], 1
     while d < top:
         out.append(d)
@@ -160,6 +165,9 @@ class RowLanguage:
         return self.explain(value) is None
 
     def _build(self, values: dict[str, Any]) -> Any:
+        """Intent:
+            Returns the ecosystem's record built from neutral field values, unvalidated.
+        """
         return self.ecosystem.build_row(self.schema, values)
 
     @_within_budget
@@ -187,6 +195,13 @@ class RowLanguage:
             self._draw_override = None
 
     def _sample(self, rng: random.Random) -> Any:
+        """Intent:
+            Returns the first drawn record that builds and is a member, counting accepted and
+            rejected draws.
+
+        Raises:
+            NoMember: no member was found within the allowed draws.
+        """
         for _ in range(_REJECTION_TRIES):
             try:
                 row = self._build(self.draw_values(rng))
@@ -240,9 +255,10 @@ class RowLanguage:
 
     @_within_budget
     def _field_hazards(self) -> tuple[HazardValue, ...]:
-        """Per field, one record with that field at each of its
-        hazards and every other field at its simplest member; only
-        the members survive."""
+        """Intent:
+            Returns, per field, one record with that field at each of its hazards and every other
+            field at its simplest member, keeping only the records that are members.
+        """
         base = {f.name: _gen.simplest(f) for f in self.schema.fields}
         out: list[HazardValue] = []
         for f in self.schema.fields:
@@ -291,8 +307,10 @@ class RowLanguage:
 
     @_within_budget
     def _record_type(self, t: Any) -> tuple[Any, Any] | None:
-        """`(fields, construct)` of a struct or referenced record type,
-        or None for any other type."""
+        """Intent:
+            Returns `(fields, construct)` of a struct or referenced record type, or None for any
+            other type or an unresolved reference.
+        """
         if t.base == "struct":
             return t.fields or (), t.construct
         if t.base == "ref" and t.ref is not None:
@@ -305,8 +323,10 @@ class RowLanguage:
 
     @_within_budget
     def _simpler_records(self, record: tuple[Any, Any], element: Any) -> list[Any]:
-        """`element`, a record of the given type, with each of its fields
-        in turn moved to its simplest member."""
+        """Intent:
+            Returns copies of `element`, a record of the given type, each with one present field
+            moved one step toward its simplest member.
+        """
         fields, construct = record
         present = {g.name: _read(element, g.name)[1] for g in fields if _read(element, g.name)[0]}
         out = []
@@ -422,10 +442,14 @@ class RowLanguage:
     # ---- structure of a recursive schema
 
     def _edge(self) -> tuple[RowSchema, Field, list[Field]] | None:
-        """`(record type, edge field, path)`: the record type that refers
-        to itself, the field through which it does (a list of it, or an
-        optional reference to it), and the root fields leading to it
-        (empty when the root itself is that record type)."""
+        """Intent:
+            Returns `(record type, edge field, path)` for a recursive schema, or None when no
+            record type, the root or one a root field refers to, refers to itself.
+
+        Notes:
+            The edge field is a list of the record type or an optional reference to it. The path
+            is the root fields leading to it, empty when the root is that record type.
+        """
         def self_edge(schema: RowSchema) -> Field | None:
             for f in schema.fields:
                 t = f.type
@@ -449,15 +473,23 @@ class RowLanguage:
         return None
 
     def _simplest_values(self, schema: RowSchema) -> dict[str, Any]:
+        """Intent:
+            Returns each field of `schema` at its simplest member.
+        """
         return {f.name: _gen.simplest(f) for f in schema.fields}
 
     def _record(self, schema: RowSchema, values: dict[str, Any]) -> Any:
+        """Intent:
+            Returns a record of `schema` built from `values` with the schema's own constructor.
+        """
         return _gen.build(schema.construct, values)
 
     @_within_budget
     def _spine(self, records: int) -> Any:
-        """A member whose recursion is one chain `records` long, built
-        bottom up with no recursion."""
+        """Intent:
+            Returns a member whose recursion is one chain `records` long, built bottom up without
+            recursion, or None for a schema with no recursive edge.
+        """
         found = self._edge()
         if found is None:
             return None
@@ -471,7 +503,10 @@ class RowLanguage:
 
     @_within_budget
     def _wide(self, width: int) -> Any:
-        """A member whose recursive node has `width` children."""
+        """Intent:
+            Returns a member whose recursive node has `width` children, or None when the schema
+            does not recur through a list.
+        """
         found = self._edge()
         if found is None or found[1].type.base != "list":
             return None
@@ -482,6 +517,10 @@ class RowLanguage:
         return self._wrap(self._record(schema, values), path)
 
     def _wrap(self, node: Any, path: list[Field]) -> Any:
+        """Intent:
+            Returns a root record holding `node` at the end of `path` (one root field), every other
+            field at its simplest member; with no path, `node` itself as a root record.
+        """
         if not path:
             if self.schema.construct is None and isinstance(node, dict):
                 return self._build(node)
@@ -492,6 +531,10 @@ class RowLanguage:
         return self._build(values)
 
     def _structure_hazards(self) -> list[HazardValue]:
+        """Intent:
+            Returns the shape hazards of a recursive schema: the deepest member within the sampling
+            depth, the widest node drawn, and a spine past the recursion limit or the validator's.
+        """
         from .structure import record_measures
 
         def tree_depth(value: Any) -> int:
@@ -531,16 +574,16 @@ class RowLanguage:
         return out
 
     def _validator_spine_limit(self) -> int | None:
-        """The records in the longest spine the ecosystem's validator
-        accepts from any ordinary call site, or None when it accepts one
-        past the interpreter's recursion limit. A validator that recurses
-        in Python stops at a depth that depends on how deep the caller's
-        stack already is, so the limit is measured once, on a fresh
-        thread whose stack starts empty, twice (the second time with
-        `_PROBE_FRAMES` already used, which gives the frames the
-        validator takes per level), and stated with room left for a
-        caller `_CALLER_FRAMES` deep: the same answer wherever the
-        language is used, and a spine that long validates from there."""
+        """Intent:
+            Returns the records in the longest spine the ecosystem's validator accepts from any
+            ordinary call site, or None when it accepts one past the interpreter's recursion limit.
+
+        Notes:
+            A validator that recurses in Python stops at a depth set by how deep the caller's stack
+            already is. The limit is measured once, cached, on a fresh thread with an empty stack,
+            twice (the second with `_PROBE_FRAMES` used, giving the frames per level), and stated
+            with room for a caller `_CALLER_FRAMES` deep.
+        """
         cached = self.__dict__.get("_spine_limit", _UNMEASURED)
         if cached is not _UNMEASURED:
             return cast("int | None", cached)
@@ -590,12 +633,19 @@ class RowLanguage:
 
 
 def _qual(schema: RowSchema) -> str:
+    """Intent:
+        Returns the qualified name of the class a schema's records are built by, or the schema's
+        name when there is none.
+    """
     construct = schema.construct
     owner = getattr(construct, "__self__", construct)
     return str(getattr(owner, "__qualname__", schema.name))
 
 
 def _read(row: Any, name: str) -> tuple[bool, Any]:
+    """Intent:
+        Returns `(present, value)` for field `name` of a record, a mapping key or an attribute.
+    """
     if isinstance(row, dict):
         return (name in row, row.get(name))
     return (hasattr(row, name), getattr(row, name, None))

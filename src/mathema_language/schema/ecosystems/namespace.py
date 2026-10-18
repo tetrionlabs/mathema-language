@@ -15,8 +15,10 @@ from ..model import RowSchema
 
 
 def _converted(convert: Any, text: str) -> Any:
-    """`text` through the argument's type, or `text` itself when the type
-    refuses it, as a value argparse would not have produced."""
+    """Intent:
+        `text` passed through the argument's type converter, or `text` unchanged when the
+        converter raises, standing for a value argparse would not have produced.
+    """
     try:
         return convert(text)
     except Exception:

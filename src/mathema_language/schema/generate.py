@@ -55,13 +55,18 @@ def drawing_within(definitions: Any, *, depth: int, nodes: int, width: int) -> I
 
 
 def _definitions() -> Any:
+    """Intent:
+        The schema the current draw budget resolves a `ref` through, or None outside a budget.
+    """
     budget = _BUDGET.get()
     return budget["defs"] if budget else None
 
 
 def _room() -> int:
-    """How many more records may open, one inside the next, under the
-    budget."""
+    """Intent:
+        How many more records may open, one inside the next, under the current draw budget;
+        effectively unlimited outside a budget.
+    """
     budget = _BUDGET.get()
     if budget is None:
         return 1 << 30
@@ -70,6 +75,9 @@ def _room() -> int:
 
 @contextlib.contextmanager
 def _deeper() -> Iterator[None]:
+    """Intent:
+        A context during which the current draw budget counts one more record level as open.
+    """
     budget = _BUDGET.get()
     if budget is not None:
         budget["level"] += 1
@@ -104,8 +112,10 @@ def build(construct: Any, values: dict[str, Any]) -> Any:
 
 
 def _record(rng: random.Random, fields: Any, construct: Any) -> Any:
-    """A struct's value: each field drawn one record down, then built
-    through `construct` (the record's class) or left a dict."""
+    """Intent:
+        A struct's value: each field drawn one record level down, then built through `construct`
+        (the record's class) or left a dict. It spends one record of the budget.
+    """
     budget = _BUDGET.get()
     if budget is not None:
         budget["nodes"] -= 1
@@ -115,7 +125,10 @@ def _record(rng: random.Random, fields: Any, construct: Any) -> Any:
 
 
 def _reaches_a_record(t: NeutralType) -> bool:
-    """Whether a value of `t` is, or carries, a record."""
+    """Intent:
+        Whether a value of `t` is a record (a struct or a `ref`), or carries one through lists and
+        maps.
+    """
     while t.base in ("list", "map"):
         inner = t.item if t.base == "list" else t.value
         if inner is None:
@@ -125,6 +138,10 @@ def _reaches_a_record(t: NeutralType) -> bool:
 
 
 def _zone(t: NeutralType) -> _dt.tzinfo | None:
+    """Intent:
+        The time zone a datetime type names: None for a naive type, UTC for `UTC` or a zone that
+        cannot be loaded, else its `ZoneInfo`.
+    """
     if t.tz is None:
         return None
     if t.tz.upper() == "UTC":
@@ -137,6 +154,10 @@ def _zone(t: NeutralType) -> _dt.tzinfo | None:
 
 
 def _int_range(f: Field) -> tuple[int, int]:
+    """Intent:
+        The closed range an int field is drawn from: its bit width's range, or +/-1e6 without one,
+        narrowed by its inclusive and exclusive bounds.
+    """
     t, c = f.type, f.constraints
     lo, hi = -1_000_000, 1_000_000
     if t.bits:
@@ -154,6 +175,10 @@ def _int_range(f: Field) -> tuple[int, int]:
 
 
 def _float_range(f: Field) -> tuple[float, float]:
+    """Intent:
+        The range a float field is drawn from: its lower and upper bounds, or -1e6 and 1e6 where it
+        states none.
+    """
     c = f.constraints
     lo = float(c.low) if c.low is not None else -1e6
     hi = float(c.high) if c.high is not None else 1e6
@@ -161,8 +186,10 @@ def _float_range(f: Field) -> tuple[float, float]:
 
 
 def _decimal_range(f: Field) -> tuple[decimal.Decimal, decimal.Decimal]:
-    """The draw range of a decimal field: its bounds, or +/-1e6 where it
-    states none, inside what `decimal(p, s)` holds."""
+    """Intent:
+        The draw range of a decimal field: its bounds, or +/-1e6 where it states none, inside what
+        `decimal(p, s)` holds.
+    """
     flo, fhi = (decimal.Decimal(str(x)) for x in _float_range(f))
     bound = f.type.decimal_bound()
     if bound is not None:
@@ -171,24 +198,35 @@ def _decimal_range(f: Field) -> tuple[decimal.Decimal, decimal.Decimal]:
 
 
 def _wide() -> Any:
-    """A decimal context wide enough for any `decimal(p, s)` a schema
-    states (Spark and SQL go to 38 digits), so arithmetic on a bound
-    stays exact."""
+    """Intent:
+        A decimal context of 100 digits, wide enough for any `decimal(p, s)` a schema states (Spark
+        and SQL go to 38 digits), so arithmetic on a bound stays exact.
+    """
     context = decimal.Context(prec=100)
     return decimal.localcontext(context)
 
 
 def _decimal_step(t: NeutralType) -> decimal.Decimal:
-    """The smallest step a decimal field holds, 10^-scale."""
+    """Intent:
+        The smallest step a decimal field holds, 10^-scale, with scale 2 when the type states none.
+    """
     return decimal.Decimal(1).scaleb(-(t.scale if t.scale is not None else 2))
 
 
 def _length_range(f: Field, default_hi: int = 12) -> tuple[int, int]:
+    """Intent:
+        The length range a string, binary or list field is drawn within: its `min_len` or 0, up to
+        its `max_len`, else `default_hi` or `min_len` if larger.
+    """
     c = f.constraints
     return (c.min_len or 0, c.max_len if c.max_len is not None else max(default_hi, c.min_len or 0))
 
 
 def _draw_string(rng: random.Random, f: Field) -> str:
+    """Intent:
+        A string for the field: one matching its regex, found by rejection and empty when no try
+        succeeds, else text from the Unicode corpus cut or padded to a random length in range.
+    """
     lo, hi = _length_range(f)
     if f.constraints.regex is not None:
         from ..text.regex import draw_matching
@@ -339,9 +377,13 @@ def simpler(f: Field, current: Any) -> list[Any]:
 
 
 def _simplest_candidates(f: Field) -> list[Any]:
-    """The plain candidates for the simplest member, in order; a bound
-    or a type its kind cannot read (a text bound on an int) ends the
-    list where it is met."""
+    """Intent:
+        The plain candidates for the simplest member, in order.
+
+    Notes:
+        A bound or a type its kind cannot read (a text bound on an int) ends the list where it is
+        met.
+    """
     t, c = f.type, f.constraints
     candidates: list[Any] = []
     try:
@@ -502,6 +544,10 @@ def hazards(f: Field) -> list[HazardValue]:
 
 
 def _same(a: Any, b: Any) -> bool:
+    """Intent:
+        Whether two values are the same: equal and of the same type, with NaN the same as NaN; False
+        when comparing them raises.
+    """
     if isinstance(a, float) and isinstance(b, float) and math.isnan(a) and math.isnan(b):
         return True
     try:

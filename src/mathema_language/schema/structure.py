@@ -17,14 +17,19 @@ from .model import NeutralType, RowSchema
 
 
 def _value_of(record: Any, name: str) -> Any:
+    """Intent:
+        Returns field `name` of a record, a mapping key or an attribute, or None when absent.
+    """
     if isinstance(record, dict):
         return record.get(name)
     return getattr(record, name, None)
 
 
 def _records_in(root: RowSchema, t: NeutralType, value: Any) -> list[tuple[Any, Any]]:
-    """The records a field value of type `t` holds directly, each with
-    its field list, looking through lists and maps."""
+    """Intent:
+        Returns the records a field value of type `t` holds directly, each with its field list,
+        looking through lists and maps.
+    """
     out: list[tuple[Any, Any]] = []
     pending = [(t, value)]
     while pending:

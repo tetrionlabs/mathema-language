@@ -31,54 +31,94 @@ _EVERY_ASSIGNED = (*_LETTER_CATEGORIES, *_NUMBER_CATEGORIES, *_MARK_CATEGORIES,
 
 
 def _every_str(s: str) -> bool:
+    """Intent:
+        Accepts every string, lone surrogates included.
+    """
     return True
 
 
 def _is_ascii(c: str) -> bool:
+    """Intent:
+        Whether the character `c` is one of the 128 ascii code points.
+    """
     return ord(c) < 0x80
 
 
 def _is_latin1(c: str) -> bool:
+    """Intent:
+        Whether the character `c` is below U+0100, so the latin-1 codec encodes it.
+    """
     return ord(c) < 0x100
 
 
 def _is_printable(c: str) -> bool:
+    """Intent:
+        Whether `str.isprintable` accepts the character `c`.
+    """
     return c.isprintable()
 
 
 def _is_digit(c: str) -> bool:
+    """Intent:
+        Whether the character `c` is one of the ten ascii digits.
+    """
     return c in string.digits
 
 
 def _is_alpha(c: str) -> bool:
+    """Intent:
+        Whether `str.isalpha` accepts the character `c`, a letter in any script.
+    """
     return c.isalpha()
 
 
 def _is_alnum(c: str) -> bool:
+    """Intent:
+        Whether `str.isalnum` accepts the character `c`, a letter or digit in any script.
+    """
     return c.isalnum()
 
 
 def _is_c0(c: str) -> bool:
+    """Intent:
+        Whether the character `c` is a C0 control character or the space, U+0000 to U+0020.
+    """
     return ord(c) <= 0x20
 
 
 def _is_format(c: str) -> bool:
+    """Intent:
+        Whether the character `c` is in Unicode category Cf, the format characters that show
+        nothing.
+    """
     return unicodedata.category(c) == "Cf"
 
 
 def _is_combining(c: str) -> bool:
+    """Intent:
+        Whether the character `c` is a combining mark, Unicode category Mn, Mc or Me.
+    """
     return unicodedata.category(c) in _MARK_CATEGORIES
 
 
 def _is_surrogate(c: str) -> bool:
+    """Intent:
+        Whether the character `c` is a surrogate code point, Unicode category Cs.
+    """
     return unicodedata.category(c) == "Cs"
 
 
 def _folds_under_nfkc(c: str) -> bool:
+    """Intent:
+        Whether NFKC normalisation changes the character `c`.
+    """
     return unicodedata.normalize("NFKC", c) != c
 
 
 def _is_non_bmp(c: str) -> bool:
+    """Intent:
+        Whether the character `c` lies past U+FFFF, in an astral plane.
+    """
     return ord(c) > 0xFFFF
 
 
