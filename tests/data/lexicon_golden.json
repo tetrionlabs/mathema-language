@@ -369,6 +369,11 @@
   "unicode": "∀ po ∈ L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], f(po) ≥ 0",
   "ascii": "for po in L[mathema_language._lexicon_models.procurement.PURCHASE_ORDER], f(po) >= 0"
  },
+ "adaptor_openapi_bounded": {
+  "input": "for req in L[mathema_language._lexicon_models.orders_api.list_orders], f(req) <= 100",
+  "unicode": "∀ req ∈ L[mathema_language._lexicon_models.orders_api.list_orders], f(req) ≤ 100",
+  "ascii": "for req in L[mathema_language._lexicon_models.orders_api.list_orders], f(req) <= 100"
+ },
  "adaptor_argparse_proven": {
   "input": "for args in L[mathema_language._lexicon_models.admin.build_restock_parser], args.quantity in [1, 100], f(args) <= 1200",
   "unicode": "∀ args ∈ L[mathema_language._lexicon_models.admin.build_restock_parser], args.quantity ∈ [1, 100] ⊂ ℤ, f(args) ≤ 1200",

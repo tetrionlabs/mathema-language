@@ -20,6 +20,10 @@ schema that refers to itself is refused by name. OpenAPI 3.0's
 spelt on the wire (`style`, `explode`, percent-encoding) is not read:
 the language is of requests once their parameters are parsed.
 
+A claim names an operation by the dotted path of a module attribute
+holding one (`create_order = operation(SPEC, "createOrder")`, then
+`L[app.api.create_order]`).
+
 `Operation` carries what the HTTP method says about an operation, as
 the method's own semantics define it: a GET or HEAD reads only, a PUT
 or DELETE is idempotent, and a DELETE destroys."""
@@ -28,6 +32,8 @@ from __future__ import annotations
 import copy
 from dataclasses import dataclass
 from typing import Any
+
+from .adaptor_priority import LIBRARY, priority
 
 _METHODS = ("get", "put", "post", "delete", "options", "head", "patch", "trace")
 _PLACES = {"path": "path", "query": "query", "header": "headers", "cookie": "cookies"}
@@ -143,6 +149,14 @@ def request_schema(spec: dict[str, Any], operation_id: str) -> dict[str, Any]:
             "required": required, "additionalProperties": False}
 
 
+@priority(LIBRARY)
+def adapt(obj: Any) -> Any:
+    """The request language of an `Operation`, so a claim names an
+    operation by the dotted path of a module attribute holding one
+    (`L[app.api.create_order]`); None for anything else."""
+    return obj.language if isinstance(obj, Operation) else None
+
+
 def operation(spec: dict[str, Any], operation_id: str) -> Operation:
     """One operation and the language of the requests it accepts."""
     from .schema.adaptors.jsonschema import adapt
@@ -151,4 +165,4 @@ def operation(spec: dict[str, Any], operation_id: str) -> Operation:
     return Operation(operation_id, method, path, language)
 
 
-__all__ = ["Operation", "operation", "operation_ids", "request_schema"]
+__all__ = ["Operation", "adapt", "operation", "operation_ids", "request_schema"]

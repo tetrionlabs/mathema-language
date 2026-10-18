@@ -71,6 +71,19 @@ post /orders False False False
 delete /orders/{id} False True True
 ```
 
+## Naming an operation in a claim
+
+A claim names an operation by the dotted path of a module attribute that
+holds one, the way it names a model class:
+
+```text
+# app/api.py
+create_order = operation(SPEC, "createOrder")
+
+# a claim over the requests it accepts
+for req in L[app.api.create_order], quantity_of(req) >= 1
+```
+
 ## What it reads
 
 A path parameter is always required, a query, header or cookie

@@ -1,6 +1,6 @@
 {
-  "implementation": 87,
-  "intent": 70,
+  "implementation": 88,
+  "intent": 69,
   "clarity": 17,
   "overall": 13,
   "clarity_algo": "entropy-dimensions@1.4",
@@ -575,6 +575,11 @@
       "intent": 50,
       "clarity": 24
     },
+    "mathema_language.lexicon.page_size": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 18
+    },
     "mathema_language.lexicon.cases_ordered": {
       "implementation": 100,
       "intent": 50,
@@ -684,6 +689,11 @@
       "implementation": 96,
       "intent": 42,
       "clarity": 11
+    },
+    "mathema_language.openapi.adapt": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
     },
     "mathema_language.openapi.operation": {
       "implementation": 100,
@@ -1890,6 +1900,26 @@
       "intent": 33,
       "clarity": 12
     },
+    "mathema_language.smt.MembershipEncoding.present": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.smt.MembershipEncoding.number": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.smt.MembershipEncoding.string": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.smt.MembershipEncoding.decode": {
+      "implementation": 100,
+      "intent": 48,
+      "clarity": 18
+    },
     "mathema_language.smt.MembershipEncoding.text": {
       "implementation": 100,
       "intent": 33,
@@ -1950,9 +1980,9 @@
       "intent": 85,
       "clarity": 13
     },
-    "mathema_language.smt._names": {
+    "mathema_language.smt.field_names": {
       "implementation": 100,
-      "intent": 85,
+      "intent": 52,
       "clarity": 13
     },
     "mathema_language.smt._field_at": {
@@ -1995,6 +2025,16 @@
       "intent": 93,
       "clarity": 28
     },
+    "mathema_language.smt.new_encoding": {
+      "implementation": 100,
+      "intent": 48,
+      "clarity": 11
+    },
+    "mathema_language.smt.build": {
+      "implementation": 100,
+      "intent": 52,
+      "clarity": 15
+    },
     "mathema_language.smt._admits": {
       "implementation": 90,
       "intent": 85,
@@ -2007,12 +2047,12 @@
     },
     "mathema_language.smt._schema_inclusion": {
       "implementation": 87,
-      "intent": 65,
+      "intent": 64,
       "clarity": 7
     },
     "mathema_language.smt._field_in": {
       "implementation": 90,
-      "intent": 65,
+      "intent": 64,
       "clarity": 11
     },
     "mathema_language.smt._received": {

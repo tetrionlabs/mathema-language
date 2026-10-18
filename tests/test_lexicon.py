@@ -115,6 +115,7 @@ EXPECTED = {
     "adaptor_spark_proven": "proven",
     "adaptor_spark_falsified": ("falsified", 'vs 0'),
     "adaptor_argparse_proven": "proven",
+    "adaptor_openapi_bounded": "holds",
     "adaptor_argparse_bounded": "holds",
     "adaptor_argparse_falsified": ("falsified", '-12 vs 0'),
     "family_length_safe": "holds",
@@ -127,7 +128,7 @@ EXPECTED = {
 
 #: the library an adaptor row's records need, by the row's adaptor
 _ADAPTOR_LIBRARY = {"pydantic": "pydantic", "sqlalchemy": "sqlalchemy",
-                    "django": "django", "jsonschema": "jsonschema"}
+                    "django": "django", "jsonschema": "jsonschema", "openapi": "jsonschema"}
 
 
 #: rows that need libraries beyond their adaptor's
