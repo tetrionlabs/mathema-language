@@ -104,6 +104,7 @@ jobs:
     # main, never a required check
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       pull-requests: write
@@ -122,6 +123,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[test]" "mathema>=0.6.2,<0.7" pytest-cov pytest-xdist
       - name: the coverage report from main
+        id: coverage
         if: env.EXACT != 'true'
         uses: actions/cache/restore@v4
         with:
@@ -137,9 +139,12 @@ jobs:
           key: badges-${{ github.sha }}
           restore-keys: badges-
       - name: the tests under coverage
-        if: env.EXACT == 'true'
-        # the tests workflow is the gate; a failure here only leaves
-        # lines uncovered, and the warning says so
+        # exact runs, and any run with no report from main to restore:
+        # scoring without a report traces every function one by one,
+        # which takes far longer than the suite under coverage. The
+        # tests workflow is the gate; a failure here only leaves lines
+        # uncovered, and the warning says so
+        if: env.EXACT == 'true' || steps.coverage.outputs.cache-matched-key == ''
         run: |
           python -m pytest -q -n 2 -p no:cacheprovider --cov=mathema_language --cov-report= \
             || echo "::warning::tests failed under coverage; the tests workflow is the gate"
@@ -174,6 +179,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
+          RAN_TESTS: ${{ env.EXACT == 'true' || steps.coverage.outputs.cache-matched-key == '' }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           COMMENTS: repos/${{ github.repository }}/issues/${{ github.event.number }}/comments
         run: |
@@ -186,7 +192,7 @@ jobs:
           done
           python .github/scripts/measure_comment.py \
             --head .mathema/badges --base base --base-sha "$BASE_SHA" \
-            --exact "$EXACT" --coverage coverage.txt --run-url "$RUN_URL" > comment.md
+            --exact "$RAN_TESTS" --coverage coverage.txt --run-url "$RUN_URL" > comment.md
           cat comment.md >> "$GITHUB_STEP_SUMMARY"
           id=$(gh api "$COMMENTS" --paginate \
                  --jq '.[] | select(.body | startswith("<!-- mathema-measure -->")) | .id' | head -1)
