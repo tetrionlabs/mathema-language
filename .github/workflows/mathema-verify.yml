@@ -14,8 +14,8 @@
 # claim removed without a decision). `measure` is never a required
 # check: it scores the badges from the restored coverage report and
 # the per-function badges cache, comments on the pull request, and on
-# main publishes the result to the mathema-badges branch, where the
-# README reads it. Coverage is regenerated on main and restored on a
+# main publishes the result to the badges branch, where the README
+# reads it. Coverage is regenerated on main and restored on a
 # pull request, so the implementation score on a pull request is a
 # lower bound until the `coverage` label asks for an exact run.
 #
@@ -30,6 +30,15 @@ on:
 
 permissions:
   contents: read
+
+# Names and messages a repository's conventions may fix, set as
+# repository variables (Settings, Secrets and variables, Actions,
+# Variables); each falls back to the default here. In a message,
+# {keys} stands for the refreshed records and {sha} for the main commit.
+env:
+  BADGES_BRANCH: "${{ vars.MATHEMA_BADGES_BRANCH || 'mathema-badges' }}"
+  RECORDS_MESSAGE: "${{ vars.MATHEMA_RECORDS_MESSAGE || 'verify: refresh records for {keys}' }}"
+  BADGES_MESSAGE: "${{ vars.MATHEMA_BADGES_MESSAGE || 'badges for {sha}' }}"
 
 jobs:
   evidence:
@@ -84,7 +93,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .mathema/verified
-          git commit -qm "verify: refresh records for $(echo $STALE)"
+          keys=$(echo $STALE)
+          git commit -qm "${RECORDS_MESSAGE//\{keys\}/$keys}"
           git push origin "HEAD:refs/heads/${{ github.head_ref }}"
       - name: the claim-level delta since the base
         if: github.event_name == 'pull_request'
@@ -183,11 +193,11 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           COMMENTS: repos/${{ github.repository }}/issues/${{ github.event.number }}/comments
         run: |
-          git fetch -q origin mathema-badges 2>/dev/null || true
+          git fetch -q origin "$BADGES_BRANCH" 2>/dev/null || true
           mkdir -p base
           for f in snapshot.json implementation.json intent.json clarity.json; do
-            git show "origin/mathema-badges:$BASE_SHA/$f" > "base/$f" 2>/dev/null \
-              || git show "origin/mathema-badges:main/$f" > "base/$f" 2>/dev/null \
+            git show "origin/$BADGES_BRANCH:$BASE_SHA/$f" > "base/$f" 2>/dev/null \
+              || git show "origin/$BADGES_BRANCH:main/$f" > "base/$f" 2>/dev/null \
               || rm -f "base/$f"
           done
           python .github/scripts/measure_comment.py \
@@ -203,15 +213,15 @@ jobs:
           fi
       - name: publish the badges
         if: github.ref == 'refs/heads/main'
-        # the mathema-badges branch holds one directory per main commit
-        # and `main/` for the latest; the README reads `main/`
+        # the badges branch holds one directory per main commit and
+        # `main/` for the latest; the README reads `main/`
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git fetch -q origin mathema-badges 2>/dev/null; then
-            git worktree add -q publish origin/mathema-badges
+          if git fetch -q origin "$BADGES_BRANCH" 2>/dev/null; then
+            git worktree add -q publish "origin/$BADGES_BRANCH"
           else
-            git worktree add -q --orphan -b mathema-badges publish
+            git worktree add -q --orphan -b "$BADGES_BRANCH" publish
           fi
           rm -rf "publish/main" "publish/${{ github.sha }}"
           mkdir -p "publish/main" "publish/${{ github.sha }}"
@@ -219,5 +229,6 @@ jobs:
           cp -R .mathema/badges/. "publish/${{ github.sha }}/"
           cd publish
           git add -A
-          git commit -qm "badges for ${{ github.sha }}" || exit 0
-          git push -q origin HEAD:refs/heads/mathema-badges
+          sha="${{ github.sha }}"
+          git commit -qm "${BADGES_MESSAGE//\{sha\}/$sha}" || exit 0
+          git push -q origin "HEAD:refs/heads/$BADGES_BRANCH"
