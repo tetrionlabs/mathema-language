@@ -1,0 +1,16 @@
+# Install the push-time check with:
+#   pre-commit install --hook-type pre-push
+# It refuses a push whose committed records are stale for the tree, and
+# names the records verify refreshed; commit them and push again. Push
+# past it with `git push --no-verify`: CI runs the same check. It runs
+# the project's own mathema (.venv), since a different mathema can
+# render a form differently and rewrite a record that was fresh.
+repos:
+  - repo: local
+    hooks:
+      - id: mathema-verify-fresh
+        name: mathema records are fresh
+        entry: sh -c '.venv/bin/mathema verify --root . --lenient >/dev/null; git diff --quiet -- .mathema/verified || { echo "records refreshed, commit .mathema/verified:"; git diff --name-only -- .mathema/verified; exit 1; }'
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

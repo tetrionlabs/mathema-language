@@ -90,7 +90,14 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           mathema review "origin/${{ github.base_ref }}" --root . --format json --output review.json
-          python .github/scripts/review_gate.py review.json | tee -a "$GITHUB_STEP_SUMMARY"
+          python .github/scripts/review_gate.py review.json --junit review.xml | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'pull_request'
+        with:
+          name: review
+          path: |
+            review.json
+            review.xml
 
   measure:
     # informational: a comment on the pull request and the badges on
@@ -140,7 +147,10 @@ jobs:
       - name: score
         run: |
           mathema badges mathema_language --root . --out .mathema/badges --jobs 2
-          mathema coverage mathema_language --root . | tail -4 > coverage.txt || true
+          # the summary lines go to the log as well as the comment: a host
+          # that reads coverage off the log (GitLab's `coverage:` regex)
+          # takes "implementation coverage: N%" from here
+          mathema coverage mathema_language --root . | tail -4 | tee coverage.txt || true
       - name: keep the coverage report for pull requests
         if: github.ref == 'refs/heads/main'
         uses: actions/cache/save@v4
