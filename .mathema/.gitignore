@@ -1,5 +1,8 @@
 # Regenerated from the code or local-only, so not committed. The
-# verified records, meta (locks/policy) and badges are the evidence
-# and config, and are committed.
+# verified records and meta (locks/policy) are the evidence and config,
+# and are committed. The badges are published by CI to the
+# mathema-badges branch, one directory per main commit.
 /declared/
 /issues/
+/badges/
+/cache/

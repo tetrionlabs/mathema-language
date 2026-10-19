@@ -124,6 +124,11 @@ packages = ["src/mathema_language"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+[tool.coverage.run]
+# the low-overhead backend on Python 3.12 and later, so a proof traced
+# under coverage stays inside its wall-clock cap
+core = "sysmon"
+
 [tool.ruff]
 target-version = "py310"
 

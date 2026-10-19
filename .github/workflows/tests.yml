@@ -2,6 +2,7 @@ name: tests
 
 on:
   push:
+    branches-ignore: [mathema-badges]
   pull_request:
   workflow_call:
 
@@ -26,7 +27,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install "mathema>=0.6.2,<0.7"
-      - run: pip install --no-deps . && pip install pytest annotated-types
+      - run: pip install --no-deps . && pip install pytest pytest-xdist annotated-types
       - name: no ecosystem is installed
         run: |
           python - <<'PY'
@@ -45,7 +46,7 @@ jobs:
             fi
           done
           exit $status
-      - run: pytest -v
+      - run: pytest -q -n 2
 
   adaptor:
     # one ecosystem per job, at its lowest supported version and its
@@ -72,7 +73,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install "mathema>=0.6.2,<0.7"
-      - run: pip install --no-deps . && pip install pytest annotated-types "${{ matrix.spec }}"
+      - run: pip install --no-deps . && pip install pytest pytest-xdist annotated-types "${{ matrix.spec }}"
       - name: only this ecosystem is installed
         env:
           ECOSYSTEM: ${{ matrix.ecosystem }}
@@ -83,7 +84,7 @@ jobs:
                     if m != os.environ["ECOSYSTEM"] and importlib.util.find_spec(m) is not None]
           assert not others, others
           PY
-      - run: pytest -v
+      - run: pytest -q -n 2
 
   everything:
     # every ecosystem together, and the static checks
@@ -94,7 +95,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install "mathema>=0.6.2,<0.7"
-      - run: pip install --no-deps . && pip install pytest ruff mypy annotated-types pydantic jsonschema sqlalchemy django ruamel.yaml pyyaml z3-solver
+      - run: pip install --no-deps . && pip install pytest pytest-xdist ruff mypy annotated-types pydantic jsonschema sqlalchemy django ruamel.yaml pyyaml z3-solver
       - run: ruff check .
       - run: mypy src
-      - run: pytest -v
+      - run: pytest -q -n 2
