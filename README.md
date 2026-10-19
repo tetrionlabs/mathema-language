@@ -3,13 +3,13 @@
 **mathema for strings, records and schemas.**
 
 <p align="center">
-  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/implementation.json" alt="implementation">
-  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/intent.json" alt="intent">
-  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/clarity.json" alt="clarity">
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/mathema-badges/main/implementation.json" alt="implementation">
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/mathema-badges/main/intent.json" alt="intent">
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/tetrionlabs/mathema-language/mathema-badges/main/clarity.json" alt="clarity">
 </p>
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tetrionlabs/mathema-language/main/.mathema/badges/triangle.svg" alt="mathema triangle" width="360">
+  <img src="https://raw.githubusercontent.com/tetrionlabs/mathema-language/mathema-badges/main/triangle.svg" alt="mathema triangle" width="360">
 </p>
 
 | score | what it measures |

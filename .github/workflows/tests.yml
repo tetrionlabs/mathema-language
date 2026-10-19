@@ -10,8 +10,12 @@ on:
 # that quietly depends on another ecosystem being present fails its own
 # job.
 
+# Every job skips the badges branch, which holds no code, whatever the
+# MATHEMA_BADGES_BRANCH variable names it.
+
 jobs:
   base:
+    if: github.ref_name != (vars.MATHEMA_BADGES_BRANCH || 'mathema-badges')
     # no ecosystem at all: the text languages, the families, the
     # dataclass and TypedDict adaptors, and every adaptor answering
     # "not mine" without importing its ecosystem
@@ -26,7 +30,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install "mathema>=0.6.2,<0.7"
-      - run: pip install --no-deps . && pip install pytest annotated-types
+      - run: pip install --no-deps . && pip install pytest pytest-xdist annotated-types
       - name: no ecosystem is installed
         run: |
           python - <<'PY'
@@ -45,9 +49,10 @@ jobs:
             fi
           done
           exit $status
-      - run: pytest -v
+      - run: pytest -q -n 2
 
   adaptor:
+    if: github.ref_name != (vars.MATHEMA_BADGES_BRANCH || 'mathema-badges')
     # one ecosystem per job, at its lowest supported version and its
     # latest release
     runs-on: ubuntu-latest
@@ -72,7 +77,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install "mathema>=0.6.2,<0.7"
-      - run: pip install --no-deps . && pip install pytest annotated-types "${{ matrix.spec }}"
+      - run: pip install --no-deps . && pip install pytest pytest-xdist annotated-types "${{ matrix.spec }}"
       - name: only this ecosystem is installed
         env:
           ECOSYSTEM: ${{ matrix.ecosystem }}
@@ -83,9 +88,10 @@ jobs:
                     if m != os.environ["ECOSYSTEM"] and importlib.util.find_spec(m) is not None]
           assert not others, others
           PY
-      - run: pytest -v
+      - run: pytest -q -n 2
 
   everything:
+    if: github.ref_name != (vars.MATHEMA_BADGES_BRANCH || 'mathema-badges')
     # every ecosystem together, and the static checks
     runs-on: ubuntu-latest
     steps:
@@ -94,7 +100,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install "mathema>=0.6.2,<0.7"
-      - run: pip install --no-deps . && pip install pytest ruff mypy annotated-types pydantic jsonschema sqlalchemy django ruamel.yaml pyyaml z3-solver
+      - run: pip install --no-deps . && pip install pytest pytest-xdist ruff mypy annotated-types pydantic jsonschema sqlalchemy django ruamel.yaml pyyaml z3-solver
       - run: ruff check .
       - run: mypy src
-      - run: pytest -v
+      - run: pytest -q -n 2

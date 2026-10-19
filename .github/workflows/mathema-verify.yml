@@ -1,62 +1,234 @@
-# mathema verify is the CI gate over the committed .mathema/ store: it
-# checks again whatever changed and gates the result. verify is
-# strict by default, which fails a falsified claim, an open unknown
-# one, and also a claim that could not be checked at all (an unreachable
-# surface, an unsupported shape). Most stores have some of the last
-# kind at first, so expect the first run to be red and to tell you
-# exactly which claims it means. Add --lenient to report those
-# unverifiable claims and accepted risk without failing, and keep
-# strict for falsified and unknown, once you have decided each one is
-# understood. Exit codes: 0 clean, 1 gate failure, 2 broken invocation
-# or store, so a failing gate is distinguishable from a broken job
-# without parsing any output.
+# The mathema gate reads the committed .mathema/ store as a lockfile
+# over the code. Each verified record states its verdicts for one form
+# hash, with the form hashes of the functions it calls beside it, so
+# "fresh" is a hash comparison: a record whose form still matches is
+# read, never re-run, and a proof it holds stands however loaded the
+# machine that runs this job is. Only the functions whose hash moved,
+# and their direct callers (the ripple, through dependencies_current),
+# are adjudicated here.
+#
+# Two jobs. `evidence` is the gate: verify adjudicates the ripple,
+# pushes the refreshed records back onto the branch so the review diff
+# carries the code and its evidence together, and fails on what this
+# change made worse (a new falsification, a dropped retirement row, a
+# claim removed without a decision). `measure` is never a required
+# check: it scores the badges from the restored coverage report and
+# the per-function badges cache, comments on the pull request, and on
+# main publishes the result to the badges branch, where the README
+# reads it. Coverage is regenerated on main and restored on a
+# pull request, so the implementation score on a pull request is a
+# lower bound until the `coverage` label asks for an exact run.
+#
+# Exit codes from verify: 0 clean, 1 gate failure, 2 broken invocation
+# or store, so a failing gate is distinguishable from a broken job.
 name: mathema
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Names and messages a repository's conventions may fix, set as
+# repository variables (Settings, Secrets and variables, Actions,
+# Variables); each falls back to the default here. In a message,
+# {keys} stands for the refreshed records and {sha} for the main commit.
+env:
+  BADGES_BRANCH: "${{ vars.MATHEMA_BADGES_BRANCH || 'mathema-badges' }}"
+  RECORDS_MESSAGE: "${{ vars.MATHEMA_RECORDS_MESSAGE || 'verify: refresh records for {keys}' }}"
+  BADGES_MESSAGE: "${{ vars.MATHEMA_BADGES_MESSAGE || 'badges for {sha}' }}"
 
 jobs:
-  verify:
+  evidence:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      # a fine-grained token with contents: write, so the records this
+      # job pushes back start the checks again; without it the job
+      # fails and names the command to run instead
+      PUSH_TOKEN: ${{ secrets.MATHEMA_CI_TOKEN }}
+      SAME_REPO: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # the pull request's own head, not the merge commit, so the
+          # records verify writes belong to a commit on the branch; the
+          # whole history so the base ref is there for the review delta
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          token: ${{ secrets.MATHEMA_CI_TOKEN || github.token }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       # your project must import for its claims to adjudicate; adjust
       # this line to however your project installs
       - run: pip install -e . "mathema>=0.6.2,<0.7"
-      - run: mathema verify --root . --lenient
-      # optional: the claim-level delta since the base, for a PR comment
-      # - run: mathema review --format json --output review.json
+      - name: verify the ripple
+        # unchanged forms are read from their records; only the
+        # functions that changed, and their callers, are checked again
+        run: mathema verify --root . --lenient
+      - name: records that were stale
+        id: stale
+        run: |
+          stale=$(git diff --name-only -- .mathema/verified | sed -e 's#.*/##' -e 's#\.yaml$##')
+          if [ -n "$stale" ]; then
+            echo "stale<<EOF" >> "$GITHUB_OUTPUT"; echo "$stale" >> "$GITHUB_OUTPUT"; echo "EOF" >> "$GITHUB_OUTPUT"
+            echo "records refreshed for: $(echo $stale)"
+            echo "locally: mathema verify $(echo $stale)"
+          else
+            echo "every record was fresh for this tree"
+          fi
+      - name: push the refreshed records to the branch
+        if: steps.stale.outputs.stale != '' && github.event_name == 'pull_request'
+        env:
+          STALE: ${{ steps.stale.outputs.stale }}
+        run: |
+          if [ "$SAME_REPO" != "true" ] || [ -z "$PUSH_TOKEN" ]; then
+            echo "::error::the committed records were stale for this tree; run and commit: mathema verify $(echo $STALE)"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .mathema/verified
+          keys=$(echo $STALE)
+          git commit -qm "${RECORDS_MESSAGE//\{keys\}/$keys}"
+          git push origin "HEAD:refs/heads/${{ github.head_ref }}"
+      - name: the claim-level delta since the base
+        if: github.event_name == 'pull_request'
+        run: |
+          mathema review "origin/${{ github.base_ref }}" --root . --format json --output review.json
+          python .github/scripts/review_gate.py review.json --junit review.xml | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always() && github.event_name == 'pull_request'
+        with:
+          name: review
+          path: |
+            review.json
+            review.xml
 
-  # The badges in .mathema/badges/ are committed with the change that
-  # moves them: regenerate them after verify and a fresh coverage run,
-  # commit them, and this job checks they are current. The implementation
-  # score reads coverage, which mathema trusts only once stamped against
-  # the files it measured.
-  badges:
+  measure:
+    # informational: a comment on the pull request and the badges on
+    # main, never a required check
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      # exact numbers mean the tests run under coverage here: always on
+      # main, and on a pull request carrying the `coverage` label
+      EXACT: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'coverage') }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e ".[test]" "mathema>=0.6.2,<0.7" pytest-cov
-      - name: Coverage for the implementation score
+      - run: pip install -e ".[test]" "mathema>=0.6.2,<0.7" pytest-cov pytest-xdist
+      - name: the coverage report from main
+        id: coverage
+        if: env.EXACT != 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            .coverage
+            coverage.sources.json
+          key: coverage-${{ env.BASE_SHA }}
+          restore-keys: coverage-
+      - name: the badges cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .mathema/cache/badges
+          key: badges-${{ github.sha }}
+          restore-keys: badges-
+      - name: the tests under coverage
+        # exact runs, and any run with no report from main to restore:
+        # scoring without a report traces every function one by one,
+        # which takes far longer than the suite under coverage. The
+        # tests workflow is the gate; a failure here only leaves lines
+        # uncovered, and the warning says so
+        if: env.EXACT == 'true' || steps.coverage.outputs.cache-matched-key == ''
         run: |
-          python -m pytest -q -p no:cacheprovider --cov=mathema_language --cov-report=
+          python -m pytest -q -n 2 -p no:cacheprovider --cov=mathema_language --cov-report= \
+            || echo "::warning::tests failed under coverage; the tests workflow is the gate"
           mathema coverage --stamp --root .
-      - run: mathema badges mathema_language --root . --out .mathema/badges
-      # the badges this run made, to commit when they differ: a function's
-      # step stops at a wall-clock cap, so a run on a loaded machine can
-      # cap more functions than this one, and the files this run makes are
-      # the ones to keep
+      - name: score
+        run: |
+          mathema badges mathema_language --root . --out .mathema/badges --jobs 2
+          # the implementation score goes to the log as well as the
+          # comment: a host that reads coverage off the log (GitLab's
+          # `coverage:` regex) takes "implementation coverage: N%" here
+          python -c "import json; print('implementation coverage: ' + json.load(open('.mathema/badges/implementation.json'))['message'])" | tee coverage.txt
+      - name: keep the coverage report for pull requests
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            .coverage
+            coverage.sources.json
+          key: coverage-${{ github.sha }}
+      - name: keep the badges cache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: .mathema/cache/badges
+          key: badges-${{ github.sha }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: badges
           path: .mathema/badges/
-      - name: The committed badges are current
-        run: git diff --exit-code .mathema/badges/
+      - name: the comment on the pull request
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RAN_TESTS: ${{ env.EXACT == 'true' || steps.coverage.outputs.cache-matched-key == '' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          COMMENTS: repos/${{ github.repository }}/issues/${{ github.event.number }}/comments
+        run: |
+          git fetch -q origin "$BADGES_BRANCH" 2>/dev/null || true
+          mkdir -p base
+          for f in snapshot.json implementation.json intent.json clarity.json; do
+            git show "origin/$BADGES_BRANCH:$BASE_SHA/$f" > "base/$f" 2>/dev/null \
+              || git show "origin/$BADGES_BRANCH:main/$f" > "base/$f" 2>/dev/null \
+              || rm -f "base/$f"
+          done
+          python .github/scripts/measure_comment.py \
+            --head .mathema/badges --base base --base-sha "$BASE_SHA" \
+            --exact "$RAN_TESTS" --coverage coverage.txt --run-url "$RUN_URL" > comment.md
+          cat comment.md >> "$GITHUB_STEP_SUMMARY"
+          id=$(gh api "$COMMENTS" --paginate \
+                 --jq '.[] | select(.body | startswith("<!-- mathema-measure -->")) | .id' | head -1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$id" -F body=@comment.md >/dev/null
+          else
+            gh api "$COMMENTS" -F body=@comment.md >/dev/null
+          fi
+      - name: publish the badges
+        if: github.ref == 'refs/heads/main'
+        # the badges branch holds one directory per main commit and
+        # `main/` for the latest; the README reads `main/`
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch -q origin "$BADGES_BRANCH" 2>/dev/null; then
+            git worktree add -q publish "origin/$BADGES_BRANCH"
+          else
+            git worktree add -q --orphan -b "$BADGES_BRANCH" publish
+          fi
+          rm -rf "publish/main" "publish/${{ github.sha }}"
+          mkdir -p "publish/main" "publish/${{ github.sha }}"
+          cp -R .mathema/badges/. "publish/main/"
+          cp -R .mathema/badges/. "publish/${{ github.sha }}/"
+          cd publish
+          git add -A
+          sha="${{ github.sha }}"
+          git commit -qm "${BADGES_MESSAGE//\{sha\}/$sha}" || exit 0
+          git push -q origin "HEAD:refs/heads/$BADGES_BRANCH"
