@@ -162,10 +162,10 @@ jobs:
       - name: score
         run: |
           mathema badges mathema_language --root . --out .mathema/badges --jobs 2
-          # the summary lines go to the log as well as the comment: a host
-          # that reads coverage off the log (GitLab's `coverage:` regex)
-          # takes "implementation coverage: N%" from here
-          mathema coverage mathema_language --root . | tail -4 | tee coverage.txt || true
+          # the implementation score goes to the log as well as the
+          # comment: a host that reads coverage off the log (GitLab's
+          # `coverage:` regex) takes "implementation coverage: N%" here
+          python -c "import json; print('implementation coverage: ' + json.load(open('.mathema/badges/implementation.json'))['message'])" | tee coverage.txt
       - name: keep the coverage report for pull requests
         if: github.ref == 'refs/heads/main'
         uses: actions/cache/save@v4
