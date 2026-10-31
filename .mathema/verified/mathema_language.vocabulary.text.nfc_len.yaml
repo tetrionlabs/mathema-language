@@ -1,4 +1,4 @@
-# machine record; binds to form 90f9f8716f52
+# machine record; binds to form py:90f9f8716f52
 mathema_language.vocabulary.text.nfc_len:
   schema_version: "0.2.0"
   name: "nfc_len"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.nfc_len:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "90f9f8716f52"
+    form: "py:90f9f8716f52"
     sig: "65ad6ba295db"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "ee62ebded0b7"
     pin: "none"
-    integrity: "v2:30c7925e0a8e41b7"
+    integrity: "v2:ba2c924cd32ae7d4"
   math: null
   claims:
     - name: "at_most_three_times_the_text"

@@ -1,4 +1,4 @@
-# machine record; binds to form 28d41f2e4099
+# machine record; binds to form py:28d41f2e4099
 mathema_language.vocabulary.text.startswith:
   schema_version: "0.2.0"
   name: "startswith"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.startswith:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "28d41f2e4099"
+    form: "py:28d41f2e4099"
     sig: "39b3ba2dd33f"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "6285c5ab18ef"
     pin: "none"
-    integrity: "v2:8107c7683b836bd0"
+    integrity: "v2:07f5a5bf5dd8bf31"
   math: null
   claims:
     - name: "dependencies_current"

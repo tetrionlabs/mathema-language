@@ -1,4 +1,4 @@
-# machine record; binds to form 6cd866ec3a4c
+# machine record; binds to form py:6cd866ec3a4c
 mathema_language.text.predicates._is_iso_date:
   schema_version: "0.2.0"
   name: "_is_iso_date"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._is_iso_date:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "6cd866ec3a4c"
+    form: "py:6cd866ec3a4c"
     sig: "8acabd54f6cd"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "b165211f6bf5"
     pin: "none"
-    integrity: "v2:7b106f68335f3ced"
+    integrity: "v2:42da82fe96dc9507"
   math: null
   claims:
     - name: "defined_on_any_text"

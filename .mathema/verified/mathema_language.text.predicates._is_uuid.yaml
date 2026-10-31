@@ -1,4 +1,4 @@
-# machine record; binds to form fe3c70ee53b0
+# machine record; binds to form py:fe3c70ee53b0
 mathema_language.text.predicates._is_uuid:
   schema_version: "0.2.0"
   name: "_is_uuid"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._is_uuid:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "fe3c70ee53b0"
+    form: "py:fe3c70ee53b0"
     sig: "8acabd54f6cd"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "b165211f6bf5"
     pin: "none"
-    integrity: "v2:2813967908060f65"
+    integrity: "v2:96c5d4437b768a41"
   math: null
   claims:
     - name: "defined_on_any_text"

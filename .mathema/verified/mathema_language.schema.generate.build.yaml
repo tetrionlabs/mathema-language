@@ -1,4 +1,4 @@
-# machine record; binds to form e5b145e2f03d
+# machine record; binds to form py:e5b145e2f03d
 mathema_language.schema.generate.build:
   schema_version: "0.2.0"
   name: "build"
@@ -7,14 +7,14 @@ mathema_language.schema.generate.build:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "e5b145e2f03d"
+    form: "py:e5b145e2f03d"
     sig: "5e376de275f7"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:025e5d3b2fb15458"
+    integrity: "v2:193a10fc282d23a6"
   math: null
   claims:
     - name: "dependencies_current"

@@ -1,4 +1,4 @@
-# machine record; binds to form ee1b3f311397
+# machine record; binds to form py:ee1b3f311397
 mathema_language.text.predicates._generate_iso_datetime:
   schema_version: "0.2.0"
   name: "_generate_iso_datetime"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._generate_iso_datetime:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "ee1b3f311397"
+    form: "py:ee1b3f311397"
     sig: "71d3eb2c5422"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:d9e823d4518cced4"
+    integrity: "v2:28088a60d3f58f86"
   math: null
   claims:
     - name: "dependencies_current"

@@ -1,4 +1,4 @@
-# machine record; binds to form f839dbc16c11
+# machine record; binds to form py:f839dbc16c11
 mathema_language.vocabulary.text.strip:
   schema_version: "0.2.0"
   name: "strip"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.strip:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "f839dbc16c11"
+    form: "py:f839dbc16c11"
     sig: "dcd3b51f9556"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "94098e1b88ba"
     pin: "none"
-    integrity: "v2:9b5fff3d6dddcaf2"
+    integrity: "v2:7b696397f8f73b1b"
   math: null
   claims:
     - name: "bounded_on_long_text"

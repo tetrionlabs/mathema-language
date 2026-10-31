@@ -1,4 +1,4 @@
-# machine record; binds to form be695abdfcaf
+# machine record; binds to form py:be695abdfcaf
 mathema_language.text.predicates._generate_slug:
   schema_version: "0.2.0"
   name: "_generate_slug"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._generate_slug:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "be695abdfcaf"
+    form: "py:be695abdfcaf"
     sig: "71d3eb2c5422"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:856c954e482c4779"
+    integrity: "v2:b5b0972d0a7afff6"
   math: null
   claims:
     - name: "dependencies_current"

@@ -1,4 +1,4 @@
-# machine record; binds to form 3306d8ce0ebe
+# machine record; binds to form py:3306d8ce0ebe
 mathema_language.vocabulary.text.nfd:
   schema_version: "0.2.0"
   name: "nfd"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.nfd:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "3306d8ce0ebe"
+    form: "py:3306d8ce0ebe"
     sig: "dcd3b51f9556"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "de5d621a1830"
     pin: "none"
-    integrity: "v2:32bbefa4c576de8b"
+    integrity: "v2:42c44f43acf4775d"
   math: null
   claims:
     - name: "dependencies_current"

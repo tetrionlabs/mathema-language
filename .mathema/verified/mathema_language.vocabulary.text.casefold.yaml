@@ -1,4 +1,4 @@
-# machine record; binds to form eee2add0956d
+# machine record; binds to form py:eee2add0956d
 mathema_language.vocabulary.text.casefold:
   schema_version: "0.2.0"
   name: "casefold"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.casefold:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "eee2add0956d"
+    form: "py:eee2add0956d"
     sig: "dcd3b51f9556"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "801a1d22138d"
     pin: "none"
-    integrity: "v2:1fbddd417f928948"
+    integrity: "v2:448ac54c76c49dfc"
   math: null
   claims:
     - name: "dependencies_current"

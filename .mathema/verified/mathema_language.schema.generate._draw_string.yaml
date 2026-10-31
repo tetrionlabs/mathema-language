@@ -1,4 +1,4 @@
-# machine record; binds to form 6760beea6ee6
+# machine record; binds to form py:6760beea6ee6
 mathema_language.schema.generate._draw_string:
   schema_version: "0.2.0"
   name: "_draw_string"
@@ -7,14 +7,14 @@ mathema_language.schema.generate._draw_string:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "6760beea6ee6"
+    form: "py:6760beea6ee6"
     sig: "2bbaf1560573"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:a992ad03c6a0b094"
+    integrity: "v2:61c0fa4f200be732"
   math: null
   claims:
     - name: "dependencies_current"
@@ -47,14 +47,14 @@ mathema_language.schema.generate._draw_string:
       key: "mathema_language.schema.generate._length_range"
       file: "src/mathema_language/schema/generate.py"
       line: 186
-      form: "7f2fd06d8775"
+      form: "py:7f2fd06d8775"
       freshness: "unverified"
     - name: "field_problems"
       kind: "function"
       key: "mathema_language.schema.checks.field_problems"
       file: "src/mathema_language/schema/checks.py"
       line: 301
-      form: "2e6a70c148b7"
+      form: "py:2e6a70c148b7"
       freshness: "current"
   meta:
     mathema.not_run:

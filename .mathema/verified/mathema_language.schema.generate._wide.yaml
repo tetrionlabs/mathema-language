@@ -1,4 +1,4 @@
-# machine record; binds to form 54f54ee39793
+# machine record; binds to form py:54f54ee39793
 mathema_language.schema.generate._wide:
   schema_version: "0.2.0"
   name: "_wide"
@@ -7,14 +7,14 @@ mathema_language.schema.generate._wide:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "54f54ee39793"
+    form: "py:54f54ee39793"
     sig: "704fb557e71b"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:084ce08b5810337c"
+    integrity: "v2:6208a3d66eb44e5e"
   math: null
   claims:
     - name: "dependencies_current"

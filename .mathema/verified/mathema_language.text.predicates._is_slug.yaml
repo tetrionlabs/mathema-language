@@ -1,4 +1,4 @@
-# machine record; binds to form b3a9eeeb0ee5
+# machine record; binds to form py:b3a9eeeb0ee5
 mathema_language.text.predicates._is_slug:
   schema_version: "0.2.0"
   name: "_is_slug"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._is_slug:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "b3a9eeeb0ee5"
+    form: "py:b3a9eeeb0ee5"
     sig: "8acabd54f6cd"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "2135f1fa35ac"
     pin: "none"
-    integrity: "v2:b684f502a447a3fa"
+    integrity: "v2:9c816215c8c70d34"
   math: null
   claims:
     - name: "accepts_its_members"
