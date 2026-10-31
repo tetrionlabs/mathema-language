@@ -1921,7 +1921,7 @@
       "clarity": 18
     },
     "mathema_language.smt.MembershipEncoding.text": {
-      "implementation": 100,
+      "implementation": 75,
       "intent": 33,
       "clarity": 18
     },
@@ -2622,12 +2622,6 @@
     }
   },
   "capped": [
-    [
-      "mathema_language.schema.checks._Walker._type",
-      [
-        "implementation"
-      ]
-    ],
     [
       "mathema_language.schema.emptiness._candidates",
       [
