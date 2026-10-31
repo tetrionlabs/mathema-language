@@ -52,7 +52,7 @@ LEXICON: dict[str, str] = {
         "for s in L[unicode], u(f(s)) == s",
     # a retraction on a predicate language: parse, render, parse again
     "language_retraction":
-        "let dump = json.dumps, for s in L[json], f(dump(f(s))) == f(s)",
+        "let dump = json.dumps, for s in L[json, depth <= 100], f(dump(f(s))) == f(s)",
     # a normaliser is idempotent over every string
     "language_idempotent": "for s in L[unicode], f(f(s)) == f(s)",
     "language_yaml_reading":

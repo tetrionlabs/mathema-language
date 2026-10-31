@@ -140,9 +140,13 @@ def _exits_3(argv: list[str]) -> int:
     raise SystemExit(3)
 
 
+# `is_language_defined` judges the bound language as the function's
+# declared domain: a member must get an answer, and a non-member that gets
+# a value back falsifies it too, so a program that swallows the refusal
+# fails both claims, the second at a command line outside the language.
 @pytest.mark.parametrize("fn, refused, answered", [
     (_parses, "holds", "holds"),
-    (_swallows_the_refusal, "falsified", "holds"),
+    (_swallows_the_refusal, "falsified", "falsified"),
     (_crashes_on_a_negative_order, "holds", "falsified"),
     (_exits_3, "holds", "falsified"),
 ], ids=lambda v: getattr(v, "__name__", v))
@@ -154,3 +158,5 @@ def test_a_program_refuses_with_exit_2_and_answers_with_a_return_or_exit_0_or_1(
     (outside,) = check_conjectures(fn, [claim("for argv in L[shop_admin_argv], excluded_outside_domain(argv)")])
     (inside,) = check_conjectures(fn, [claim("for argv in L[shop_admin_argv], is_language_defined(argv)")])
     assert (outside.verdict, inside.verdict) == (refused, answered)
+    if fn is _swallows_the_refusal:
+        assert "(outside L[shop_admin_argv]) returned 1" in inside.counterexample

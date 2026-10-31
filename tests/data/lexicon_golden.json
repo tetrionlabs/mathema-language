@@ -20,9 +20,9 @@
   "ascii": "let u = mathema_language.lexicon.unescape_angle, for s in L[unicode], u(f(s)) = s"
  },
  "language_retraction": {
-  "input": "let dump = json.dumps, for s in L[json], f(dump(f(s))) == f(s)",
-  "unicode": "let dump = json.dumps, ∀ s ∈ L[json], f(dump(f(s))) = f(s)",
-  "ascii": "let dump = json.dumps, for s in L[json], f(dump(f(s))) = f(s)"
+  "input": "let dump = json.dumps, for s in L[json, depth <= 100], f(dump(f(s))) == f(s)",
+  "unicode": "let dump = json.dumps, ∀ s ∈ L[json, depth <= 100], f(dump(f(s))) = f(s)",
+  "ascii": "let dump = json.dumps, for s in L[json, depth <= 100], f(dump(f(s))) = f(s)"
  },
  "language_idempotent": {
   "input": "for s in L[unicode], f(f(s)) == f(s)",
