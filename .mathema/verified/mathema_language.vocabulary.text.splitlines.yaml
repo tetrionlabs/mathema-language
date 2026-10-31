@@ -1,4 +1,4 @@
-# machine record; binds to form 64c6a2d3ccb4
+# machine record; binds to form py:64c6a2d3ccb4
 mathema_language.vocabulary.text.splitlines:
   schema_version: "0.2.0"
   name: "splitlines"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.splitlines:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "64c6a2d3ccb4"
+    form: "py:64c6a2d3ccb4"
     sig: "a3a4794c12e0"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "62f97a008cea"
     pin: "none"
-    integrity: "v2:cde4b31b31c81a9d"
+    integrity: "v2:9027dfef40939cff"
   math: null
   claims:
     - name: "defined_on_any_text"

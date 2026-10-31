@@ -1,4 +1,4 @@
-# machine record; binds to form 91b4c2196829
+# machine record; binds to form py:91b4c2196829
 mathema_language.schema.generate._definitions:
   schema_version: "0.2.0"
   name: "_definitions"
@@ -7,14 +7,14 @@ mathema_language.schema.generate._definitions:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "91b4c2196829"
+    form: "py:91b4c2196829"
     sig: "704fb557e71b"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:4f7d60048227db35"
+    integrity: "v2:f8218248189fe3bf"
   math: null
   claims:
     - name: "dependencies_current"

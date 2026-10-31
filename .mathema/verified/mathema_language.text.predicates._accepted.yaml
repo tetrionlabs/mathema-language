@@ -1,4 +1,4 @@
-# machine record; binds to form 4f259ac7a1d9
+# machine record; binds to form py:4f259ac7a1d9
 mathema_language.text.predicates._accepted:
   schema_version: "0.2.0"
   name: "_accepted"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._accepted:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "4f259ac7a1d9"
+    form: "py:4f259ac7a1d9"
     sig: "599c7fa342f3"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:d445106e346d7c7f"
+    integrity: "v2:7bd5aa1d760fbd91"
   math: null
   claims:
     - name: "dependencies_current"

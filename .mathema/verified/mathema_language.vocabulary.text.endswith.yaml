@@ -1,4 +1,4 @@
-# machine record; binds to form 9ac326ccb7e2
+# machine record; binds to form py:9ac326ccb7e2
 mathema_language.vocabulary.text.endswith:
   schema_version: "0.2.0"
   name: "endswith"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.endswith:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "9ac326ccb7e2"
+    form: "py:9ac326ccb7e2"
     sig: "9f2511675da0"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "e925666dcc81"
     pin: "none"
-    integrity: "v2:f45ce2e94e48f5cc"
+    integrity: "v2:019d2ea26b667d3a"
   math: null
   claims:
     - name: "dependencies_current"

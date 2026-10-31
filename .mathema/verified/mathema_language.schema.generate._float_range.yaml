@@ -1,4 +1,4 @@
-# machine record; binds to form 96cdb218f840
+# machine record; binds to form py:96cdb218f840
 mathema_language.schema.generate._float_range:
   schema_version: "0.2.0"
   name: "_float_range"
@@ -7,14 +7,14 @@ mathema_language.schema.generate._float_range:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "96cdb218f840"
+    form: "py:96cdb218f840"
     sig: "e7a5c41b191a"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:9837d63ab556b2cd"
+    integrity: "v2:f23550ee8685f21f"
   math: null
   claims:
     - name: "dependencies_current"

@@ -1,4 +1,4 @@
-# machine record; binds to form 54a06a2d2db2
+# machine record; binds to form py:54a06a2d2db2
 mathema_language.vocabulary.text.nfkc:
   schema_version: "0.2.0"
   name: "nfkc"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.nfkc:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "54a06a2d2db2"
+    form: "py:54a06a2d2db2"
     sig: "dcd3b51f9556"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "de5d621a1830"
     pin: "none"
-    integrity: "v2:773dce363e36aa9f"
+    integrity: "v2:d26737d4e5bdc2f5"
   math: null
   claims:
     - name: "dependencies_current"

@@ -1,4 +1,4 @@
-# machine record; binds to form 0f597ca33bf1
+# machine record; binds to form py:0f597ca33bf1
 mathema_language.schema.generate._reaches_a_record:
   schema_version: "0.2.0"
   name: "_reaches_a_record"
@@ -7,14 +7,14 @@ mathema_language.schema.generate._reaches_a_record:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "0f597ca33bf1"
+    form: "py:0f597ca33bf1"
     sig: "359b5f078111"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:cf45ff3c6e962382"
+    integrity: "v2:ed03486c604b8ed0"
   math: null
   claims:
     - name: "dependencies_current"

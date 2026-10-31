@@ -1,4 +1,4 @@
-# machine record; binds to form 3502d6e6e31e
+# machine record; binds to form py:3502d6e6e31e
 mathema_language.schema.generate._room:
   schema_version: "0.2.0"
   name: "_room"
@@ -7,14 +7,14 @@ mathema_language.schema.generate._room:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "3502d6e6e31e"
+    form: "py:3502d6e6e31e"
     sig: "02679bd5daed"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "f340751eefe6"
     pin: "none"
-    integrity: "v2:4724471be8718863"
+    integrity: "v2:9ca7d9c76043cd93"
   math: null
   claims:
     - name: "dependencies_current"

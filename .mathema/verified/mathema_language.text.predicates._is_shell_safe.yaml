@@ -1,4 +1,4 @@
-# machine record; binds to form 703811b1224c
+# machine record; binds to form py:703811b1224c
 mathema_language.text.predicates._is_shell_safe:
   schema_version: "0.2.0"
   name: "_is_shell_safe"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._is_shell_safe:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "703811b1224c"
+    form: "py:703811b1224c"
     sig: "8acabd54f6cd"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "b165211f6bf5"
     pin: "none"
-    integrity: "v2:59c377bc70a9b8c0"
+    integrity: "v2:cdf0d3cac0d3e98d"
   math: null
   claims:
     - name: "defined_on_any_text"
@@ -83,7 +83,7 @@ mathema_language.text.predicates._is_shell_safe:
       kind: "function"
       key: "shlex.quote"
       line: 323
-      form: "96d8d3b18a64"
+      form: "py:96d8d3b18a64"
   meta:
     mathema.concept_sources:
       mechanism:

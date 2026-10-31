@@ -1,4 +1,4 @@
-# machine record; binds to form f30df0ac2f69
+# machine record; binds to form py:f30df0ac2f69
 mathema_language.vocabulary.text.nfkd:
   schema_version: "0.2.0"
   name: "nfkd"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.nfkd:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "f30df0ac2f69"
+    form: "py:f30df0ac2f69"
     sig: "dcd3b51f9556"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "de5d621a1830"
     pin: "none"
-    integrity: "v2:ece2eb2a780c7269"
+    integrity: "v2:9e4ef82b35352282"
   math: null
   claims:
     - name: "dependencies_current"

@@ -1,4 +1,4 @@
-# machine record; binds to form 7bc8defd2fb3
+# machine record; binds to form py:7bc8defd2fb3
 mathema_language.text.predicates._is_hex:
   schema_version: "0.2.0"
   name: "_is_hex"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._is_hex:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "7bc8defd2fb3"
+    form: "py:7bc8defd2fb3"
     sig: "8acabd54f6cd"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "b165211f6bf5"
     pin: "none"
-    integrity: "v2:3f394ffaac6e1dbd"
+    integrity: "v2:b2806152e0b4f236"
   math: null
   claims:
     - name: "defined_on_any_text"

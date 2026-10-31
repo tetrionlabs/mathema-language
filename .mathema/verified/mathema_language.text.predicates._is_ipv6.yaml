@@ -1,4 +1,4 @@
-# machine record; binds to form 7358f1aad0c2
+# machine record; binds to form py:7358f1aad0c2
 mathema_language.text.predicates._is_ipv6:
   schema_version: "0.2.0"
   name: "_is_ipv6"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._is_ipv6:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "7358f1aad0c2"
+    form: "py:7358f1aad0c2"
     sig: "8acabd54f6cd"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "b165211f6bf5"
     pin: "none"
-    integrity: "v2:8d4e044af8ae1cf1"
+    integrity: "v2:de460758bccb65bc"
   math: null
   claims:
     - name: "defined_on_any_text"

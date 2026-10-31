@@ -1,4 +1,4 @@
-# machine record; binds to form ecc482f7b16c
+# machine record; binds to form py:ecc482f7b16c
 mathema_language.vocabulary.text.nfc:
   schema_version: "0.2.0"
   name: "nfc"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.nfc:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "ecc482f7b16c"
+    form: "py:ecc482f7b16c"
     sig: "dcd3b51f9556"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "6eaba061c82d"
     pin: "none"
-    integrity: "v2:00274b16f0b922ed"
+    integrity: "v2:897d0e72f135f29f"
   math: null
   claims:
     - name: "absorbs_decomposition"

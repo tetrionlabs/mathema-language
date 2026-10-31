@@ -1,4 +1,4 @@
-# machine record; binds to form 61844eeba8a5
+# machine record; binds to form py:61844eeba8a5
 mathema_language.vocabulary.text.upper:
   schema_version: "0.2.0"
   name: "upper"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.upper:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "61844eeba8a5"
+    form: "py:61844eeba8a5"
     sig: "dcd3b51f9556"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "31f7b0823af4"
     pin: "none"
-    integrity: "v2:0bc13e6f433cd5c0"
+    integrity: "v2:fffc590d5da487de"
   math: null
   claims:
     - name: "at_most_triples_length"

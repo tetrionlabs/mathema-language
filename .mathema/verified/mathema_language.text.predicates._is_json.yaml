@@ -1,4 +1,4 @@
-# machine record; binds to form c60a77a6625e
+# machine record; binds to form py:c60a77a6625e
 mathema_language.text.predicates._is_json:
   schema_version: "0.2.0"
   name: "_is_json"
@@ -7,14 +7,14 @@ mathema_language.text.predicates._is_json:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "c60a77a6625e"
+    form: "py:c60a77a6625e"
     sig: "8acabd54f6cd"
     tier: 3
     source_available: true
     pure: false
     claims_fingerprint: "f8f83230f797"
     pin: "none"
-    integrity: "v2:7add6023d3fdc49a"
+    integrity: "v2:8de2028600ecb444"
   math: null
   claims:
     - name: "accepts_its_members"

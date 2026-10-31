@@ -1,4 +1,4 @@
-# machine record; binds to form 30391e680a80
+# machine record; binds to form py:30391e680a80
 mathema_language.vocabulary.text.lower:
   schema_version: "0.2.0"
   name: "lower"
@@ -7,14 +7,14 @@ mathema_language.vocabulary.text.lower:
   grammar: "mathema"
   tolerance: 1.0e-09
   identity:
-    form: "30391e680a80"
+    form: "py:30391e680a80"
     sig: "dcd3b51f9556"
     tier: 2
     source_available: true
     pure: true
     claims_fingerprint: "de5d621a1830"
     pin: "none"
-    integrity: "v2:f1f64e6425b431bc"
+    integrity: "v2:cd80af53abc17c90"
   math: null
   claims:
     - name: "dependencies_current"
