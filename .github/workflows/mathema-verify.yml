@@ -160,6 +160,11 @@ jobs:
             || echo "::warning::tests failed under coverage; the tests workflow is the gate"
           mathema coverage --stamp --root .
       - name: score
+        env:
+          # mathema 0.6.4 turns the core badges writer off by default and
+          # 0.6.5 removes it; the flag keeps it on until this job moves to
+          # mathema-ci
+          MATHEMA_BADGES: "on"
         run: |
           mathema badges mathema_language --root . --out .mathema/badges --jobs 2
           # the implementation score goes to the log as well as the
