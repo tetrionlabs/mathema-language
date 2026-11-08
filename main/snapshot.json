@@ -1885,6 +1885,11 @@
       "intent": 93,
       "clarity": 29
     },
+    "mathema_language.smt.MembershipEncoding._decimal_digits": {
+      "implementation": 100,
+      "intent": 57,
+      "clarity": 30
+    },
     "mathema_language.smt.MembershipEncoding._bounds": {
       "implementation": 89,
       "intent": 95,
@@ -1896,7 +1901,7 @@
       "clarity": 19
     },
     "mathema_language.smt.MembershipEncoding.member": {
-      "implementation": 82,
+      "implementation": 81,
       "intent": 33,
       "clarity": 12
     },
@@ -2021,7 +2026,7 @@
       "clarity": 23
     },
     "mathema_language.smt._scalar": {
-      "implementation": 70,
+      "implementation": 87,
       "intent": 93,
       "clarity": 28
     },
