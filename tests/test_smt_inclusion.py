@@ -167,9 +167,12 @@ def _values(language, row):
     return out
 
 
-@pytest.mark.parametrize("schema", [V1, Pattern, Rich, Line, ORDER_V1, ORDER_V2],
-                         ids=["pydantic", "pattern", "rich", "dataclass", "json-v1", "json-v2"])
+@pytest.mark.parametrize("schema", [V1, Pattern, Rich, Line, ORDER_V1, ORDER_V2, "money", "money-finer"],
+                         ids=["pydantic", "pattern", "rich", "dataclass", "json-v1", "json-v2",
+                              "money", "money-finer"])
 def test_the_encoding_never_admits_less_than_older_or_more_than_newer(schema):
+    if isinstance(schema, str):
+        schema = {"money": Money, "money-finer": MoneyFiner}[schema]
     language = adapt_row(schema)
     rng = random.Random(7)
     members = [language.sample(rng) for _ in range(60)]
@@ -338,3 +341,45 @@ def _satisfies_language(language, values, side):
     for name in names:
         solver.add(enc.var(name) == (enc.const(values[name]) if name in values else enc.V.absent))
     return solver.check() == z3.sat
+
+
+class Money(BaseModel):
+    amount: decimal.Decimal = Field(max_digits=9, decimal_places=2)
+
+
+class MoneyFiner(BaseModel):
+    amount: decimal.Decimal = Field(max_digits=10, decimal_places=3)
+
+
+class MoneyCoarser(BaseModel):
+    amount: decimal.Decimal = Field(max_digits=9, decimal_places=1)
+
+
+@pytest.mark.parametrize("older, newer, verdict", [
+    (Money, Money, "proven"),
+    (Money, MoneyFiner, "proven"),
+    (Money, MoneyCoarser, "falsified"),
+    (MoneyFiner, Money, "falsified"),
+], ids=lambda v: getattr(v, "__name__", None) or v)
+def test_a_decimal_scale_and_digit_count_decide_inclusion(older, newer, verdict):
+    result = smt._schema_inclusion(older, newer)
+    assert result.verdict == verdict, str(result)
+    if verdict == "falsified":
+        assert smt._admits(adapt_row(older), result.witness)
+        assert not smt._admits(adapt_row(newer), result.witness)
+
+
+@pytest.mark.parametrize("amount, admitted", [
+    ("1234567.89", True),
+    ("-1234567.89", True),
+    ("7", True),
+    ("1.234", False),
+    ("12345678.9", False),
+    ("10000000", False),
+])
+def test_a_decimal_reads_the_same_on_both_sides_at_its_scale_and_digit_edges(amount, admitted):
+    language = adapt_row(Money)
+    values = {"amount": decimal.Decimal(amount)}
+    assert smt._admits(language, values) is admitted
+    assert _satisfies(language, values, "older") is admitted
+    assert _satisfies(language, values, "newer") is admitted
