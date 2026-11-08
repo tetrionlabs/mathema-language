@@ -191,6 +191,41 @@ class MembershipEncoding:
         return (self.z3.Or(V.is_i(x), V.is_r(x)),
                 self.z3.If(V.is_i(x), self.z3.ToReal(V.iv(x)), V.rv(x)))
 
+    def _decimal_digits(self, x: Any, V: Any, scale: int, precision: int | None,
+                        side: str, name: str) -> Any:
+        """Intent:
+            Returns the z3 condition that the number `x` has at most `scale` places after the
+            point and, when `precision` is given, at most `precision` digits in all.
+
+            A number has at most `scale` places when its shift by `10**scale` is whole, and then
+            at most `precision` digits when that shifted value lies strictly between
+            `-10**precision` and `10**precision`. An int always meets the scale, so its arm only
+            bounds the digits, in integer arithmetic.
+
+            The two sides state the real arm differently. The newer side, which an inclusion
+            negates, states it as a function of `x` alone (the shifted value equals its own
+            floor), so negating it leaves the solver nothing to choose. The older side, which an
+            inclusion only asserts, builds `x` as a whole number `k` over `10**scale`; the two
+            admit the same reals, and the built form is the one z3 decides quickly.
+        """
+        z3 = self.z3
+        shift = 10 ** scale
+        bound = 10 ** precision if precision is not None else None
+        n = V.iv(x) * shift
+        on_int = z3.And(n < bound, n > -bound) if bound is not None else z3.BoolVal(True)
+        if side == "older":
+            k = z3.Int(f"k_{len(self.extra)}_{name}")
+            self.extra.append(k)
+            on_real = [x == V.r(z3.ToReal(k) / shift)]
+            if bound is not None:
+                on_real += [k < bound, k > -bound]
+        else:
+            scaled = V.rv(x) * shift
+            on_real = [V.is_r(x), z3.ToReal(z3.ToInt(scaled)) == scaled]
+            if bound is not None:
+                on_real += [scaled < bound, scaled > -bound]
+        return z3.Or(z3.And(V.is_i(x), on_int), z3.And(*on_real))
+
     def _bounds(self, f: Field, real: Any) -> list[Any]:
         """Intent:
             Returns one z3 condition on `real` per numeric bound (inclusive or exclusive minimum
@@ -273,11 +308,7 @@ class MembershipEncoding:
             if c.multiple_of is not None:
                 raise Untranslated(f"the divisor on the {t.base} field .{f.name}")
             if t.base == "decimal" and t.scale is not None:
-                k = z3.Int(f"k_{len(self.extra)}_{f.name}")
-                self.extra.append(k)
-                num.append(real * (10 ** t.scale) == z3.ToReal(k))
-                if t.precision is not None:
-                    num += [k < 10 ** t.precision, k > -(10 ** t.precision)]
+                num.append(self._decimal_digits(x, V, t.scale, t.precision, side, f.name))
             alternatives = [z3.And(*num)]
             if t.base == "float":
                 specials = side == "older" or f.nan_allowed
