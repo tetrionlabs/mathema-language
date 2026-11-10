@@ -24,7 +24,8 @@ The examples are the shop's own, from `examples/shop/formats.py`.
 | Language | Members | Decided by |
 |---|---|---|
 | `L[digit]` | strings of the ten ASCII digits | `c in "0123456789"` |
-| `L[alpha]`, `L[alnum]` | letters, and letters with digits, in any script | `str.isalpha`, `str.isalnum` |
+| `L[alpha]`, `L[alnum]` | strings of ASCII letters, and of ASCII letters and digits | `string.ascii_letters`, with `string.digits` for `alnum` |
+| `L[unicode_alpha]`, `L[unicode_alnum]` | letters, and letters with digits, in any script | `str.isalpha`, `str.isalnum` |
 | `L[identifier]` | Python identifiers | `str.isidentifier` |
 | `L[uuid]` | every spelling `uuid.UUID` reads: hyphenated, bare, braced, `urn:uuid:` | `uuid.UUID` |
 | `L[iso_date]`, `L[iso_datetime]` | ISO 8601 dates and times as this Python reads them | `date.fromisoformat`, `datetime.fromisoformat` |
