@@ -19,7 +19,7 @@ as the value outside the language.
 | `len` | code points, the way `len` counts | text languages |
 | `depth` | nesting: records along the deepest path, or containers for `L[json]` | record trees, `L[json]` |
 | `nodes` | records in all, or every value and container for `L[json]` | record trees, `L[json]` |
-| `children` | the most records, items or keys one level holds | record trees, `L[json]` |
+| `width` | the most records, items or keys one level holds | record trees, `L[json]` |
 
 ## Length
 
@@ -49,7 +49,7 @@ for text in L[json, nodes <= 20], f(text) <= 19
     holds
 ```
 
-Where nothing bounds a tree, random members are drawn within sampling
-bounds the record states (depth 8, 256 nodes, 16 children), and the
+Where nothing bounds a tree, random members are drawn within default
+sampling bounds (depth 8, 256 nodes, width 16), and the
 hazards still reach the real extent, a spine past Python's recursion
 limit included.

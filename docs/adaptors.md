@@ -8,16 +8,17 @@
 
 An adaptor turns one library's schema object into a language whose
 members are that library's records, and there will be many of them, so
-the package's own nine have no privileged path: each is an ordinary
+the package's own ten have no privileged path: each is an ordinary
 registration under mathema's `mathema.language_adaptors` entry-point
 group, found through the same registry an adaptor from your package is
 found through, and passes the same conformance checks. The pages
-beside this one describe the nine: [dataclasses](adaptor-dataclass.md),
+beside this one describe the ten: [dataclasses](adaptor-dataclass.md),
 [TypedDicts](adaptor-typeddict.md), [pydantic](adaptor-pydantic.md),
 [JSON Schema](adaptor-jsonschema.md), [Spark schemas](adaptor-spark.md),
 [command lines](adaptor-argparse.md),
 [SQLAlchemy](adaptor-sqlalchemy.md),
-[Django](adaptor-django.md) and [text annotations](adaptor-text.md).
+[Django](adaptor-django.md), [text annotations](adaptor-text.md) and
+[OpenAPI operations](openapi.md).
 
 ## The contract
 

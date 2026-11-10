@@ -27,7 +27,7 @@ code:
 | `L[identifier]` | a Python identifier |
 
 [Languages](languages.md) lists the rest, formats such as `L[uuid]` and
-`L[email]` among them, and [Formats](formats.md) uses them.
+`L[iso_date]` among them, and [Formats](formats.md) uses them.
 
 ## Narrowing by length
 
