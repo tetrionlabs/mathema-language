@@ -65,7 +65,7 @@ jobs:
           python-version: "3.12"
       # your project must import for its claims to adjudicate; adjust
       # this line to however your project installs
-      - run: pip install -e . "mathema>=0.6.2,<0.7"
+      - run: pip install -e . "mathema>=0.6.5,<0.7"
       - name: verify the ripple
         # unchanged forms are read from their records; only the
         # functions that changed, and their callers, are checked again
@@ -131,7 +131,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -e ".[test]" "mathema>=0.6.2,<0.7" pytest-cov pytest-xdist
+      - run: pip install -e ".[test]" "mathema>=0.6.5,<0.7" pytest-cov pytest-xdist
       - name: the coverage report from main
         id: coverage
         if: env.EXACT != 'true'
