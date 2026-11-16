@@ -14,12 +14,12 @@ mathema_language.schema.checks.field_problems:
     pure: true
     claims_fingerprint: "8aaed477d126"
     pin: "none"
-    integrity: "v2:64e92103dcfe0d2f"
+    integrity: "v2:f849d08279c45504"
   math: null
   claims:
     - name: "absent[definitions]"
       statement: "absent(f, definitions)"
-      verdict: "unknown"
+      verdict: "skipped:unknown_but_accepted"
       n: 1
       note: "f raised AttributeError at definitions = None and again with definitions present, on every draw of value, field, path and shallow tried, so the raise is not definitions's and nothing says what f does at definitions = None. bind value, field, path and shallow in a claim to values f runs on, so f can be read at definitions = None"
       route: "probe:counterfactual"
@@ -34,14 +34,13 @@ mathema_language.schema.checks.field_problems:
           sentence: "f raised AttributeError at definitions = None and again with definitions present, on every draw of value, field, path and shallow tried, so the raise is not definitions's and nothing says what f does at definitions = None"
           next: "bind value, field, path and shallow in a claim to values f runs on, so f can be read at definitions = None"
         mathema.surface: "mathema"
-        mathema.previous_verdict: "skipped:unknown_but_accepted"
+        mathema.previous_verdict: "unknown"
       accepted:
         as: "risk"
-        at: "2026-10-14"
-        form: "2e6a70c148b7"
+        at: "2026-11-16"
+        form: "py:4e8d88638128"
         by: "Aaron Byrne"
-        note: "mathema 0.6.2's default draws of value and field raise AttributeError whatever definitions is, so the row cannot be read. Behaviour at definitions=None is pinned by tests/test_schema_emptiness.py::test_a_reference_with_no_definitions_to_resolve_it_is_a_problem: problems returned, never a raise, and an unresolvable reference is a problem."
-        stale: true
+        note: "known risk"
       acceptance_history:
         - at: "2026-10-14"
           as: "risk"
@@ -51,6 +50,11 @@ mathema_language.schema.checks.field_problems:
         - at: "2026-11-16"
           event: "stale"
           reason: "form changed since acceptance, re-verification and a new sign-off are required"
+        - at: "2026-11-16"
+          as: "risk"
+          verdict: "unknown"
+          by: "Aaron Byrne"
+          note: "known risk"
     - name: "absent[field.default]"
       statement: "absent(f, field.default) drops"
       verdict: "holds"
