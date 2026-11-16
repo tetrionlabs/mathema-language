@@ -17,7 +17,7 @@
 | [**implementation**](https://mathema.tetrionlabs.com/modes/badges/#the-three-badges) | the share of statements reached by a test, a probe or a derive proof, taken together |
 | [**intent**](https://mathema.tetrionlabs.com/modes/badges/#the-three-badges) | how much of what the code is meant to do is explicitly specified |
 | [**clarity**](https://mathema.tetrionlabs.com/modes/badges/#how-clarity-is-scored) | how much of each function's knowable behaviour its verified claims have pinned down |
-| [**overall**](https://mathema.tetrionlabs.com/modes/badges/#the-triangle) | the area the three span, so it falls toward zero when any one of them is empty |
+| [**overall**](https://mathema.tetrionlabs.com/modes/badges/#the-triangle) | the area spanned by all three scores |
 
 [ [mathema](https://mathema.tetrionlabs.com/) ] know what your code actually does
 
