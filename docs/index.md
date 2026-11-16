@@ -105,3 +105,7 @@ mathematics is right and the code is not.
   for each adaptor.
 - The claims worth writing for a function, by what the function does:
   [What to claim](catalogue.md).
+- For an API: [OpenAPI operations](openapi.md). For a Spark job:
+  [Prove a Spark rule](how-to-prove-a-spark-rule.md).
+- For tools and tests that use a language directly:
+  [Using a language from Python](python-api.md).

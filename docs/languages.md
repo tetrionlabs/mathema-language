@@ -28,8 +28,10 @@ Every string over a set of characters, the empty string included;
 | `L[latin-1]` | what the latin-1 codec encodes | `ord(c) < 256` | [Text](text.md) |
 | `L[printable]` | what Python calls printable | `str.isprintable` | [Text](text.md) |
 | `L[digit]` | the ten ASCII digits | `c in "0123456789"` | [Formats](formats.md) |
-| `L[alpha]` | letters in any script | `str.isalpha` | [Formats](formats.md) |
-| `L[alnum]` | letters and digits in any script | `str.isalnum` | [Formats](formats.md) |
+| `L[alpha]` | the ASCII letters | `c in string.ascii_letters` | [Formats](formats.md) |
+| `L[alnum]` | the ASCII letters and digits | `c in string.ascii_letters + string.digits` | [Formats](formats.md) |
+| `L[unicode_alpha]` | letters in any script | `str.isalpha` | [Formats](formats.md) |
+| `L[unicode_alnum]` | letters and digits in any script | `str.isalnum` | [Formats](formats.md) |
 
 ## Hazard alphabets
 
