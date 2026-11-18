@@ -12,9 +12,9 @@
 
 | score | what it measures |
 |:---|:---|
-| [**implementation**](https://mathema.tetrionlabs.com/modes/badges/#the-three-badges) | the share of statements reached by a test, a probe or a derive proof, taken together |
-| [**intent**](https://mathema.tetrionlabs.com/modes/badges/#the-three-badges) | how much of what the code is meant to do is explicitly specified |
+| [**implementation**](https://mathema.tetrionlabs.com/modes/badges/#the-three-scores) | the share of statements reached by a test, a probe or a derive proof, taken together |
+| [**intent**](https://mathema.tetrionlabs.com/modes/badges/#the-three-scores) | how much of what the code is meant to do is explicitly specified |
 | [**clarity**](https://mathema.tetrionlabs.com/modes/badges/#how-clarity-is-scored) | how much of each function's knowable behaviour its verified claims have pinned down |
-| [**overall**](https://mathema.tetrionlabs.com/modes/badges/#the-triangle) | the area the three span, where each pair of scores counts equally, so a low score pulls it down without zeroing it |
+| [**overall**](https://mathema.tetrionlabs.com/modes/badges/#the-triangle) | the area spanned by all three scores |
 
 [ [mathema](https://mathema.tetrionlabs.com/) ] know what your code actually does
