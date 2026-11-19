@@ -33,17 +33,27 @@ def runs(pattern, flags, predicate, text):
 
 
 def disagreements(pattern, flags, texts, predicates=PREDICATES):
+    """Each (version, predicate, text) where a term parts from `re` run here:
+    the term for every supported Python, and the term pinned to this one.
+    An exact term must equal `re`; a pair must hold every string `re`
+    admits in `at_least` and none `re` refuses in `at_most`."""
     out = []
-    for predicate in predicates:
-        doc = rx.term(pattern, flags, predicate)
-        for text in texts:
-            expected = runs(pattern, flags, predicate, text)
-            if doc["exact"]:
-                if rx.member(doc, text) != expected:
-                    out.append((predicate, text, expected))
-            elif (expected and not rx.member(doc, text, "at_least")) or \
-                    (rx.member(doc, text, "at_most") and not expected):
-                out.append((predicate, text, expected))
+    for version in (None, rx.RUNNING):
+        for predicate in predicates:
+            try:
+                doc = rx.term(pattern, flags, predicate, version=version)
+            except rx.NotRegular:
+                if version is None:
+                    continue
+                raise
+            for text in texts:
+                expected = runs(pattern, flags, predicate, text)
+                if doc["exact"]:
+                    if rx.member(doc, text) != expected:
+                        out.append((version, predicate, text, expected))
+                elif (expected and not rx.member(doc, text, "at_least")) or \
+                        (rx.member(doc, text, "at_most") and not expected):
+                    out.append((version, predicate, text, expected))
     return out
 
 
@@ -135,10 +145,9 @@ def test_a_large_bound_is_kept_as_a_count():
 def test_what_is_not_regular_is_a_named_bound(pattern, named):
     texts = ["", "a", "aa", "aaa", "b", "ab", "ba", "c", "bc", "abc", " a", "a a"]
     for predicate in PREDICATES:
-        doc = rx.term(pattern, 0, predicate)
+        doc = rx.term(pattern, 0, predicate, version=rx.RUNNING)
         assert not doc["exact"] and "language" not in doc
         assert any(named in why for why in doc["source"]["not_exact"])
-        assert doc["at_most"] == {"op": "empty"}
     assert disagreements(pattern, 0, texts) == []
 
 
@@ -205,7 +214,7 @@ def test_the_hash_reads_the_meaning_not_the_source():
 
 def test_a_term_round_trips_through_its_nodes():
     for pattern in [r"\Aa\Z", r"[^\n]+$", r"(?:ab|c){2,5}", r"\b\d"]:
-        doc = rx.term(pattern, 0, "contains")
+        doc = rx.term(pattern, 0, "contains", version=rx.RUNNING)
         node = rx.to_node(rx.from_node(doc["language"]))
         assert node == doc["language"]
 
@@ -257,15 +266,15 @@ def _sweep(n_patterns, n_texts, seed):
         pattern = _generate(rng)
         flags = rng.choice([0, re.I, re.M, re.S, re.A, re.I | re.M, re.I | re.A])
         try:
-            rx.term(pattern, flags)
+            rx.term(pattern, flags, version=rx.RUNNING)
         except rx.NotRegular:
             continue
-        if rx.term(pattern, flags)["exact"]:
+        if rx.term(pattern, flags, version=rx.RUNNING)["exact"]:
             exact += 1
         else:
             inexact += 1
         texts = _texts(rng, n_texts)
-        checks += len(texts) * len(PREDICATES)
+        checks += 2 * len(texts) * len(PREDICATES)
         wrong += [(pattern, flags, *d) for d in disagreements(pattern, flags, texts)]
     return exact, inexact, checks, wrong
 
@@ -339,7 +348,7 @@ def test_a_unicode_scope_in_an_ascii_pattern_is_a_bound():
 def test_a_backreference_under_ignore_case_is_bounded_by_any_case(pattern):
     texts = ["aA", "aa", "AA", "Aa", "a", "k\u212ax", "kKx", "kkx", ""]
     for predicate in PREDICATES:
-        assert not rx.term(pattern, 0, predicate)["exact"]
+        assert not rx.term(pattern, 0, predicate, version=rx.RUNNING)["exact"]
     assert disagreements(pattern, 0, texts) == []
 
 

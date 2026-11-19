@@ -122,6 +122,10 @@ class Ecma(_Regex):
         self.pattern = pattern
         self.flags_text = flags
         self.relax = True
+        self.reading = "at_least"
+        self.native = True
+        self.version = None
+        self.varies: list[str] = []
         self.not_exact: list[str] = []
         self.groups: dict[int, list] = {}
         self.unicode = "u" in flags or "v" in flags

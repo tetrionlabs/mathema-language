@@ -68,6 +68,10 @@ class NotRegular(ValueError):
     """A pattern the translation does not read, or reads only as a bound, named."""
 
 
+class OtherVersion(RuntimeError):
+    """A language about one Python version, asked to check or draw on another."""
+
+
 #: the last code point
 _MAX_CODE = 0x10FFFF
 
@@ -443,10 +447,38 @@ def _merge(pieces: list) -> list:
     return [(left, body, right) for (left, right), body in by.items()]
 
 
-def _power(pieces: list, n: int) -> list:
+#: the most nodes a counted repeat of a sub-pattern with assertions is written out to
+_WRITTEN = 20_000
+
+
+def _written(pieces: list) -> int:
+    """Intent:
+        Returns the number of nodes and ranges the bodies of `pieces` take when written out as
+        a tree.
+    """
+    sizes: dict[int, int] = {}
+
+    def size(r: tuple) -> int:
+        if id(r) not in sizes and r[0] == "chars":
+            sizes[id(r)] = len(r[1])
+        if id(r) not in sizes:
+            sizes[id(r)] = 1 + sum(size(p) for p in r[1:] if isinstance(p, tuple) and p
+                                   and isinstance(p[0], str))
+        return sizes[id(r)]
+
+    return sum(size(r) for _, r, _ in pieces)
+
+
+def _power(pieces: list, n: int) -> list | None:
+    """Intent:
+        Returns the pieces of `pieces` followed by itself `n` times in all, or None once they
+        would take more than `_WRITTEN` nodes to write out.
+    """
     out = [(_TRIVIAL, _EPS, _TRIVIAL)]
     for _ in range(n):
         out = _join(out, pieces)
+        if _written(out) > _WRITTEN:
+            return None
     return out
 
 
@@ -471,18 +503,131 @@ def _boundary(word: Any, other: Any, negated: bool, in_empty: bool) -> list:
 _UNROLL = 32
 
 
+#: the Python this interpreter is, as the data file names versions
+RUNNING = f"{sys.version_info[0]}.{sys.version_info[1]}"
+
+_VERSIONS: dict[str, Any] = {}
+
+
+def versions_data() -> dict[str, Any]:
+    """Intent:
+        Returns what each supported Python reads differently, from the shipped data file: the
+        versions with their Unicode versions, each version-dependent class as the code points
+        every version holds (`common`) and each version's own (`by_version`), the code points
+        unassigned in the newest version, the code points whose case reading differs between
+        versions, and the versions on which each engine reading holds.
+    """
+    if not _VERSIONS:
+        import json
+        from pathlib import Path
+        raw = json.loads((Path(__file__).parent / "data" / "python_versions.json").read_text())
+
+        def spans(ranges: Any) -> tuple[tuple[int, int], ...]:
+            return tuple((lo, hi) for lo, hi in ranges)
+
+        classes = {}
+        for name, entry in raw["classes"].items():
+            common = spans(entry["common"])
+            by_version = {v: _cs_union(common, spans(extra)) for v, extra in entry["extra"].items()}
+            classes[name] = {"common": common, "by_version": by_version,
+                             "any": _cs_union(*by_version.values())}
+        _VERSIONS.update(
+            dialect=raw["dialect"], versions=[v["python"] for v in raw["versions"]],
+            unicode={v["python"]: v["unicode"] for v in raw["versions"]}, classes=classes,
+            unassigned=spans(raw["unassigned"]), case_varies=spans(raw["case_varies"]),
+            engine=raw["engine"])
+    return _VERSIONS
+
+
+def class_bounds(name: str, version: str | None = None) -> tuple[Any, Any]:
+    """Intent:
+        Returns the code points a version-dependent class holds as a pair: for one `version`
+        that version's set twice; for every supported version, the code points all of them
+        hold, and those any of them holds together with every code point unassigned in the
+        newest, which a later version may give to the class.
+
+    Raises:
+        ValueError: `version` is not a supported Python.
+    """
+    data = versions_data()
+    entry = data["classes"][name]
+    if version is None:
+        return entry["common"], _cs_union(entry["any"], data["unassigned"])
+    if version not in entry["by_version"]:
+        raise ValueError(f"python {version} is not one of the supported versions "
+                         f"{data['versions']}")
+    return entry["by_version"][version], entry["by_version"][version]
+
+
+def version_dependent_characters(text: str) -> list[dict[str, Any]]:
+    """Intent:
+        Returns, for each character of `text` that the supported Pythons read differently, what
+        differs: the classes it is in on some versions only (with the versions on each side),
+        whether its case reading differs between versions, and whether it is unassigned in the
+        newest version.
+    """
+    data = versions_data()
+    out = []
+    for c in dict.fromkeys(text):
+        code = ord(c)
+        classes = {}
+        for name, entry in data["classes"].items():
+            inside = [v for v in data["versions"] if _cs_has(entry["by_version"][v], code)]
+            if inside and len(inside) != len(data["versions"]):
+                classes[name] = {"in": inside,
+                                 "not_in": [v for v in data["versions"] if v not in inside]}
+        case = _cs_has(data["case_varies"], code)
+        unassigned = _cs_has(data["unassigned"], code)
+        if classes or case or unassigned:
+            out.append({"character": c, "code": code, "classes": classes, "case_varies": case,
+                        "unassigned": unassigned})
+    return out
+
+
+_CATEGORY_CLASS = {"CATEGORY_DIGIT": ("decimal", False), "CATEGORY_NOT_DIGIT": ("decimal", True),
+                   "CATEGORY_SPACE": ("space", False), "CATEGORY_NOT_SPACE": ("space", True),
+                   "CATEGORY_WORD": ("word", False), "CATEGORY_NOT_WORD": ("word", True)}
+
+_LOWERS_INTO: dict[str, Any] = {}
+
+
+def _lowers_into(target: Any) -> tuple[tuple[int, int], ...]:
+    """Intent:
+        Returns the code points whose lower case, on this interpreter, is one other character
+        in `target`.
+    """
+    if "pairs" not in _LOWERS_INTO:
+        _LOWERS_INTO["pairs"] = [(code, ord(low)) for code in range(_MAX_CODE + 1)
+                                 for low in [chr(code).lower()] if len(low) == 1 and ord(low) != code]
+    return _cs_union(*[((code, code),) for code, low in _LOWERS_INTO["pairs"]
+                       if _cs_has(target, low)])
+
+
 class _Regex:
     """A Python regular expression as pieces. With `relax`, a construct that is not regular is
-    read as a wider one and named in `not_exact`; without it, it raises `NotRegular`."""
+    read as a wider one and named in `not_exact`; without it, it raises `NotRegular`.
 
-    def __init__(self, pattern: Any, flags: int = 0, relax: bool = False) -> None:
+    `version` is the Python whose reading is taken, from the shipped data: one supported
+    version's, or None for every supported version at once. With `native` the reading is this
+    interpreter's own, every set being what its `re` matches.
+    Where versions differ, or a construct is not regular, the `reading` decides: `at_least`
+    takes what any version admits (and the wider construct), `at_most` what every version
+    admits (and nothing for a construct that is not regular); `varies` names what differed."""
+
+    def __init__(self, pattern: Any, flags: int = 0, relax: bool = False,
+                 version: str | None = RUNNING, reading: str = "at_least",
+                 native: bool = False) -> None:
         if isinstance(pattern, re.Pattern):
             pattern, flags = pattern.pattern, pattern.flags | flags
         if not isinstance(pattern, str):
             raise NotRegular(f"the pattern {pattern!r}, a bytes pattern")
         self.pattern = pattern
         self.relax = relax
+        self.version = version
+        self.reading = reading
+        self.native = native
         self.not_exact: list[str] = []
+        self.varies: list[str] = []
         self.groups: dict[int, list] = {}
         parser, _, _ = _sre()
         try:
@@ -506,7 +651,89 @@ class _Regex:
             raise NotRegular(f"the pattern {self.pattern!r} ({what})")
         if what not in self.not_exact:
             self.not_exact.append(what)
-        return pieces
+        return pieces if self.reading == "at_least" else []
+
+    def _covered(self) -> list[str]:
+        """Intent:
+            Returns the Python versions this reading covers.
+        """
+        return versions_data()["versions"] if self.version is None else [self.version]
+
+    def _pick(self, lo: Any, hi: Any, what: str) -> Any:
+        """Intent:
+            Returns the bound of a set this reading takes, noting `what` when the two differ.
+        """
+        if lo != hi and what not in self.varies:
+            self.varies.append(what)
+        return hi if self.reading == "at_least" else lo
+
+    def _class(self, name: str, negated: bool) -> tuple[Any, Any]:
+        lo, hi = class_bounds(name, self.version)
+        return (_cs_complement(hi), _cs_complement(lo)) if negated else (lo, hi)
+
+    def _structure(self, op: Any, arg: Any) -> tuple[Any, Any]:
+        """Intent:
+            Returns the bounds of a one-character item read without IGNORECASE or ASCII, from
+            its literals and ranges and the data's sets for its categories.
+        """
+        name = str(op)
+        if name == "LITERAL":
+            return ((arg, arg),), ((arg, arg),)
+        if name == "NOT_LITERAL":
+            both = _cs_complement(((arg, arg),))
+            return both, both
+        if name == "CATEGORY":
+            return self._class(*_CATEGORY_CLASS[str(arg)])
+        lows, highs, negate = [], [], False
+        for item_op, item in arg:
+            kind = str(item_op)
+            if kind == "NEGATE":
+                negate = True
+                continue
+            if kind == "CATEGORY" and str(item) not in _CATEGORY_CLASS:
+                raise NotRegular(f"the pattern {self.pattern!r} ({str(item).lower()})")
+            lo, hi = (((item, item),),) * 2 if kind == "LITERAL" else (
+                ((item[0], item[1]),),) * 2 if kind == "RANGE" else self._class(
+                *_CATEGORY_CLASS[str(item)])
+            lows.append(lo)
+            highs.append(hi)
+        lo, hi = _cs_union(*lows), _cs_union(*highs)
+        return (_cs_complement(hi), _cs_complement(lo)) if negate else (lo, hi)
+
+    def _leaf(self, op: Any, arg: Any, flags: int) -> Any:
+        """Intent:
+            Returns the code points a one-character item matches under `flags`, for this
+            reading's version or versions.
+
+        Notes:
+            A native reading is what this interpreter's `re` matches. Under ASCII, and for
+            `.`, every version reads alike. Without IGNORECASE the set is built from the
+            item's literals and ranges and the data's category sets. Under IGNORECASE it is
+            what this interpreter matches, which every version matches too unless the item
+            names a character whose case reading differs between versions, or a category: then
+            those characters, the categories' differing and unassigned ones, and the characters
+            that lower into them, are added for `at_least` and removed for `at_most`.
+        """
+        name = str(op)
+        if self.native or flags & re.ASCII or name == "ANY":
+            return _item_chars(op, arg, flags)
+        if not flags & re.IGNORECASE:
+            lo, hi = self._structure(op, arg)
+            return self._pick(lo, hi, "a class whose characters differ between Python versions")
+        here = _item_chars(op, arg, flags)
+        items = arg if name == "IN" else [(op, arg)]
+        written = _cs_union(*[((a, a),) if str(o) in ("LITERAL", "NOT_LITERAL") else ((a[0], a[1]),)
+                              for o, a in items if str(o) in ("LITERAL", "NOT_LITERAL", "RANGE")])
+        data = versions_data()
+        varying: tuple[tuple[int, int], ...] = ()
+        if _cs_inter(written, data["case_varies"]):
+            varying = data["case_varies"]
+        if any(str(o) == "CATEGORY" for o, _ in items):
+            differing = _cs_union(data["unassigned"], *[
+                _cs_inter(c["any"], _cs_complement(c["common"])) for c in data["classes"].values()])
+            varying = _cs_union(data["case_varies"], differing, _lowers_into(differing))
+        return self._pick(_cs_inter(here, _cs_complement(varying)), _cs_union(here, varying),
+                          "ignore case over characters whose case differs between Python versions")
 
     def _seq(self, items: Any, flags: int) -> list:
         out = [(_TRIVIAL, _EPS, _TRIVIAL)]
@@ -526,12 +753,21 @@ class _Regex:
         name = str(op)
         _, _, constants = _sre()
         if name in ("LITERAL", "NOT_LITERAL", "ANY", "IN", "CATEGORY"):
-            return [(_TRIVIAL, _chars_re(_item_chars(op, arg, flags)), _TRIVIAL)]
+            return [(_TRIVIAL, _chars_re(self._leaf(op, arg, flags)), _TRIVIAL)]
+        if name in ("POSSESSIVE_REPEAT", "ATOMIC_GROUP") and not self.native:
+            missing = [v for v in self._covered()
+                       if v not in versions_data()["engine"]["possessive_and_atomic"]]
+            if missing:
+                raise NotRegular(
+                    f"the pattern {self.pattern!r} (a possessive repeat or atomic group, which "
+                    f"python {', '.join(missing)} does not read; state a version that does, "
+                    f"such as python {RUNNING})")
         if name in ("MAX_REPEAT", "MIN_REPEAT", "POSSESSIVE_REPEAT"):
             lo, hi, sub = arg
             body = self._seq(sub, flags)
-            if name == "POSSESSIVE_REPEAT":
-                self._wider("a possessive repeat, which gives nothing back", [])
+            if name == "POSSESSIVE_REPEAT" and not self._wider(
+                    "a possessive repeat, which gives nothing back", [None]):
+                return []
             return self._repeat(body, lo, None if hi == constants.MAXREPEAT else hi)
         if name == "SUBPATTERN":
             group, add, remove = arg[0], arg[1], arg[2]
@@ -583,9 +819,17 @@ class _Regex:
             free = _alt(*[r for _, r, _ in body])
             return self._wider(f"an assertion inside a repeat of more than {_UNROLL}",
                                [(_TRIVIAL, _loop(free, lo, hi), _TRIVIAL)])
+        free = _alt(*[r for _, r, _ in body])
+        too_large = f"an assertion inside a repeat, too large to write out past {_WRITTEN} nodes"
         head = _power(body, lo)
+        if head is None:
+            return self._wider(too_large, [(_TRIVIAL, _loop(free, lo, hi), _TRIVIAL)])
         if hi is not None:
-            return _join(head, _power(_merge([*body, (_TRIVIAL, _EPS, _TRIVIAL)]), hi - lo))
+            tail = _power(_merge([*body, (_TRIVIAL, _EPS, _TRIVIAL)]), hi - lo)
+            whole = None if tail is None else _join(head, tail)
+            if whole is None or _written(whole) > _WRITTEN:
+                return self._wider(too_large, [(_TRIVIAL, _loop(free, lo, hi), _TRIVIAL)])
+            return whole
         steps = _merge([(left, _nonempty(r), right) for left, r, right in body])
         if any(left != _TRIVIAL or right != _TRIVIAL for left, _, right in steps):
             free = _alt(*[r for _, r, _ in steps])
@@ -610,9 +854,21 @@ class _Regex:
         if name in ("AT_BOUNDARY", "AT_NON_BOUNDARY"):
             parser, _, _ = _sre()
             word_item = list(parser.parse(r"\w", flags & re.ASCII))[0]
-            word = _item_chars(*word_item, flags & ~re.IGNORECASE)
-            other = _cs_complement(word)
-            return _boundary(word, other, name == "AT_NON_BOUNDARY", _B_IN_EMPTY)
+            lo = hi = _item_chars(*word_item, flags & ~re.IGNORECASE)
+            holds_in_empty = [_B_IN_EMPTY]
+            if not self.native:
+                engine = versions_data()["engine"]["not_boundary_in_empty"]
+                holds_in_empty = [v in engine for v in self._covered()]
+                if not flags & re.ASCII:
+                    lo, hi = class_bounds("word", self.version)
+            what = "a word boundary over characters that differ between Python versions"
+            word = self._pick(lo, hi, what)
+            other = self._pick(_cs_complement(hi), _cs_complement(lo), what)
+            negated = name == "AT_NON_BOUNDARY"
+            if negated and len(set(holds_in_empty)) > 1 and "\\B in the empty string" not in self.varies:
+                self.varies.append("\\B in the empty string")
+            in_empty = any(holds_in_empty) if self.reading == "at_least" else all(holds_in_empty)
+            return _boundary(word, other, negated, in_empty)
         raise NotRegular(f"the pattern {self.pattern!r} ({name.lower()})")
 
     def language(self, mode: str) -> tuple:
@@ -701,48 +957,97 @@ def from_node(node: dict) -> tuple:
 
 
 #: the dialects a pattern is written in, by canonical name
-DIALECTS = ("python", "javascript")
+DIALECTS = ("python",)
 
 
-def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str = "python") -> dict:
+def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str = "python",
+         version: str | None = None) -> dict:
     """Intent:
-        Returns the term of the strings for which `predicate` holds of a pattern under `flags`:
-        exact, or, for a construct that is not regular, an at-least and at-most pair. A
-        `python` pattern takes `re`'s flags as an int, a `javascript` pattern its flag letters.
+        Returns the term of the strings for which `predicate` holds of a pattern under `flags`,
+        on every supported Python, or on the one `version` names (`"3.13"`): exact where one
+        regular language is the answer, else an at-least and at-most pair. Without a version
+        the pair brackets every supported version: `at_most` holds only strings every version
+        admits, `at_least` every string any version admits; a class's characters that differ
+        between versions, and code points still unassigned, fall between the two. The term is
+        the same whichever supported interpreter builds it.
 
     Raises:
-        NotRegular: the pattern does not compile, is a bytes pattern, or uses LOCALE.
-        ValueError: `predicate` is not one of `PREDICATES`, or `dialect` not one of `DIALECTS`.
-
-    Notes:
-        A javascript pattern without the `u` or `v` flag reads a string by its UTF-16 code
-        units, so its term states the alphabet of code units, `[[0, 65535]]`, and a string is
-        a member when its code units are.
+        NotRegular: the pattern does not compile, is a bytes pattern, uses LOCALE, or, without
+            a version, uses a possessive repeat or atomic group, which some versions do not read.
+        ValueError: `predicate` is not one of `PREDICATES`, `dialect` not one of `DIALECTS`, or
+            `version` not a supported Python.
+        NotRegular: also for a dialect that is not available yet.
     """
     if predicate not in PREDICATES:
         raise ValueError(f"a predicate is one of {sorted(PREDICATES)}, not {predicate!r}")
+    if dialect in EXPERIMENTAL_DIALECTS:
+        return _experimental_term(pattern, flags, predicate, dialect)
     if dialect not in DIALECTS:
         raise ValueError(f"a dialect is one of {list(DIALECTS)}, not {dialect!r}")
-    source: dict[str, Any] = {"dialect": dialect}
-    alphabet = [[0, _MAX_CODE]]
-    if dialect == "javascript":
-        from ._ecma import Ecma
-        regex: Any = Ecma(pattern, flags or "")
-        language = to_node(regex.language(regex.mode(predicate)))
-        source.update(pattern=pattern, flags=regex.flag_words(), predicate=predicate)
-        if not regex.unicode:
-            alphabet = [[0, 0xFFFF]]
-    else:
-        regex = _Regex(pattern, int(flags), relax=True)
-        language = to_node(regex.language(PREDICATES[predicate]))
-        source.update(
-            pattern=pattern.pattern if isinstance(pattern, re.Pattern) else pattern,
-            flags=sorted(word for flag, word in FLAG_WORDS.items() if regex.flags & flag),
-            predicate=predicate, python=sys.version.split()[0])
-    source["unicode"] = unicodedata.unidata_version
+    data = versions_data()
+    if version is not None and version not in data["versions"]:
+        raise ValueError(f"python {version} is not one of the supported versions {data['versions']}")
+    key = (pattern, int(flags), predicate, version)
+    if key in _TERMS:
+        import copy
+        return copy.deepcopy(_TERMS[key])
+    high = _Regex(pattern, int(flags), relax=True, version=version, reading="at_least")
+    low = _Regex(pattern, int(flags), relax=True, version=version, reading="at_most")
+    at_least = to_node(high.language(PREDICATES[predicate]))
+    at_most = to_node(low.language(PREDICATES[predicate]))
+    covered = data["versions"] if version is None else [version]
+    source: dict[str, Any] = {
+        "dialect": dialect, "versions": covered,
+        "unicode": list(dict.fromkeys(data["unicode"][v] for v in covered)),
+        "pattern": pattern.pattern if isinstance(pattern, re.Pattern) else pattern,
+        "flags": sorted(word for flag, word in FLAG_WORDS.items() if high.flags & flag),
+        "predicate": predicate}
     doc: dict[str, Any] = {
-        "kind": "regular_language", "version": TERM_VERSION, "alphabet": alphabet,
-        "exact": not regex.not_exact, "source": source}
+        "kind": "regular_language", "version": TERM_VERSION, "alphabet": [[0, _MAX_CODE]],
+        "exact": at_least == at_most, "source": source}
+    if doc["exact"]:
+        doc["language"] = at_least
+    else:
+        doc["at_least"] = at_least
+        doc["at_most"] = at_most
+        doc["source"]["not_exact"] = [*high.not_exact, *high.varies]
+    if len(_TERMS) > 512:
+        _TERMS.clear()
+    import copy
+    _TERMS[key] = copy.deepcopy(doc)
+    return doc
+
+
+_TERMS: dict[tuple[Any, int, str, Any], dict] = {}
+
+#: the dialects refused unless the environment variable below lists them, comma separated
+EXPERIMENTAL_DIALECTS = ("javascript",)
+EXPERIMENTAL_SWITCH = "MATHEMA_LANGUAGE_EXPERIMENTAL_DIALECTS"
+
+
+def _experimental_term(pattern: Any, flags: Any, predicate: str, dialect: str) -> dict:
+    """Intent:
+        Returns the term of a pattern in a dialect that is not available yet, when the
+        environment names the dialect as experimental at the time of the call.
+
+    Raises:
+        NotRegular: the environment does not name the dialect, or the pattern does not compile.
+
+    Notes:
+        A pattern read by UTF-16 code units states the alphabet `[[0, 65535]]`.
+    """
+    import os
+    named = [d.strip() for d in os.environ.get(EXPERIMENTAL_SWITCH, "").split(",")]
+    if dialect not in named:
+        raise NotRegular(f"the {dialect} dialect is not available yet")
+    from ._ecma import Ecma
+    regex = Ecma(pattern, flags or "")
+    language = to_node(regex.language(regex.mode(predicate)))
+    doc: dict[str, Any] = {
+        "kind": "regular_language", "version": TERM_VERSION,
+        "alphabet": [[0, _MAX_CODE if regex.unicode else 0xFFFF]], "exact": not regex.not_exact,
+        "source": {"dialect": dialect, "pattern": pattern, "flags": regex.flag_words(),
+                   "predicate": predicate, "unicode": unicodedata.unidata_version}}
     if regex.not_exact:
         doc["at_least"] = language
         doc["at_most"] = {"op": "empty"}
@@ -973,7 +1278,17 @@ def member(doc: dict, text: str, bound: str = "language") -> bool:
         raise ValueError("the term is not exact: ask for its at_least or its at_most bound")
     if doc.get("alphabet") == [[0, 0xFFFF]]:
         text = code_units(text)
-    return holds(from_node(doc["language"] if "language" in doc else doc[bound]), text)
+    node = doc["language"] if "language" in doc else doc[bound]
+    kept = _READ.get(id(node))
+    if kept is None or kept[0] is not node:
+        if len(_READ) > 256:
+            _READ.clear()
+        kept = _READ[id(node)] = (node, from_node(node))
+    return holds(kept[1], text)
+
+
+#: the expression of each node `member` has read, kept with the node it was read from
+_READ: dict[int, tuple[dict, tuple]] = {}
 
 
 def code_units(text: str) -> str:
@@ -1021,11 +1336,12 @@ def runs(pattern: Any, flags: int, predicate: str, text: str) -> bool:
 
 
 def admits(pattern: Any, flags: Any, predicate: str, text: str, dialect: str = "python",
-           bound: str = "at_least") -> bool:
+           bound: str = "at_least", version: str = "running") -> bool:
     r"""Intent:
         Returns whether `text` is in the term of the pattern under `predicate`: its language
-        when exact, else the `bound` named, `at_least` or `at_most`. A `javascript` pattern
-        takes its flag letters.
+        when exact, else the `bound` named, `at_least` or `at_most`. The term is this
+        interpreter's version's (`running`), a named version's (`"3.13"`), or the one for every
+        supported version (`every`).
 
     Claims:
         dollar_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in {"", "a", "\n", "aa", "a\n", "\na", "\n\n", "aaa", "aa\n", "a\na", "a\n\n", "\naa", "\na\n", "\n\na", "\n\n\n"}, f("a$", 0, "matches", text) == runs("a$", 0, "matches", text)
@@ -1038,16 +1354,16 @@ def admits(pattern: Any, flags: Any, predicate: str, text: str, dialect: str = "
         a_backreference_is_bounded_below: let runs = mathema_language.text._regular.runs, for text in {"", "a", "A", "\n", "aa", "aA", "a\n", "Aa", "AA", "A\n", "\na", "\nA", "\n\n", "aaa", "aaA", "aa\n", "aAa", "aAA", "aA\n", "a\na", "a\nA", "a\n\n", "Aaa", "AaA", "Aa\n", "AAa", "AAA", "AA\n", "A\na", "A\nA", "A\n\n", "\naa", "\naA", "\na\n", "\nAa", "\nAA", "\nA\n", "\n\na", "\n\nA", "\n\n\n"}, (f("(a+)(?i:\\1)", 0, "matches", text, "python", "at_least") or not runs("(a+)(?i:\\1)", 0, "matches", text)) == True
         a_backreference_is_bounded_above: let runs = mathema_language.text._regular.runs, for text in {"", "a", "A", "\n", "aa", "aA", "a\n", "Aa", "AA", "A\n", "\na", "\nA", "\n\n", "aaa", "aaA", "aa\n", "aAa", "aAA", "aA\n", "a\na", "a\nA", "a\n\n", "Aaa", "AaA", "Aa\n", "AAa", "AAA", "AA\n", "A\na", "A\nA", "A\n\n", "\naa", "\naA", "\na\n", "\nAa", "\nAA", "\nA\n", "\n\na", "\n\nA", "\n\n\n"}, (runs("(a+)(?i:\\1)", 0, "matches", text) or not f("(a+)(?i:\\1)", 0, "matches", text, "python", "at_most")) == True
         the_json_round_trip_keeps_membership: let again = mathema_language.text._regular.admits_after_json, for text in {"", "a", "b", "\n", "aa", "ab", "a\n", "ba", "bb", "b\n", "\na", "\nb", "\n\n", "aaa", "aab", "aa\n", "aba", "abb", "ab\n", "a\na", "a\nb", "a\n\n", "baa", "bab", "ba\n", "bba", "bbb", "bb\n", "b\na", "b\nb", "b\n\n", "\naa", "\nab", "\na\n", "\nba", "\nbb", "\nb\n", "\n\na", "\n\nb", "\n\n\n"}, f("^a(?:b|$)", 8, "contains", text) == again("^a(?:b|$)", 8, "contains", text)
-        javascript_anchors_are_python_absolute_ones: for text in {"", "a", "A", "\n", "aa", "aA", "a\n", "Aa", "AA", "A\n", "\na", "\nA", "\n\n", "aaa", "aaA", "aa\n", "aAa", "aAA", "aA\n", "a\na", "a\nA", "a\n\n", "Aaa", "AaA", "Aa\n", "AAa", "AAA", "AA\n", "A\na", "A\nA", "A\n\n", "\naa", "\naA", "\na\n", "\nAa", "\nAA", "\nA\n", "\n\na", "\n\nA", "\n\n\n"}, f("^[a-z]+$", "u", "contains", text, "javascript") == f("\\A[a-z]+\\Z", 0, "contains", text)
-        javascript_digits_are_python_ascii_digits: for text in {"", "1", "\u0663", "\n", "11", "1\u0663", "1\n", "\u06631", "\u0663\u0663", "\u0663\n", "\n1", "\n\u0663", "\n\n", "111", "11\u0663", "11\n", "1\u06631", "1\u0663\u0663", "1\u0663\n", "1\n1", "1\n\u0663", "1\n\n", "\u066311", "\u06631\u0663", "\u06631\n", "\u0663\u06631", "\u0663\u0663\u0663", "\u0663\u0663\n", "\u0663\n1", "\u0663\n\u0663", "\u0663\n\n", "\n11", "\n1\u0663", "\n1\n", "\n\u06631", "\n\u0663\u0663", "\n\u0663\n", "\n\n1", "\n\n\u0663", "\n\n\n"}, f("^\\d+$", "u", "contains", text, "javascript") == f("\\A\\d+\\Z", 256, "contains", text)
-        javascript_digits_are_among_python_digits: for text in {"", "1", "\u0663", "\n", "11", "1\u0663", "1\n", "\u06631", "\u0663\u0663", "\u0663\n", "\n1", "\n\u0663", "\n\n", "111", "11\u0663", "11\n", "1\u06631", "1\u0663\u0663", "1\u0663\n", "1\n1", "1\n\u0663", "1\n\n", "\u066311", "\u06631\u0663", "\u06631\n", "\u0663\u06631", "\u0663\u0663\u0663", "\u0663\u0663\n", "\u0663\n1", "\u0663\n\u0663", "\u0663\n\n", "\n11", "\n1\u0663", "\n1\n", "\n\u06631", "\n\u0663\u0663", "\n\u0663\n", "\n\n1", "\n\n\u0663", "\n\n\n"}, (f("^\\d+$", 0, "contains", text) or not f("^\\d+$", "u", "contains", text, "javascript")) == True
+        every_version_holds_what_re_admits: let runs = mathema_language.text._regular.runs, for text in {"", "a", " ", "\u00b2", "\n", "aa", "a ", "a\u00b2", "a\n", " a", "  ", " \u00b2", " \n", "\u00b2a", "\u00b2 ", "\u00b2\u00b2", "\u00b2\n", "\na", "\n ", "\n\u00b2", "\n\n", "aaa", "aa ", "aa\u00b2", "aa\n", "a a", "a  ", "a \u00b2", "a \n", "a\u00b2a", "a\u00b2 ", "a\u00b2\u00b2", "a\u00b2\n", "a\na", "a\n ", "a\n\u00b2", "a\n\n", " aa", " a ", " a\u00b2", " a\n", "  a", "   ", "  \u00b2", "  \n", " \u00b2a", " \u00b2 ", " \u00b2\u00b2", " \u00b2\n", " \na", " \n ", " \n\u00b2", " \n\n", "\u00b2aa", "\u00b2a ", "\u00b2a\u00b2", "\u00b2a\n", "\u00b2 a", "\u00b2  ", "\u00b2 \u00b2", "\u00b2 \n", "\u00b2\u00b2a", "\u00b2\u00b2 ", "\u00b2\u00b2\u00b2", "\u00b2\u00b2\n", "\u00b2\na", "\u00b2\n ", "\u00b2\n\u00b2", "\u00b2\n\n", "\naa", "\na ", "\na\u00b2", "\na\n", "\n a", "\n  ", "\n \u00b2", "\n \n", "\n\u00b2a", "\n\u00b2 ", "\n\u00b2\u00b2", "\n\u00b2\n", "\n\na", "\n\n ", "\n\n\u00b2", "\n\n\n"}, (f("\\b\\w+\\b", 0, "contains", text, "python", "at_least", "every") or not runs("\\b\\w+\\b", 0, "contains", text)) == True
+        every_version_admits_what_the_lower_bound_holds: let runs = mathema_language.text._regular.runs, for text in {"", "a", " ", "\u00b2", "\n", "aa", "a ", "a\u00b2", "a\n", " a", "  ", " \u00b2", " \n", "\u00b2a", "\u00b2 ", "\u00b2\u00b2", "\u00b2\n", "\na", "\n ", "\n\u00b2", "\n\n", "aaa", "aa ", "aa\u00b2", "aa\n", "a a", "a  ", "a \u00b2", "a \n", "a\u00b2a", "a\u00b2 ", "a\u00b2\u00b2", "a\u00b2\n", "a\na", "a\n ", "a\n\u00b2", "a\n\n", " aa", " a ", " a\u00b2", " a\n", "  a", "   ", "  \u00b2", "  \n", " \u00b2a", " \u00b2 ", " \u00b2\u00b2", " \u00b2\n", " \na", " \n ", " \n\u00b2", " \n\n", "\u00b2aa", "\u00b2a ", "\u00b2a\u00b2", "\u00b2a\n", "\u00b2 a", "\u00b2  ", "\u00b2 \u00b2", "\u00b2 \n", "\u00b2\u00b2a", "\u00b2\u00b2 ", "\u00b2\u00b2\u00b2", "\u00b2\u00b2\n", "\u00b2\na", "\u00b2\n ", "\u00b2\n\u00b2", "\u00b2\n\n", "\naa", "\na ", "\na\u00b2", "\na\n", "\n a", "\n  ", "\n \u00b2", "\n \n", "\n\u00b2a", "\n\u00b2 ", "\n\u00b2\u00b2", "\n\u00b2\n", "\n\na", "\n\n ", "\n\n\u00b2", "\n\n\n"}, (runs("\\b\\w+\\b", 0, "contains", text) or not f("\\b\\w+\\b", 0, "contains", text, "python", "at_most", "every")) == True
 
     Raises:
         NotRegular: the pattern does not compile, is a bytes pattern, or uses LOCALE.
     """
-    key = (pattern, flags, predicate, dialect, bound)
+    key = (pattern, flags, predicate, dialect, bound, version)
     if key not in _ADMITTED:
-        doc = term(pattern, flags, predicate, dialect)
+        pinned = {"running": RUNNING, "every": None}.get(version, version)
+        doc = term(pattern, flags, predicate, dialect, pinned)
         units = doc["alphabet"] == [[0, 0xFFFF]]
         _ADMITTED[key] = (from_node(doc["language"] if doc["exact"] else doc[bound]), units)
     expression, units = _ADMITTED[key]
@@ -1060,27 +1376,31 @@ def admits_after_json(pattern: Any, flags: Any, predicate: str, text: str) -> bo
         is written as JSON text and read back.
     """
     import json
-    doc = json.loads(json.dumps(term(pattern, flags, predicate), ensure_ascii=True))
+    doc = json.loads(json.dumps(term(pattern, flags, predicate, version=RUNNING), ensure_ascii=True))
     return member(doc, text, "at_least")
 
 
-def exact(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str = "python") -> bool:
+def exact(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str = "python",
+          version: str = "every") -> bool:
     r"""Intent:
-        Returns whether the pattern's term under `predicate` is exact.
+        Returns whether the pattern's term under `predicate` is exact, for every supported
+        Python (`every`) or for the one `version` names (`"3.13"`).
 
     Claims:
         anchors_and_flags_are_exact: f("(?m)^a$|\\Ab\\Z", 2) == True
-        unicode_classes_are_exact: f("\\b\\w+\\s\\d", 0, "contains") == True
+        unicode_classes_are_exact_on_one_version: f("\\b\\w+\\s\\d", 0, "contains", "python", "3.13") == True
+        unicode_classes_differ_between_versions: f("\\b\\w+\\s\\d", 0, "contains") == False
+        ascii_classes_are_exact_on_every_version: f("\\b\\w+\\s\\d", 256, "contains") == True
+        ignore_case_is_exact_on_every_version: f("[a-z]+k", 2, "contains") == True
+        not_boundary_differs_between_versions: f("\\B", 256, "matches") == False
         a_backreference_is_not: f("(a)\\1", 0) == False
         a_lookahead_is_not: f("(?=a)a", 0, "contains") == False
-        a_possessive_repeat_is_not: f("a*+a", 0) == False
-        a_javascript_property_is_not: f("\\p{L}", "u", "matches", "javascript") == False
-        a_javascript_sticky_pattern_is: f("a$", "my", "contains", "javascript") == True
+        a_possessive_repeat_is_not: f("a*+a", 0, "matches", "python", "3.13") == False
 
     Raises:
         NotRegular: the pattern does not compile.
     """
-    return bool(term(pattern, flags, predicate, dialect)["exact"])
+    return bool(term(pattern, flags, predicate, dialect, None if version == "every" else version)["exact"])
 
 
 def canonical_is_stable(pattern: Any, flags: Any = 0, predicate: str = "matches",
@@ -1093,7 +1413,6 @@ def canonical_is_stable(pattern: Any, flags: Any = 0, predicate: str = "matches"
         an_anchored_pattern: f("^a(?:b|$)", 8, "contains") == True
         a_unicode_class: f("\\b\\w+\\b", 0, "ends with") == True
         a_bounded_pair: f("(a)\\1|b", 0, "matches") == True
-        a_javascript_pattern: f("^[a-z]+$", "im", "contains", "javascript") == True
     """
     doc = term(pattern, flags, predicate, dialect)
     again = dict(doc)
@@ -1106,7 +1425,7 @@ def canonical_is_stable(pattern: Any, flags: Any = 0, predicate: str = "matches"
     return term_hash(again) == term_hash(doc)
 
 
-_ADMITTED: dict[tuple[Any, Any, str, str, str], tuple[tuple, bool]] = {}
+_ADMITTED: dict[tuple[Any, Any, str, str, str, str], tuple[tuple, bool]] = {}
 
 
 def shortest(r: tuple, limit: int = 12) -> str | None:
@@ -1146,8 +1465,27 @@ def every_string_over(chars: Any, name: str) -> dict:
     node = {"op": "repeat", "arg": {"op": "chars", "ranges": [[lo, hi] for lo, hi in chars]},
             "min": 0, "max": None}
     return {"kind": "regular_language", "version": TERM_VERSION, "alphabet": [[0, _MAX_CODE]],
-            "exact": True, "language": canonical(node),
-            "source": {"alphabet": name, "unicode": unicodedata.unidata_version}}
+            "exact": True, "language": canonical(node), "source": {"alphabet": name}}
+
+
+def every_string_over_class(name: str) -> dict:
+    """Intent:
+        Returns the term of every string over a class whose characters depend on the Python
+        version, for every supported version: `at_most` over the characters all versions
+        hold, `at_least` over those any holds and the unassigned code points.
+    """
+    data = versions_data()
+    low, high = class_bounds(name)
+
+    def star(chars: Any) -> dict:
+        return canonical({"op": "repeat", "min": 0, "max": None,
+                          "arg": {"op": "chars", "ranges": [[lo, hi] for lo, hi in chars]}})
+
+    return {"kind": "regular_language", "version": TERM_VERSION, "alphabet": [[0, _MAX_CODE]],
+            "exact": False, "at_least": star(high), "at_most": star(low),
+            "source": {"alphabet": name, "dialect": "python", "versions": data["versions"],
+                       "unicode": list(dict.fromkeys(data["unicode"].values())),
+                       "not_exact": ["a class whose characters differ between Python versions"]}}
 
 
 def of_length(doc: dict, lo: int, hi: int | None) -> dict:
@@ -1179,14 +1517,18 @@ def of_length(doc: dict, lo: int, hi: int | None) -> dict:
 _METHODS = {"fullmatch": "matches", "search": "contains", "match": "starts with"}
 
 
-def pattern_language(source: Any, predicate: str | None = None, flags: int = 0) -> Any:
+def pattern_language(source: Any, predicate: str | None = None, flags: int = 0,
+                     version: str | None = None) -> Any:
     """Intent:
         Returns the text language of the strings a predicate holds of a Python pattern:
         membership by `re` itself, the term as its stated `definition`, draws from the
         pattern's parse tree or, failing that, a shortest member of the term. `source` is a
         compiled pattern, a pattern's text (with `flags`), or a compiled pattern's bound
         method `fullmatch`, `search` or `match`, which names its own predicate; the predicate
-        is `matches` when none is given or named.
+        is `matches` when none is given or named. Without a `version` the language is about
+        every supported Python and its definition brackets them; with one (`"3.13"`) it is
+        about that Python alone, and on another interpreter it refuses to be checked or drawn,
+        since `re` here is not the `re` the claim is about.
 
     Raises:
         NotRegular: the pattern is a bytes pattern or does not compile.
@@ -1195,7 +1537,7 @@ def pattern_language(source: Any, predicate: str | None = None, flags: int = 0) 
     """
     import random as _random
 
-    from ._kit import TextLanguage
+    from ._kit import PinnedLanguage, TextLanguage
     from .regex import Unsupported, _emit
 
     owner = getattr(source, "__self__", None)
@@ -1211,9 +1553,10 @@ def pattern_language(source: Any, predicate: str | None = None, flags: int = 0) 
         pattern, flags = source.pattern, source.flags | int(flags)
     else:
         pattern = source
-    doc = term(pattern, flags, predicate)
-    words = doc["source"]["flags"]
+    doc = term(pattern, flags, predicate, version=version)
+    words = [*doc["source"]["flags"], *([f"python {version}"] if version else [])]
     name = f"{predicate} (re({pattern!r}{''.join(', ' + w for w in words)}))"
+    elsewhere = version is not None and version != RUNNING
     parser, _, _ = _sre()
     tree = parser.parse(pattern, flags)
     fallback = shortest(from_node(doc["language"])) if doc["exact"] else None
@@ -1233,5 +1576,9 @@ def pattern_language(source: Any, predicate: str | None = None, flags: int = 0) 
             return fallback
         raise ValueError(f"no member of {name} was drawn")
 
+    if elsewhere:
+        return PinnedLanguage(name, level="predicate", accepts=accepts, generate=draw,
+                              schema={"definition": doc},
+                              elsewhere=f"this claim is about python {version}; this is python {RUNNING}")
     return TextLanguage(name, level="predicate", accepts=accepts, generate=draw,
                         schema={"definition": doc})

@@ -523,7 +523,7 @@ def _translated(pattern: Any, flags: int) -> _Regex:
     key = (pattern, int(flags))
     if key not in _REGEX_CACHE:
         try:
-            _REGEX_CACHE[key] = _Regex(pattern, int(flags))
+            _REGEX_CACHE[key] = _Regex(pattern, int(flags), native=True)
         except _rx.NotRegular as e:
             raise Untranslated(str(e)) from e
     return _REGEX_CACHE[key]

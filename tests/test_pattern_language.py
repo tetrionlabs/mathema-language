@@ -95,34 +95,49 @@ def test_every_alphabet_language_is_covered():
             "astral"} <= set(ALPHABETS)
 
 
+VERSIONED = set(rx.versions_data()["classes"])
+
+
+def _star_set(node):
+    assert node["op"] == "repeat" and node["min"] == 0 and node["max"] is None
+    arg = node["arg"]
+    spans = arg["ranges"] if arg["op"] == "chars" else [[c, c] for c in arg["codes"]]
+    return {c for lo, hi in spans for c in range(lo, hi + 1)}
+
+
 @pytest.mark.parametrize("name", ALPHABETS)
 def test_an_alphabet_states_every_string_over_its_characters(name):
     lang = LANGUAGES[name]
     doc = lang.to_json()["definition"]
-    assert doc["exact"] and doc["alphabet"] == [[0, 0x10FFFF]] and doc["kind"] == "regular_language"
-    node = doc["language"]
-    assert node["op"] == "repeat" and node["min"] == 0 and node["max"] is None
-    arg = node["arg"]
-    spans = arg["ranges"] if arg["op"] == "chars" else [[c, c] for c in arg["codes"]]
-    stated = {c for lo, hi in spans for c in range(lo, hi + 1)}
-    assert stated == {c for c in range(0x110000) if lang.contains(chr(c))}
+    assert doc["alphabet"] == [[0, 0x10FFFF]] and doc["kind"] == "regular_language"
+    here = {c for c in range(0x110000) if lang.contains(chr(c))}
+    if name in VERSIONED:
+        # its characters depend on the Unicode version: the bounds hold on every supported one
+        assert not doc["exact"] and doc["source"]["versions"] == rx.versions_data()["versions"]
+        assert _star_set(doc["at_most"]) <= here <= _star_set(doc["at_least"])
+    else:
+        assert doc["exact"] and _star_set(doc["language"]) == here
     rng = random.Random(1)
     texts = ["", "a", "0", "a0", "\x00", "\u00e9", "\u200b", "\ud800", "\U0001F600", "a b", "\u0301"]
     texts += [lang.sample(rng) for _ in range(20)]
     for text in texts:
-        assert rx.member(doc, text) == lang.contains(text), (name, text)
+        inside = lang.contains(text)
+        assert not inside or rx.member(doc, text, "at_least"), (name, text)
+        assert not rx.member(doc, text, "at_most") or inside, (name, text)
     json.dumps(lang.to_json(), ensure_ascii=True)
 
 
 @pytest.mark.parametrize("name, lo, hi", [("digit", 1, 3), ("unicode", 0, 2), ("ascii", 2, None),
-                                          ("alnum", 0, 0), ("unicode_alpha", 1, 2)])
+                                          ("alnum", 0, 0), ("unicode_alpha", 1, 2), ("printable", 0, 3)])
 def test_a_length_bound_refines_the_definition(name, lo, hi):
     refined = length(LANGUAGES[name], length_bound(lo, hi))
     doc = refined.to_json()["definition"]
-    assert doc["exact"] and doc["language"].get("min", 0) == lo
+    assert doc["exact"] == (name not in VERSIONED)
     for text in ["", "1", "12", "123", "1234", "a", "ab", "abc", "a1", "\u00e9", "\U0001F600\U0001F600", " "]:
-        assert rx.member(doc, text) == refined.contains(text), (name, text)
-    assert rx.term_hash(doc) != rx.term_hash(LANGUAGES[name].to_json()["definition"]) or (lo, hi) == (0, None)
+        inside = refined.contains(text)
+        assert not inside or rx.member(doc, text, "at_least"), (name, text)
+        assert not rx.member(doc, text, "at_most") or inside, (name, text)
+    assert rx.term_hash(doc) != rx.term_hash(LANGUAGES[name].to_json()["definition"])
 
 
 def test_a_length_bound_over_a_pattern_language_meets_its_term():
@@ -134,3 +149,35 @@ def test_a_length_bound_over_a_pattern_language_meets_its_term():
 
 def test_unicode_is_every_string():
     assert UNICODE.to_json()["definition"]["language"] == rx._EVERY_STRING
+
+
+# -- one version, or every supported one ----------------------------------------
+
+def test_a_language_about_another_python_refuses_to_run_here():
+    other = next(v for v in rx.versions_data()["versions"] if v != rx.RUNNING)
+    lang = pattern_language(r"\w+", "matches", 0, version=other)
+    doc = lang.to_json()["definition"]
+    assert doc["exact"] and doc["source"]["versions"] == [other]
+    assert f"python {other}" in lang.name
+    with pytest.raises(rx.OtherVersion, match=f"this claim is about python {other}"):
+        lang.contains("a")
+    with pytest.raises(rx.OtherVersion, match=f"this claim is about python {other}"):
+        lang.sample(random.Random(0))
+
+
+def test_a_language_about_this_python_runs_here():
+    lang = pattern_language(r"\w+", "matches", 0, version=rx.RUNNING)
+    doc = lang.to_json()["definition"]
+    assert doc["exact"] and lang.contains("\u00e9a") and rx.member(doc, "\u00e9a")
+    assert lang.contains(lang.sample(random.Random(0)))
+
+
+def test_without_a_version_the_definition_brackets_every_supported_python():
+    lang = pattern_language(r"\w+")
+    doc = lang.to_json()["definition"]
+    assert not doc["exact"] and doc["source"]["versions"] == rx.versions_data()["versions"]
+    for text in ["a", "\u00e9", "a b", "", "\U00010570"]:
+        inside = lang.contains(text)
+        assert not inside or rx.member(doc, text, "at_least")
+        assert not rx.member(doc, text, "at_most") or inside
+    assert pattern_language(r"[a-z]+\d", "matches", re.A).to_json()["definition"]["exact"]
