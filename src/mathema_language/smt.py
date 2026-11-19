@@ -461,6 +461,7 @@ class _Regex:
             parsed = sre_parse.parse(pattern)
         except re.error as e:
             raise Untranslated(f"the pattern {pattern!r}, which does not compile") from e
+        self._flags(parsed.state.flags, pattern)
         items = list(parsed)
         if items and str(items[0][0]) == "AT" and str(items[0][1]) in ("AT_BEGINNING", "AT_BEGINNING_STRING"):
             self.anchored_start = True
@@ -469,6 +470,27 @@ class _Regex:
             self.anchored_end = True
             items = items[:-1]
         return self._seq(items, pattern)
+
+    def _flags(self, flags: int, pattern: str) -> None:
+        """Intent:
+            Refuses the inline flags the translation does not read.
+
+        Raises:
+            Untranslated: the flags hold IGNORECASE, or, when widening for the older side,
+                DOTALL or MULTILINE.
+
+        Notes:
+            Every item is read as it reads without flags. Under DOTALL and MULTILINE the
+            pattern admits more than that (`.` a newline, `^` and `$` each line), so the
+            reading still admits at most what `re` does and serves the newer side only.
+            Under IGNORECASE a literal admits more and a negated class less, so the reading
+            serves neither side.
+        """
+        if flags & re.IGNORECASE:
+            raise Untranslated(f"the pattern {pattern!r} (the ignorecase flag)")
+        if self.widen and flags & (re.DOTALL | re.MULTILINE):
+            raise Untranslated(f"the pattern {pattern!r} (the dotall or multiline flag, on "
+                               "the side that admits at least what the pattern does)")
 
     def _seq(self, items: Any, pattern: str) -> Any:
         """Intent:
@@ -488,7 +510,8 @@ class _Regex:
             alternation or a category) as a z3 regular expression.
 
         Raises:
-            Untranslated: the item is any other construct.
+            Untranslated: the item is any other construct, a possessive repeat on the newer
+                side, or a group under a flag `_flags` refuses.
         """
         z3, name = self.z3, str(op)
         if name == "LITERAL":
@@ -499,6 +522,11 @@ class _Regex:
             return z3.Diff(z3.AllChar(self.R), z3.Re(z3.StringVal("\n")))
         if name == "IN":
             return self._class(arg, pattern)
+        if name == "POSSESSIVE_REPEAT" and not self.widen:
+            # a possessive repeat gives nothing back, so it matches no more than the greedy
+            # repeat and sometimes less (`a*+a` matches nothing): the greedy reading admits
+            # at least what `re` does, never at most
+            raise Untranslated(f"the pattern {pattern!r} (a possessive repeat)")
         if name in ("MAX_REPEAT", "MIN_REPEAT", "POSSESSIVE_REPEAT"):
             lo, hi, sub = arg
             inner = self._seq(sub, pattern)
@@ -506,6 +534,7 @@ class _Regex:
                 return z3.Concat(z3.Loop(inner, lo, lo), z3.Star(inner)) if lo else z3.Star(inner)
             return z3.Loop(inner, lo, hi)
         if name == "SUBPATTERN":
+            self._flags(arg[1], pattern)
             return self._seq(arg[-1], pattern)
         if name == "BRANCH":
             return z3.Union(*[self._seq(b, pattern) for b in arg[1]])
@@ -552,7 +581,8 @@ class _Regex:
             union of its literals, ranges and categories.
 
         Raises:
-            Untranslated: the class holds any other construct.
+            Untranslated: the class holds any other construct, or is negated and holds a
+                category.
         """
         z3 = self.z3
         negate = False
@@ -569,6 +599,10 @@ class _Regex:
                 parts.append(self._category(str(arg), pattern))
             else:
                 raise Untranslated(f"the pattern {pattern!r} ({name.lower()})")
+        if negate and any(str(op) == "CATEGORY" for op, _ in items):
+            # a category is read wider or narrower than `re` reads it, and negating turns
+            # each bound into the opposite one
+            raise Untranslated(f"the pattern {pattern!r} (a negated class holding a category)")
         cls = parts[0] if len(parts) == 1 else z3.Union(*parts)
         return z3.Diff(z3.AllChar(self.R), cls) if negate else cls
 
