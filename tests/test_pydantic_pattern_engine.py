@@ -36,7 +36,7 @@ def admits(M, text):
 
 SHARED = [r"^[A-Z]{3}-[0-9]{4}$", r"a", r"^a$", r"a$", r"^ab|cd", r"a.c", r"[^a]b", r"(?:ab)+c",
           r"a{2,3}", r"a*?b", r"x(a|b)?y", r"\Aab", r"[a-c0-2]+", r"\.\*", r"\x41é",
-          r"a\tb", r"(?P<n>a)b", r"^$", r"[^\n]x", r"\-\/"]
+          r"a\tb", r"(?P<n>a)b", r"^$", r"[^\n]x", r"\-\/", "\\u00e9x", "a\\U0001F600"]
 ALPHABET = list("abcxyABC012-./*") + ["\n", "\t", "é", " ", "٣", "\U0001F600"]
 
 
@@ -107,3 +107,15 @@ def test_a_pattern_in_a_nested_model_is_held_to_the_same_rule():
 
     why = smt.untranslated(adapt_row(Outer))
     assert why is not None and ".inner.s" in why
+
+
+def test_the_table_of_constructs_is_what_these_tests_show():
+    import json
+    from pathlib import Path
+    table = json.loads((Path(__file__).parent / "data" / "python_rust_constructs.json").read_text())
+    assert {d["pattern"] for d in table["different"]} == {p for p, parts in REFUSED if parts}
+    assert {d["pattern"] for d in table["not_shown_identical"]} <= {p for p, parts in REFUSED if not parts}
+    assert {e for d in table["identical"] for e in d["examples"]} <= set(SHARED)
+    for d in table["different"]:
+        import re
+        assert admits(model(d["pattern"]), d["parts_at"]) != bool(re.search(d["pattern"], d["parts_at"]))
