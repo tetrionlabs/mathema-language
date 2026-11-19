@@ -144,7 +144,7 @@ def test_there_are_at_least_twenty_five_pinned_readings_and_the_package_own_vali
 def test_the_path_within_pattern_reads_as_a_choice_between_a_relative_path_and_the_root():
     from mathema_language.text.path_language import within_pattern
     said = explain(_regular.term(within_pattern("/ws"), 0, "matches"))
-    assert said.startswith('either ((either "." or ((any character except: U+0000, ".", "/") followed by ')
+    assert said.startswith('either ((either "." or (".." followed by one or more of: any character except: ')
     assert ' or ("/ws" followed by any number of: ("/" followed by (optionally: either "." or ' in said
     assert said.count("(") == said.count(")")
 
@@ -183,7 +183,7 @@ def test_a_term_stated_as_bounds_reads_each_bound_for_what_it_is():
                             'no text is known to be accepted for certain')
     pair = {"kind": "regular_language", "version": 1, "alphabet": [[0, 1114111]], "exact": False,
             "at_least": {"op": "repeat", "arg": {"op": "chars", "ranges": [[48, 57]]}, "min": 1, "max": None},
-            "at_most": {"op": "literal", "text": "0"},
+            "at_most": {"op": "literal", "codes": [48]},
             "source": {"not_exact": ["an interval of datetimes", "a lookbehind"]}}
     assert explain(pair) == ('approximate because the pattern uses an interval of datetimes and a lookbehind; '
                              'every accepted text fits: one or more of: 0-9; not every text that fits is '
@@ -228,7 +228,7 @@ def test_a_named_class_reads_by_name_with_its_size_and_never_as_a_dump():
 
 def test_explain_reads_only_a_term():
     with pytest.raises(ValueError):
-        explain({"op": "literal", "text": "a"})
+        explain({"op": "literal", "codes": [97]})
     with pytest.raises(ValueError):
         explain({"kind": "regular_language", "exact": False})
     with pytest.raises(ValueError):

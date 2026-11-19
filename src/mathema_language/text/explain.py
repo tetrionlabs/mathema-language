@@ -19,7 +19,9 @@ one canonical form read the same whatever pattern they came from.
 - A repeat reads by its count: `optionally`, `any number of`, `one or
   more of`, `exactly 3 of`, `2 to 4 of`, `up to 4 of`, `2 or more of`.
 - A choice between literal texts reads `one of: "a", "b"`; any other
-  choice `either ... or ...`.
+  choice `either ... or ...`. The literal texts come first, in code
+  point order, then the other alternatives in the canonical form's
+  order.
 - A character set reads as its ranges in code point order (`0-9, a-z`),
   a single character in quotes or by name (`space`, `newline`, `tab`),
   with its code point after it outside ASCII and alone when it does not
@@ -197,7 +199,7 @@ def _is_final_newline(node: dict[str, Any]) -> bool:
     """Intent:
         Whether the node is an optional single newline: nothing or `"\\n"`.
     """
-    newline = {"op": "literal", "text": "\n"}
+    newline = {"op": "literal", "codes": [10]}
     if node["op"] == "repeat":
         return node["arg"] == newline and (node["min"], node["max"]) == (0, 1)
     return node["op"] == "union" and len(node["args"]) == 2 and newline in node["args"] \
@@ -267,7 +269,7 @@ def _read(node: dict[str, Any], depth: int) -> str:
     if op == "epsilon":
         return "the empty text"
     if op == "literal":
-        return json.dumps(node["text"], ensure_ascii=False)
+        return json.dumps("".join(map(chr, node["codes"])), ensure_ascii=False)
     if op == "chars":
         said = describe_characters(node["ranges"])
         return said if said.startswith("any character") else "one of: " + said
@@ -300,6 +302,8 @@ def _read(node: dict[str, Any], depth: int) -> str:
     if op == "union":
         args = [a for a in node["args"] if a["op"] != "epsilon"]
         optional = len(args) < len(node["args"])
+        args = (sorted((a for a in args if a["op"] == "literal"), key=lambda a: a["codes"])
+                + [a for a in args if a["op"] != "literal"])
         if all(a["op"] == "literal" for a in args) and len(args) > 1:
             said = "one of: " + ", ".join(_read(a, depth + 1) for a in args)
         elif len(args) == 1:
