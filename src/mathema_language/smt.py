@@ -23,11 +23,22 @@ Each field value is of a single z3 type holding every kind of value a
 field can take: absent, null, NaN, the two infinities, a bool, an int,
 an exact real and a string. Numbers are exact reals, as mathema's own
 z3 rung reads them. z3's strings hold characters up to U+2FFFF; a
-record whose text uses a higher one reads the same, to every pattern
-and length the encoding holds, as one with that character replaced by a
-character no pattern names, so a proof over z3's characters holds over
-all of Unicode, and a pattern or constant that names such a character is
-not translated.
+record whose text uses a higher one is read as one with each such
+character replaced by U+2FFFF, which keeps its length. A regular
+expression is read under that replacement on both sides (a class
+holding some higher character holds U+2FFFF on the older side, and on
+the newer side only when it holds U+2FFFF and every higher character),
+so a proof over z3's characters holds over all of Unicode; a constant
+that names such a character is not translated.
+
+A Python regular expression, its flags and a mode (`fullmatch`, `match`,
+`search`) translate exactly, the newer and older sides one formula, for
+the constructs `re` reads as a regular language: literals, classes and
+`\\d \\w \\s` as `re` reads them for the running Python's Unicode,
+IGNORECASE, ASCII, DOTALL, MULTILINE and VERBOSE, inline and scoped flags,
+`^ $ \\A \\Z \\b \\B`, alternation, groups, and greedy and lazy repeats.
+Backreferences, lookaround, conditionals, atomic groups, possessive
+repeats and an anchor inside an unbounded repeat are `Untranslated`.
 
 `_schema_inclusion` decides inclusion end to end (a value in one and not
 the other, built and confirmed by both languages' own validation before
@@ -87,10 +98,12 @@ class _InclusionResult:
     `newer` refuses, confirmed by both validations) or `unknown` (with
     `reason`). `float_line` lists the neighbouring doubles of each float
     bound that were run through both validations, and holds the first
-    one `older` admits and `newer` refuses, if any."""
+    one `older` admits and `newer` refuses, if any. Between pattern
+    languages the witness is a string, and `proven` and `falsified` read
+    as each call states."""
     verdict: str
     reason: str = ""
-    witness: dict[str, Any] | None = None
+    witness: Any = None
     float_line: list[str] = field(default_factory=list)
 
     def __str__(self) -> str:
@@ -246,21 +259,16 @@ class MembershipEncoding:
 
     def _regex(self, pattern: str, side: str) -> Any:
         """Intent:
-            Returns `pattern` as a z3 regular expression: a full match on the newer side, a search
-            (anything around it, honouring its anchors) on the older side.
+            Returns `pattern` as a z3 regular expression over a field's whole text: the strings
+            `re.search` finds it in on the older side, those it matches in full on the newer.
+
+        Notes:
+            Every string `re.fullmatch` matches, `re.search` finds a match in, so the newer side
+            admits no more than the older, whichever of the two a library runs.
         """
-        z3 = self.z3
-        regex = _Regex(z3, widen=side == "older")
-        body = regex.translate(pattern)
         if side == "newer":
-            return body
-        anything = z3.Star(z3.AllChar(z3.ReSort(z3.StringSort())))
-        parts = [body]
-        if not regex.anchored_start:
-            parts.insert(0, anything)
-        # `$` also matches before a final newline
-        parts.append(z3.Option(z3.Re(z3.StringVal("\n"))) if regex.anchored_end else anything)
-        return z3.Concat(*parts)
+            return _pattern_regex(self.z3, pattern, 0, "fullmatch", "newer")
+        return _pattern_regex(self.z3, pattern, 0, "search", "older")
 
     def member(self, f: Field, x: Any, side: str, mapping: bool, D: Any = None,
                path: str | None = None) -> Any:
@@ -394,12 +402,14 @@ class MembershipEncoding:
 
     def text(self, language: Any, x: Any, side: str) -> Any:
         """The formula: the z3 string `x` is a member of a text language
-        defined by a regular expression read in full (its `pattern`, as
-        `L[path]` and `L[path, within "/root"]` are)."""
+        defined by a regular expression: its `pattern`, under its `flags`
+        (none when it states none), read by its `mode` (`fullmatch` when it
+        states none, as `L[path]` and `L[path, within "/root"]` are)."""
         pattern = getattr(language, "pattern", None)
-        if not isinstance(pattern, str):
+        if not isinstance(pattern, (str, re.Pattern)):
             raise Untranslated(f"{getattr(language, 'name', language)!r}, which states no pattern")
-        return self.z3.InRe(x, _Regex(self.z3, widen=side == "older").translate(pattern))
+        return _pattern(self.z3, pattern, getattr(language, "flags", 0),
+                        getattr(language, "mode", "fullmatch"), x, side)
 
     def language(self, language: Any, names: list[str], side: str) -> Any:
         """The formula: the values of `names` make a member of `language`,
@@ -440,137 +450,815 @@ class MembershipEncoding:
         return z3.And(*conds) if conds else z3.BoolVal(True)
 
 
-class _Regex:
-    """A Python regular expression as a z3 one, for the constructs both
-    read the same way; anything else is `Untranslated`."""
+# -- regular expressions ------------------------------------------------------
+#
+# A Python pattern, its flags and a mode are a text language: the strings
+# `re.<mode>(pattern, s, flags)` finds a match in. The translation builds that
+# language as a regular expression over the whole string, in three steps.
+#
+# 1. Every one-character item (a literal, `.`, a class, a category) is the set
+#    of code points it matches, found by running `re` itself over every code
+#    point, so `\d`, `\w`, `\s` and IGNORECASE are `re`'s own reading for the
+#    running Python. A set is a tuple of disjoint, sorted, inclusive intervals.
+# 2. A zero-width assertion (`^`, `$`, `\A`, `\Z`, `\b`, `\B`) holds or fails
+#    by the text around its position, so a sub-pattern reads as a list of
+#    pieces `(left, body, right)`: it matches a string in `body` wherever the
+#    text before the match meets `left` and the text after meets `right`. A
+#    context is `(empty, chars, only)`: the text there may be empty (when
+#    `empty`), or its adjacent character is in `chars`, and with `only` that
+#    character is the whole of it. Contexts are closed under conjunction, and
+#    joining two pieces turns the second's left context into a condition on
+#    the first's last character (or, when the first matched nothing, into a
+#    condition on the text before both), and the first's right context into a
+#    condition on the second's first character, likewise.
+# 3. The mode reads the pieces against the whole string: fullmatch takes the
+#    pieces whose contexts admit empty text on both sides, match puts the
+#    right context's text after the body, search puts both around it.
+#
+# Without backreferences, lookaround, atomic groups and possessive repeats,
+# `re` backtracks through every way a pattern can match from a position and
+# tries every position, so a match exists exactly when the string is in this
+# language.
+#
+# z3's strings hold code points up to U+2FFFF (H). A string with a higher
+# character reads as the same string with each such character replaced by H.
+# A set reads, on the older side, as its part up to H, with H added when it
+# holds any higher character; on the newer side, as its part up to H, with H
+# left out unless the set holds H and every higher character. Each operator
+# the translation uses is monotone in its sets, so the older side admits at
+# least, and the newer at most, what `re` admits under that reading; the two
+# are the same formula when every set agrees with H's membership on all the
+# characters above H.
 
-    def __init__(self, z3: Any, widen: bool = False) -> None:
-        self.z3 = z3
-        self.R = z3.ReSort(z3.StringSort())
-        self.widen = widen
-        self.anchored_start = False
-        self.anchored_end = False
+#: the last code point
+_MAX_CODE = 0x10FFFF
 
-    def translate(self, pattern: str) -> Any:
-        import sys
-        if sys.version_info >= (3, 11):
-            from re import _parser as sre_parse  # type: ignore[attr-defined]
+#: every code point
+_FULL: tuple[tuple[int, int], ...] = ((0, _MAX_CODE),)
+
+#: the empty set
+_NONE: tuple[tuple[int, int], ...] = ()
+
+#: whether `\B` matches in the empty string, which differs between Pythons
+_B_IN_EMPTY = re.search(r"\B", "") is not None
+
+
+def _cs_union(*sets: Any) -> tuple[tuple[int, int], ...]:
+    """Intent:
+        Returns the union of interval sets, as sorted disjoint intervals with no two adjacent.
+    """
+    spans = sorted(span for s in sets for span in s)
+    out: list[list[int]] = []
+    for lo, hi in spans:
+        if out and lo <= out[-1][1] + 1:
+            out[-1][1] = max(out[-1][1], hi)
         else:
-            import sre_parse
+            out.append([lo, hi])
+    return tuple((lo, hi) for lo, hi in out)
+
+
+def _cs_complement(s: Any) -> tuple[tuple[int, int], ...]:
+    """Intent:
+        Returns the code points not in `s`.
+    """
+    out, at = [], 0
+    for lo, hi in s:
+        if lo > at:
+            out.append((at, lo - 1))
+        at = hi + 1
+    if at <= _MAX_CODE:
+        out.append((at, _MAX_CODE))
+    return tuple(out)
+
+
+def _cs_inter(a: Any, b: Any) -> tuple[tuple[int, int], ...]:
+    """Intent:
+        Returns the code points in both `a` and `b`.
+    """
+    return _cs_complement(_cs_union(_cs_complement(a), _cs_complement(b)))
+
+
+def _cs_has(s: Any, code: int) -> bool:
+    return any(lo <= code <= hi for lo, hi in s)
+
+
+def _cs_side(s: Any, side: str) -> tuple[tuple[int, int], ...]:
+    """Intent:
+        Returns the part of `s` z3 reads on `side`: the code points up to H, with H added on the
+        older side when `s` holds a higher one, and H dropped on the newer side unless `s` holds
+        H and every higher code point.
+    """
+    low = _cs_inter(s, ((0, _Z3_MAX_CHAR),))
+    high = _cs_inter(s, ((_Z3_MAX_CHAR + 1, _MAX_CODE),))
+    if side == "older":
+        return _cs_union(low, ((_Z3_MAX_CHAR, _Z3_MAX_CHAR),)) if high else low
+    if high == ((_Z3_MAX_CHAR + 1, _MAX_CODE),) and _cs_has(s, _Z3_MAX_CHAR):
+        return low
+    return _cs_inter(low, ((0, _Z3_MAX_CHAR - 1),))
+
+
+def _cs_exact(s: Any) -> bool:
+    """Intent:
+        Returns whether `s` reads the same on both sides: every code point above H is in `s`
+        exactly when H is.
+    """
+    return _cs_side(s, "older") == _cs_side(s, "newer")
+
+
+def _sre() -> tuple[Any, Any, Any]:
+    """Intent:
+        Returns the regex parser, compiler and constants modules of the running Python.
+    """
+    import sys
+    if sys.version_info >= (3, 11):
+        from re import _compiler, _constants, _parser  # type: ignore[attr-defined]
+        return _parser, _compiler, _constants
+    import sre_compile
+    import sre_constants
+    import sre_parse
+    return sre_parse, sre_compile, sre_constants
+
+
+_EVERY_CODE_POINT: list[str] = []
+
+
+def _every_code_point() -> str:
+    """Intent:
+        Returns the string of every code point in order, lone surrogates included.
+    """
+    if not _EVERY_CODE_POINT:
+        _EVERY_CODE_POINT.append("".join(map(chr, range(_MAX_CODE + 1))))
+    return _EVERY_CODE_POINT[0]
+
+
+_ITEM_CHARS: dict[tuple[str, int], tuple[tuple[int, int], ...]] = {}
+
+
+def _item_chars(op: Any, arg: Any, flags: int) -> tuple[tuple[int, int], ...]:
+    """Intent:
+        Returns the code points one parsed one-character item matches under `flags`: those `re`
+        itself matches, found by running the item, repeated, over every code point.
+
+    Notes:
+        Such an item reads one character and nothing around it, so the runs of the repeated
+        item over the string of every code point are the intervals of its set. A literal
+        without IGNORECASE is its own code point.
+    """
+    parser, compiler, constants = _sre()
+    if str(op) == "LITERAL" and not flags & re.IGNORECASE:
+        return ((arg, arg),)
+    key = (f"{op}:{arg!r}", flags & (re.IGNORECASE | re.ASCII | re.DOTALL | re.UNICODE))
+    if key not in _ITEM_CHARS:
+        state = (getattr(parser, "State", None) or parser.Pattern)()
+        state.flags = flags
+        item = parser.SubPattern(state, [(op, arg)])
+        repeated = parser.SubPattern(state, [(constants.MAX_REPEAT,
+                                              (1, constants.MAXREPEAT, item))])
+        compiled = compiler.compile(repeated, flags)
+        _ITEM_CHARS[key] = tuple((m.start(), m.end() - 1)
+                                 for m in compiled.finditer(_every_code_point()))
+    return _ITEM_CHARS[key]
+
+
+def _class_chars(pattern: str, flags: int = 0) -> tuple[tuple[int, int], ...]:
+    """Intent:
+        Returns the code points a pattern of one one-character item (`\\d`, `[^a-z]`, `.`)
+        matches under `flags`, as `re` reads it.
+
+    Raises:
+        Untranslated: the pattern is not one such item.
+    """
+    parser, _, _ = _sre()
+    items = list(parser.parse(pattern, flags))
+    if len(items) != 1 or str(items[0][0]) not in ("LITERAL", "NOT_LITERAL", "ANY", "IN", "CATEGORY"):
+        raise Untranslated(f"the pattern {pattern!r}, which is not one character item")
+    return _item_chars(items[0][0], items[0][1], parser.parse(pattern, flags).state.flags | flags)
+
+
+# a regular expression, before z3: ("chars", set), ("eps",), ("empty",),
+# ("cat", a, b, ...), ("alt", a, b, ...), ("loop", r, lo, hi or None),
+# ("inter", a, b)
+_EPS = ("eps",)
+_EMPTY_RE = ("empty",)
+_ANY_STAR = ("loop", ("chars", _FULL), 0, None)
+_ANY_PLUS = ("loop", ("chars", _FULL), 1, None)
+
+
+def _chars_re(s: Any) -> tuple:
+    return ("chars", tuple(s)) if s else _EMPTY_RE
+
+
+def _cat(*parts: tuple) -> tuple:
+    flat: list[tuple] = []
+    for p in parts:
+        if p == _EMPTY_RE:
+            return _EMPTY_RE
+        if p == _EPS:
+            continue
+        flat.extend(p[1:] if p[0] == "cat" else [p])
+    if not flat:
+        return _EPS
+    return flat[0] if len(flat) == 1 else ("cat", *flat)
+
+
+def _alt(*parts: tuple) -> tuple:
+    flat: list[tuple] = []
+    for p in parts:
+        for q in (p[1:] if p[0] == "alt" else [p]):
+            if q != _EMPTY_RE and q not in flat:
+                flat.append(q)
+    if not flat:
+        return _EMPTY_RE
+    return flat[0] if len(flat) == 1 else ("alt", *flat)
+
+
+def _inter(a: tuple, b: tuple) -> tuple:
+    if _EMPTY_RE in (a, b):
+        return _EMPTY_RE
+    if b == _ANY_STAR:
+        return a
+    if a == _ANY_STAR:
+        return b
+    return ("inter", a, b)
+
+
+def _loop(r: tuple, lo: int, hi: int | None) -> tuple:
+    if hi == 0 or r == _EPS:
+        return _EPS
+    if r == _EMPTY_RE:
+        return _EPS if lo == 0 else _EMPTY_RE
+    if lo == hi == 1:
+        return r
+    return ("loop", r, lo, hi)
+
+
+def _nullable(r: tuple) -> bool:
+    """Intent:
+        Returns whether the empty string is in `r`.
+    """
+    kind = r[0]
+    if kind == "eps":
+        return True
+    if kind in ("chars", "empty"):
+        return False
+    if kind in ("cat", "inter"):
+        return all(_nullable(p) for p in r[1:])
+    if kind == "alt":
+        return any(_nullable(p) for p in r[1:])
+    return r[2] == 0 or _nullable(r[1])
+
+
+def _nonempty(r: tuple) -> tuple:
+    """Intent:
+        Returns the non-empty strings of `r`, written without intersecting.
+
+    Notes:
+        A non-empty string of a concatenation has a first non-empty part, everything before it
+        empty; one of a repeat of a nullable body is some iterations followed by a last
+        non-empty one.
+    """
+    if not _nullable(r):
+        return r
+    kind = r[0]
+    if kind in ("eps", "empty"):
+        return _EMPTY_RE
+    if kind == "cat":
+        parts = r[1:]
+        return _alt(*[_cat(_nonempty(parts[i]), *parts[i + 1:]) for i in range(len(parts))])
+    if kind == "alt":
+        return _alt(*[_nonempty(p) for p in r[1:]])
+    if kind == "inter":
+        return _inter(_nonempty(r[1]), r[2])
+    sub, lo, hi = r[1], r[2], r[3]
+    if not _nullable(sub):
+        return _loop(sub, 1, hi)
+    return _cat(_loop(sub, 0, None if hi is None else hi - 1), _nonempty(sub))
+
+
+def _edge(r: tuple, chars: Any, at_end: bool) -> tuple:
+    """Intent:
+        Returns the non-empty strings of `r` whose last character (first, when not `at_end`) is
+        in `chars`, written without intersecting where `r` has no intersection of its own.
+    """
+    kind = r[0]
+    if kind in ("eps", "empty"):
+        return _EMPTY_RE
+    if kind == "chars":
+        return _chars_re(_cs_inter(r[1], chars))
+    if kind == "alt":
+        return _alt(*[_edge(p, chars, at_end) for p in r[1:]])
+    if kind == "inter":
+        return _inter(_edge(r[1], chars, at_end), r[2])
+    if kind == "cat":
+        parts = list(r[1:])
+        order = range(len(parts) - 1, -1, -1) if at_end else range(len(parts))
+        out = []
+        for i in order:
+            if at_end:
+                out.append(_cat(*parts[:i], _edge(parts[i], chars, True)))
+            else:
+                out.append(_cat(_edge(parts[i], chars, False), *parts[i + 1:]))
+            if not _nullable(parts[i]):
+                break
+        return _alt(*out)
+    sub, lo, hi = r[1], r[2], r[3]
+    rest = _loop(sub, 0 if _nullable(sub) else max(lo - 1, 0), None if hi is None else hi - 1)
+    edge = _edge(sub, chars, at_end)
+    return _cat(rest, edge) if at_end else _cat(edge, rest)
+
+
+def _singles(r: tuple) -> tuple[tuple[int, int], ...]:
+    """Intent:
+        Returns the code points `c` for which the one-character string `c` is in `r`.
+    """
+    kind = r[0]
+    if kind == "chars":
+        return r[1]
+    if kind in ("eps", "empty"):
+        return _NONE
+    if kind == "alt":
+        return _cs_union(*[_singles(p) for p in r[1:]])
+    if kind == "inter":
+        return _cs_inter(_singles(r[1]), _singles(r[2]))
+    if kind == "cat":
+        parts = r[1:]
+        return _cs_union(*[_singles(p) for i, p in enumerate(parts)
+                           if all(_nullable(q) for j, q in enumerate(parts) if j != i)])
+    sub, lo, hi = r[1], r[2], r[3]
+    if (hi is None or hi >= 1) and (lo <= 1 or _nullable(sub)):
+        return _singles(sub)
+    return _NONE
+
+
+def _re_sets(r: tuple, out: set) -> set:
+    """Intent:
+        Returns the character sets `r` names, added to `out`.
+    """
+    if r[0] == "chars":
+        out.add(r[1])
+    elif r[0] in ("cat", "alt", "inter"):
+        for p in r[1:]:
+            _re_sets(p, out)
+    elif r[0] == "loop":
+        _re_sets(r[1], out)
+    return out
+
+
+# a context: (empty, chars, only); see the section comment
+_TRIVIAL = (True, _FULL, False)
+_AT_EDGE = (True, _NONE, False)
+
+
+def _ctx_and(a: tuple, b: tuple) -> tuple:
+    """Intent:
+        Returns the context that holds exactly where both `a` and `b` hold.
+    """
+    return (a[0] and b[0], _cs_inter(a[1], b[1]), a[2] or b[2])
+
+
+def _ctx_possible(c: tuple) -> bool:
+    return c[0] or bool(c[1])
+
+
+def _ctx_text(c: tuple, after: bool) -> tuple:
+    """Intent:
+        Returns the texts `c` admits on one side of a match: after it when `after`, else before.
+    """
+    empty, chars, only = c
+    if c == _TRIVIAL:
+        return _ANY_STAR
+    edge = _chars_re(chars) if only else (
+        _cat(_chars_re(chars), _ANY_STAR) if after else _cat(_ANY_STAR, _chars_re(chars)))
+    return _alt(_EPS, edge) if empty else edge
+
+
+def _ends_in(body: tuple, c: tuple, at_end: bool) -> tuple[tuple, bool]:
+    """Intent:
+        Returns the non-empty strings of `body` whose last character (first, when not `at_end`)
+        meets context `c`, and whether `c` also requires the text beyond them to be empty.
+    """
+    empty, chars, only = c
+    if only:
+        return _chars_re(_cs_inter(_singles(body), chars)), True
+    if chars == _FULL:
+        return _nonempty(body), False
+    return _edge(body, chars, at_end), False
+
+
+def _join(a: list, b: list) -> list:
+    """Intent:
+        Returns the pieces of a sub-pattern followed by another, from the pieces of each.
+    """
+    out = []
+    for l1, r1, c1 in a:
+        for l2, r2, c2 in b:
+            lefts = [(l1, r1)]
+            if l2 != _TRIVIAL:
+                lefts = []
+                if _nullable(r1):
+                    lefts.append((_ctx_and(l1, l2), _EPS))
+                body, edge = _ends_in(r1, l2, at_end=True)
+                lefts.append((_ctx_and(l1, _AT_EDGE) if edge else l1, body))
+            rights = [(r2, c2)]
+            if c1 != _TRIVIAL:
+                rights = []
+                if _nullable(r2):
+                    rights.append((_EPS, _ctx_and(c1, c2)))
+                body, edge = _ends_in(r2, c1, at_end=False)
+                rights.append((body, _ctx_and(c2, _AT_EDGE) if edge else c2))
+            for left, x in lefts:
+                for y, right in rights:
+                    out.append((left, _cat(x, y), right))
+    return _merge(out)
+
+
+def _merge(pieces: list) -> list:
+    """Intent:
+        Returns `pieces` with those of equal contexts joined into one and the impossible ones
+        dropped.
+    """
+    by: dict[tuple, tuple] = {}
+    for left, body, right in pieces:
+        if body == _EMPTY_RE or not _ctx_possible(left) or not _ctx_possible(right):
+            continue
+        key = (left, right)
+        by[key] = _alt(by[key], body) if key in by else body
+    return [(left, body, right) for (left, right), body in by.items()]
+
+
+def _power(pieces: list, n: int) -> list:
+    out = [(_TRIVIAL, _EPS, _TRIVIAL)]
+    for _ in range(n):
+        out = _join(out, pieces)
+    return out
+
+
+#: the largest repeat count of a sub-pattern with assertions that is written out
+_UNROLL = 32
+
+
+class _Regex:
+    """A Python regular expression as pieces, for the constructs `re` reads as a regular
+    language; anything else is `Untranslated`, naming the construct."""
+
+    def __init__(self, pattern: Any, flags: int = 0) -> None:
+        if isinstance(pattern, re.Pattern):
+            pattern, flags = pattern.pattern, pattern.flags | flags
+        if not isinstance(pattern, str):
+            raise Untranslated(f"the pattern {pattern!r}, a bytes pattern")
+        self.pattern = pattern
+        parser, _, _ = _sre()
         try:
-            parsed = sre_parse.parse(pattern)
-        except re.error as e:
-            raise Untranslated(f"the pattern {pattern!r}, which does not compile") from e
-        items = list(parsed)
-        if items and str(items[0][0]) == "AT" and str(items[0][1]) in ("AT_BEGINNING", "AT_BEGINNING_STRING"):
-            self.anchored_start = True
-            items = items[1:]
-        if items and str(items[-1][0]) == "AT" and str(items[-1][1]) in ("AT_END", "AT_END_STRING"):
-            self.anchored_end = True
-            items = items[:-1]
-        return self._seq(items, pattern)
+            re.compile(pattern, flags)
+            parsed = parser.parse(pattern, flags)
+        except (re.error, ValueError, TypeError) as e:
+            raise Untranslated(f"the pattern {pattern!r}, which does not compile ({e})") from e
+        self.flags = parsed.state.flags | flags
+        if self.flags & re.LOCALE:
+            raise Untranslated(f"the pattern {pattern!r}, under the LOCALE flag")
+        self.pieces = self._seq(list(parsed), self.flags)
 
-    def _seq(self, items: Any, pattern: str) -> Any:
-        """Intent:
-            Returns a parsed sequence of regex items as the z3 concatenation of their translations,
-            the empty string when there are none.
-        """
-        z3 = self.z3
-        parts = [self._item(op, arg, pattern) for op, arg in items]
-        parts = [p for p in parts if p is not None]
-        if not parts:
-            return z3.Re(z3.StringVal(""))
-        return parts[0] if len(parts) == 1 else z3.Concat(*parts)
+    def _untranslated(self, what: str) -> Untranslated:
+        return Untranslated(f"the pattern {self.pattern!r} ({what})")
 
-    def _item(self, op: Any, arg: Any, pattern: str) -> Any:
+    def _seq(self, items: Any, flags: int) -> list:
+        out = [(_TRIVIAL, _EPS, _TRIVIAL)]
+        for op, arg in items:
+            out = _join(out, self._item(op, arg, flags))
+        return out
+
+    def _item(self, op: Any, arg: Any, flags: int) -> list:
         """Intent:
-            Returns one parsed regex item (a literal, `.`, a class, a repeat, a group, an
-            alternation or a category) as a z3 regular expression.
+            Returns one parsed item as pieces.
 
         Raises:
-            Untranslated: the item is any other construct.
+            Untranslated: the item is a backreference, a lookaround, a conditional, an atomic
+                group, a possessive repeat, or an assertion inside an unbounded repeat.
         """
-        z3, name = self.z3, str(op)
-        if name == "LITERAL":
-            return z3.Re(z3.StringVal(self._char(arg, pattern)))
-        if name == "NOT_LITERAL":
-            return z3.Diff(z3.AllChar(self.R), z3.Re(z3.StringVal(self._char(arg, pattern))))
-        if name == "ANY":
-            return z3.Diff(z3.AllChar(self.R), z3.Re(z3.StringVal("\n")))
-        if name == "IN":
-            return self._class(arg, pattern)
-        if name in ("MAX_REPEAT", "MIN_REPEAT", "POSSESSIVE_REPEAT"):
+        name = str(op)
+        if name in ("LITERAL", "NOT_LITERAL", "ANY", "IN", "CATEGORY"):
+            return [(_TRIVIAL, _chars_re(_item_chars(op, arg, flags)), _TRIVIAL)]
+        if name in ("MAX_REPEAT", "MIN_REPEAT"):
             lo, hi, sub = arg
-            inner = self._seq(sub, pattern)
-            if hi == sre_maxrepeat():
-                return z3.Concat(z3.Loop(inner, lo, lo), z3.Star(inner)) if lo else z3.Star(inner)
-            return z3.Loop(inner, lo, hi)
+            return self._repeat(self._seq(sub, flags), lo, None if hi == sre_maxrepeat() else hi)
         if name == "SUBPATTERN":
-            return self._seq(arg[-1], pattern)
+            add, remove = arg[1], arg[2]
+            return self._seq(arg[-1], (flags | add) & ~remove)
         if name == "BRANCH":
-            return z3.Union(*[self._seq(b, pattern) for b in arg[1]])
-        if name == "CATEGORY":
-            return self._category(str(arg), pattern)
-        raise Untranslated(f"the pattern {pattern!r} ({name.lower()})")
+            return _merge([p for b in arg[1] for p in self._seq(b, flags)])
+        if name == "AT":
+            return self._at(str(arg), flags)
+        blocked = {"GROUPREF": "a backreference", "GROUPREF_EXISTS": "a conditional group",
+                   "ATOMIC_GROUP": "an atomic group",
+                   "POSSESSIVE_REPEAT": "a possessive repeat, which gives nothing back"}
+        if name in blocked:
+            raise self._untranslated(blocked[name])
+        if name in ("ASSERT", "ASSERT_NOT"):
+            raise self._untranslated("a lookahead" if arg[0] >= 0 else "a lookbehind")
+        raise self._untranslated(name.lower())
 
-    def _char(self, code: int, pattern: str) -> str:
+    def _repeat(self, body: list, lo: int, hi: int | None) -> list:
         """Intent:
-            Returns the character with code point `code`.
-
-        Raises:
-            Untranslated: the code point is past the last character z3's strings hold.
-        """
-        if code > _Z3_MAX_CHAR:
-            raise Untranslated(f"the pattern {pattern!r}, past the characters z3 holds")
-        return chr(code)
-
-    def _category(self, name: str, pattern: str) -> Any:
-        """Intent:
-            Returns `\\d` or `\\w` as a z3 regular expression: their ASCII ranges, or any
-            character when widening for the older side.
-
-        Raises:
-            Untranslated: the category is neither `\\d` nor `\\w`.
+            Returns pieces for `body` repeated `lo` to `hi` times (`None`: unbounded).
 
         Notes:
-            Python reads both over all of Unicode, so the ASCII ranges admit less than Python
-            does and any character admits more.
+            An iteration that matches nothing only adds conditions at one position, so an
+            unbounded repeat reads as its non-empty iterations alone.
         """
-        z3 = self.z3
-        if self.widen and name in ("CATEGORY_DIGIT", "CATEGORY_WORD"):
-            return z3.AllChar(self.R)
-        ranges = {"CATEGORY_DIGIT": [("0", "9")],
-                  "CATEGORY_WORD": [("a", "z"), ("A", "Z"), ("0", "9"), ("_", "_")]}
-        if name not in ranges:
-            raise Untranslated(f"the pattern {pattern!r} ({name.lower()})")
-        return z3.Union(*[z3.Range(a, b) for a, b in ranges[name]]) if len(ranges[name]) > 1 \
-            else z3.Range(*ranges[name][0])
+        if len(body) == 1 and body[0][0] == _TRIVIAL and body[0][2] == _TRIVIAL:
+            return [(_TRIVIAL, _loop(body[0][1], lo, hi), _TRIVIAL)]
+        if lo > _UNROLL or (hi is not None and hi > _UNROLL):
+            raise self._untranslated(f"an assertion inside a repeat of more than {_UNROLL}")
+        head = _power(body, lo)
+        if hi is not None:
+            return _join(head, _power(_merge([*body, (_TRIVIAL, _EPS, _TRIVIAL)]), hi - lo))
+        steps = _merge([(left, _nonempty(r), right) for left, r, right in body])
+        if any(left != _TRIVIAL or right != _TRIVIAL for left, _, right in steps):
+            raise self._untranslated("an anchor or word boundary inside an unbounded repeat")
+        return _join(head, [(_TRIVIAL, _loop(steps[0][1], 0, None) if steps else _EPS, _TRIVIAL)])
 
-    def _class(self, items: Any, pattern: str) -> Any:
+    def _at(self, name: str, flags: int) -> list:
         """Intent:
-            Returns a character class (`[...]`, possibly negated) as a z3 regular expression, the
-            union of its literals, ranges and categories.
-
-        Raises:
-            Untranslated: the class holds any other construct.
+            Returns the pieces of a zero-width assertion, read as `re` reads it under `flags`.
         """
-        z3 = self.z3
-        negate = False
+        newline = ((10, 10),)
+        multiline = bool(flags & re.MULTILINE)
+        if name == "AT_BEGINNING" and multiline:
+            return [((True, newline, False), _EPS, _TRIVIAL)]
+        if name in ("AT_BEGINNING", "AT_BEGINNING_STRING"):
+            return [(_AT_EDGE, _EPS, _TRIVIAL)]
+        if name == "AT_END":
+            return [(_TRIVIAL, _EPS, (True, newline, not multiline))]
+        if name == "AT_END_STRING":
+            return [(_TRIVIAL, _EPS, _AT_EDGE)]
+        if name in ("AT_BOUNDARY", "AT_NON_BOUNDARY"):
+            parser, _, _ = _sre()
+            word_item = list(parser.parse(r"\w", flags & re.ASCII))[0]
+            word = _item_chars(*word_item, flags & ~re.IGNORECASE)
+            other = _cs_complement(word)
+            if name == "AT_BOUNDARY":
+                return [((False, word, False), _EPS, (True, other, False)),
+                        ((True, other, False), _EPS, (False, word, False))]
+            pieces = [((False, word, False), _EPS, (False, word, False)),
+                      ((False, other, False), _EPS, (True, other, False)),
+                      (_AT_EDGE, _EPS, (False, other, False))]
+            if _B_IN_EMPTY:
+                pieces.append((_AT_EDGE, _EPS, _AT_EDGE))
+            return pieces
+        raise self._untranslated(name.lower())
+
+    def language(self, mode: str) -> tuple:
+        """Intent:
+            Returns the whole strings `re.<mode>` finds a match in.
+        """
+        if mode not in ("fullmatch", "match", "search"):
+            raise ValueError(f"a mode is fullmatch, match or search, not {mode!r}")
         parts = []
-        for op, arg in items:
-            name = str(op)
-            if name == "NEGATE":
-                negate = True
-            elif name == "LITERAL":
-                parts.append(z3.Re(z3.StringVal(self._char(arg, pattern))))
-            elif name == "RANGE":
-                parts.append(z3.Range(self._char(arg[0], pattern), self._char(arg[1], pattern)))
-            elif name == "CATEGORY":
-                parts.append(self._category(str(arg), pattern))
+        for left, body, right in self.pieces:
+            if mode != "search" and not left[0]:
+                continue
+            if mode == "fullmatch":
+                if right[0]:
+                    parts.append(body)
+                continue
+            before = _EPS if mode == "match" else _ctx_text(left, after=False)
+            parts.append(_cat(before, body, _ctx_text(right, after=True)))
+        return _alt(*parts)
+
+    def sets(self) -> set:
+        """Intent:
+            Returns every character set the pieces name, in bodies and contexts.
+        """
+        out: set = set()
+        for left, body, right in self.pieces:
+            _re_sets(body, out)
+            out.update({left[1], right[1]})
+        return out
+
+
+_REGEX_CACHE: dict[tuple[Any, int], _Regex] = {}
+
+
+def _translated(pattern: Any, flags: int) -> _Regex:
+    """Intent:
+        Returns the pieces of `pattern` under `flags`, translated once per pattern.
+
+    Raises:
+        Untranslated: the pattern holds a construct the translation does not read.
+    """
+    key = (pattern, int(flags))
+    if key not in _REGEX_CACHE:
+        _REGEX_CACHE[key] = _Regex(pattern, int(flags))
+    return _REGEX_CACHE[key]
+
+
+def _z3_text(z3: Any, text: str) -> Any:
+    """Intent:
+        Returns `text` as a z3 string, every character written as its code point so that none
+        is read as part of an escape.
+    """
+    return z3.StringVal("".join("\\u{%x}" % ord(c) for c in text))
+
+
+def _text_of(model: Any, x: Any) -> str:
+    """Intent:
+        Returns the Python string a z3 model gives the string `x`, read one code point at a
+        time.
+    """
+    import z3
+    n = model.eval(z3.Length(x), model_completion=True).as_long()
+    return "".join(chr(model.eval(z3.StrToCode(z3.SubString(x, i, 1)), model_completion=True)
+                       .as_long()) for i in range(n))
+
+
+def _to_z3(z3: Any, r: tuple, side: str, alphabet: Any = None) -> Any:
+    """Intent:
+        Returns `r` as a z3 regular expression, each character set read on `side`, and, given
+        an `_Alphabet`, written over its representatives.
+    """
+    R = z3.ReSort(z3.StringSort())
+    memo: dict[int, Any] = {}
+
+    def char(code: int) -> Any:
+        return _z3_text(z3, chr(code))
+
+    def go(node: tuple) -> Any:
+        if id(node) in memo:
+            return memo[id(node)]
+        kind = node[0]
+        if kind == "eps":
+            out = z3.Re(z3.StringVal(""))
+        elif kind == "empty":
+            out = z3.Empty(R)
+        elif kind == "chars":
+            s = _cs_side(node[1], side)
+            if alphabet is not None:
+                s = alphabet.squeeze(s)
+            if not s:
+                out = z3.Empty(R)
+            elif s == ((0, _Z3_MAX_CHAR),):
+                out = z3.AllChar(R)
             else:
-                raise Untranslated(f"the pattern {pattern!r} ({name.lower()})")
-        cls = parts[0] if len(parts) == 1 else z3.Union(*parts)
-        return z3.Diff(z3.AllChar(self.R), cls) if negate else cls
+                ranges = [z3.Re(char(lo)) if lo == hi else z3.Range(char(lo), char(hi))
+                          for lo, hi in s]
+                out = ranges[0] if len(ranges) == 1 else z3.Union(*ranges)
+        elif kind == "cat":
+            out = z3.Concat(*[go(p) for p in node[1:]])
+        elif kind == "alt":
+            out = z3.Union(*[go(p) for p in node[1:]])
+        elif kind == "inter":
+            out = z3.Intersect(go(node[1]), go(node[2]))
+        else:
+            sub, lo, hi = go(node[1]), node[2], node[3]
+            if hi is None:
+                out = z3.Star(sub) if lo == 0 else (
+                    z3.Plus(sub) if lo == 1 else z3.Concat(z3.Loop(sub, lo, lo), z3.Star(sub)))
+            elif lo == 0 and hi == 1:
+                out = z3.Option(sub)
+            else:
+                out = z3.Loop(sub, lo, hi)
+        memo[id(node)] = out
+        return out
+
+    return go(r)
+
+
+class _Alphabet:
+    """The atoms of the character sets some regular expressions name: the classes of z3's
+    characters (up to U+2FFFF) that no set tells apart, each written as its least character.
+
+    A language built from those sets by concatenation, union, repetition and intersection holds
+    a string exactly when it holds the string with each character replaced by its atom's
+    representative, so a question about membership in such languages alone has the same answer
+    over the representatives, and a string over them is a witness as it stands."""
+
+    def __init__(self, sets: Any) -> None:
+        import bisect
+        self._bisect = bisect
+        sets = list(sets)
+        cuts = {0, _Z3_MAX_CHAR + 1}
+        for s in sets:
+            for lo, hi in s:
+                cuts.update(c for c in (lo, hi + 1) if c <= _Z3_MAX_CHAR + 1)
+        self.starts = sorted(cuts)[:-1]
+        starts_of = [[lo for lo, _ in s] for s in sets]
+        reps: dict[tuple, int] = {}
+        self.rep_at: list[int] = []
+        for start in self.starts:
+            key = tuple(self._has(s, starts, start) for s, starts in zip(sets, starts_of))
+            self.rep_at.append(reps.setdefault(key, start))
+        self.reps = sorted(set(self.rep_at))
+
+    def _has(self, s: Any, starts: list[int], code: int) -> bool:
+        i = self._bisect.bisect_right(starts, code) - 1
+        return i >= 0 and s[i][1] >= code
+
+    def rep(self, code: int) -> int:
+        """Intent:
+            Returns the representative of the atom holding the character `code` (up to H).
+        """
+        return self.rep_at[self._bisect.bisect_right(self.starts, code) - 1]
+
+    def squeeze(self, s: Any) -> tuple[tuple[int, int], ...]:
+        """Intent:
+            Returns the representatives `s` holds, `s` being a union of atoms.
+        """
+        starts = [lo for lo, _ in s]
+        return _cs_union(*[((r, r),) for r in self.reps if self._has(s, starts, r)])
+
+    def text(self, text: str) -> str:
+        """Intent:
+            Returns `text` with each character replaced by its atom's representative, a
+            character past U+2FFFF read as U+2FFFF.
+        """
+        return "".join(chr(self.rep(min(ord(c), _Z3_MAX_CHAR))) for c in text)
+
+
+def _squeezed(z3: Any, wanted: Any) -> list[Any]:
+    """Intent:
+        Returns, for each `(language, side)` of pattern languages, its z3 regular expression
+        written over the representatives of the atoms of every set all of them name.
+
+    Raises:
+        Untranslated: a pattern holds a construct the translation does not read.
+    """
+    trees = [(_translated(lang.pattern, lang.flags).language(lang.mode), side)
+             for lang, side in wanted]
+    sets = {_cs_side(s, side) for tree, side in trees for s in _re_sets(tree, set())}
+    alphabet = _Alphabet(sets)
+    return [_to_z3(z3, tree, side, alphabet) for tree, side in trees]
+
+
+def _decides(pattern: Any, flags: int, mode: str, side: str, text: str) -> bool:
+    """Intent:
+        Returns whether z3 finds the string `text` in the translation of
+        `re.<mode>(pattern, ., flags)` on `side`, asked over the atoms of the pattern's own
+        sets, a character past U+2FFFF read as U+2FFFF.
+
+    Raises:
+        Untranslated: the pattern holds a construct the translation does not read.
+        RuntimeError: z3 did not decide it.
+    """
+    z3 = _z3()
+    tree = _translated(pattern, flags).language(mode)
+    alphabet = _Alphabet({_cs_side(s, side) for s in _re_sets(tree, set())})
+    solver = z3.Solver()
+    solver.add(z3.InRe(_z3_text(z3, alphabet.text(text)), _to_z3(z3, tree, side, alphabet)))
+    answer = solver.check()
+    if answer == z3.unknown:
+        raise RuntimeError(f"z3 did not decide {text!r} in {pattern!r} ({solver.reason_unknown()})")
+    return answer == z3.sat
+
+
+def _pattern_regex(z3: Any, pattern: Any, flags: int, mode: str, side: str) -> Any:
+    """Intent:
+        Returns, as a z3 regular expression, the strings `re.<mode>(pattern, s, flags)` finds a
+        match in: at least those on the older side, at most those on the newer.
+
+    Raises:
+        Untranslated: the pattern holds a construct the translation does not read.
+    """
+    return _to_z3(z3, _translated(pattern, flags).language(mode), side)
+
+
+def _pattern(z3: Any, pattern: Any, flags: int, mode: str, x: Any, side: str) -> Any:
+    """Intent:
+        Returns the formula: `re.<mode>(pattern, x, flags)` finds a match in the z3 string `x`,
+        read at least as `re` reads it on the older side and at most on the newer, the same
+        formula wherever `_exact(pattern, flags)`.
+
+    Raises:
+        Untranslated: the pattern holds a construct the translation does not read, named.
+    """
+    return z3.InRe(x, _pattern_regex(z3, pattern, flags, mode, side))
+
+
+def _exact(pattern: Any, flags: int = 0) -> bool:
+    """Intent:
+        Returns whether the two sides of the translation of `pattern` coincide: whether every
+        character set it names treats the code points above U+2FFFF as it treats U+2FFFF.
+
+    Raises:
+        Untranslated: the pattern holds a construct the translation does not read, named.
+    """
+    return all(_cs_exact(s) for s in _translated(pattern, flags).sets())
+
+
+@dataclass(frozen=True)
+class _PatternLanguage:
+    """The text language of a pattern under `flags` and a `mode`: the strings
+    `re.<mode>(pattern, s, flags)` finds a match in."""
+    pattern: str
+    flags: int = 0
+    mode: str = "fullmatch"
+
+    @property
+    def name(self) -> str:
+        return f"re.{self.mode}({self.pattern!r}, flags={self.flags})"
+
+    def contains(self, value: Any) -> bool:
+        return isinstance(value, str) and getattr(re, self.mode)(self.pattern, value,
+                                                                 self.flags) is not None
 
 
 def sre_maxrepeat() -> int:
@@ -926,6 +1614,118 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     return _InclusionResult("unknown", f"z3 offered {values!r}, which the validations do not "
                            f"confirm ({older.name} must admit it and {newer.name} refuse it); "
                            "this is a gap in the encoding")
+
+
+def _text_language(spec: Any) -> _PatternLanguage:
+    """Intent:
+        Returns the pattern language `spec` names: a `_PatternLanguage`, a
+        `(pattern, flags, mode)` triple, or a pattern alone, read in full.
+    """
+    if isinstance(spec, _PatternLanguage):
+        return spec
+    if isinstance(spec, tuple):
+        return _PatternLanguage(*spec)
+    return _PatternLanguage(spec)
+
+
+def _solve_text(wanted: Any, inside: list[bool], timeout_ms: int) -> tuple[str, Any]:
+    """Intent:
+        Returns z3's answer on a string `x` in each `(language, side)` of `wanted` whose `inside`
+        flag is set and outside each other one: `unsat`, `sat` with the string a model gives
+        `x`, or `unknown` with z3's reason.
+
+    Raises:
+        Untranslated: a pattern holds a construct the translation does not read.
+    """
+    z3 = _z3()
+    x = z3.String("x")
+    solver = z3.Solver()
+    solver.set("timeout", timeout_ms)
+    for regex, keep in zip(_squeezed(z3, wanted), inside):
+        solver.add(z3.InRe(x, regex) if keep else z3.Not(z3.InRe(x, regex)))
+    answer = solver.check()
+    if answer == z3.unsat:
+        return "unsat", None
+    if answer == z3.sat:
+        return "sat", _text_of(solver.model(), x)
+    return "unknown", solver.reason_unknown()
+
+
+def _text_inclusion(a: Any, b: Any, *, timeout_ms: int = 5000) -> _InclusionResult:
+    """Intent:
+        Decides whether every string pattern language `a` holds, `b` holds: `proven`,
+        `falsified` with a string `re` confirms is in `a` and not in `b`, or `unknown` with the
+        reason.
+    """
+    a, b = _text_language(a), _text_language(b)
+    try:
+        answer, found = _solve_text([(a, "older"), (b, "newer")], [True, False], timeout_ms)
+    except Untranslated as e:
+        return _InclusionResult("unknown", f"not translated: {e}")
+    if answer == "unsat":
+        return _InclusionResult("proven", f"every string {a.name} holds, {b.name} holds")
+    if answer == "unknown":
+        return _InclusionResult("unknown", f"z3 did not decide it ({found})")
+    if a.contains(found) and not b.contains(found):
+        return _InclusionResult("falsified", f"{a.name} holds it and {b.name} does not", found)
+    return _InclusionResult("unknown", f"z3 offered {found!r}, which re does not confirm "
+                            f"({a.name} must hold it and {b.name} not)")
+
+
+def _text_emptiness(a: Any, *, timeout_ms: int = 5000) -> _InclusionResult:
+    """Intent:
+        Decides whether pattern language `a` holds no string: `proven`, `falsified` with a
+        string `re` confirms it holds, or `unknown` with the reason.
+    """
+    a = _text_language(a)
+    try:
+        answer, found = _solve_text([(a, "older")], [True], timeout_ms)
+    except Untranslated as e:
+        return _InclusionResult("unknown", f"not translated: {e}")
+    if answer == "unsat":
+        return _InclusionResult("proven", f"{a.name} holds no string")
+    if answer == "unknown":
+        return _InclusionResult("unknown", f"z3 did not decide it ({found})")
+    if a.contains(found):
+        return _InclusionResult("falsified", f"{a.name} holds it", found)
+    return _InclusionResult("unknown", f"z3 offered {found!r}, which re does not confirm")
+
+
+def _text_disjointness(a: Any, b: Any, *, timeout_ms: int = 5000) -> _InclusionResult:
+    """Intent:
+        Decides whether pattern languages `a` and `b` share no string: `proven`, `falsified`
+        with a string `re` confirms both hold, or `unknown` with the reason.
+    """
+    a, b = _text_language(a), _text_language(b)
+    try:
+        answer, found = _solve_text([(a, "older"), (b, "older")], [True, True], timeout_ms)
+    except Untranslated as e:
+        return _InclusionResult("unknown", f"not translated: {e}")
+    if answer == "unsat":
+        return _InclusionResult("proven", f"no string is held by both {a.name} and {b.name}")
+    if answer == "unknown":
+        return _InclusionResult("unknown", f"z3 did not decide it ({found})")
+    if a.contains(found) and b.contains(found):
+        return _InclusionResult("falsified", f"both {a.name} and {b.name} hold it", found)
+    return _InclusionResult("unknown", f"z3 offered {found!r}, which re does not confirm")
+
+
+def _text_equivalence(a: Any, b: Any, *, timeout_ms: int = 5000) -> _InclusionResult:
+    """Intent:
+        Decides whether pattern languages `a` and `b` hold the same strings: `proven` when each
+        includes the other, `falsified` with a string `re` confirms one holds and the other does
+        not, or `unknown` with the reason.
+    """
+    ab = _text_inclusion(a, b, timeout_ms=timeout_ms)
+    if ab.verdict == "falsified":
+        return ab
+    ba = _text_inclusion(b, a, timeout_ms=timeout_ms)
+    if ba.verdict == "falsified":
+        return ba
+    if ab.verdict == ba.verdict == "proven":
+        a, b = _text_language(a), _text_language(b)
+        return _InclusionResult("proven", f"{a.name} and {b.name} hold the same strings")
+    return ab if ab.verdict == "unknown" else ba
 
 
 def _field_in(language: Any, name: str, text_language: Any, *,
