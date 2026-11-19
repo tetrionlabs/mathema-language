@@ -35,7 +35,21 @@ def test_every_definition_shown_is_the_shop_s():
     assert definition_problems(README, _shop()) == []
 
 
-@pytest.mark.parametrize("fn,text,verdict,witness", claim_blocks(README), ids=lambda v: str(v)[:40])
+def _readme_blocks():
+    """Intent:
+        The README's claim blocks as parameters, the `L[latin-1]` block
+        (whose shown witness follows the samples of mathema 0.6.6) marked
+        as an expected failure.
+    """
+    out = []
+    for block in claim_blocks(README):
+        marks = ([pytest.mark.xfail(strict=True, reason="the shown output follows the 0.6.6 samples; rewritten with mathema-language 0.4.0 and core 0.6.7, due 2026-11-29 (mathema/probe-route-redesign)")]
+                 if "L[latin-1]" in block[1] else [])
+        out.append(pytest.param(*block, marks=marks))
+    return out
+
+
+@pytest.mark.parametrize("fn,text,verdict,witness", _readme_blocks(), ids=lambda v: str(v)[:40])
 def test_every_claim_lands_on_its_verdict(fn, text, verdict, witness):
     scope = {k: v for m in reversed(_shop()) for k, v in vars(m).items()}
     target = claimed_function(text, scope, fn)
