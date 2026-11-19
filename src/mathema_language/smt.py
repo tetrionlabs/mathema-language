@@ -1206,6 +1206,14 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         `older` and `newer` are record languages, or anything `L[...]` resolves (a model class,
         a JSON Schema dict). A proof is followed by a run at each float bound's neighbouring
         doubles, which can still falsify it.
+
+        The witness reported is chosen among the records both validations confirm: each text
+        field in turn, in field order, takes the shortest text, and then, character by
+        character, a letter before a digit before other printable ASCII before any other
+        character, the lower code point within each. Fields that are not text keep the value
+        the solver gave. The choice is made after a confirmed witness exists and within a time
+        limit, past which the best confirmed so far is reported, so the verdict never depends
+        on it.
     """
     z3 = _z3()
     from .schema.adaptors import adapt_row
@@ -1233,13 +1241,6 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     kept = undeclared
     if answer != z3.sat and undeclared:
         answer, kept = solver.check(), []
-    if answer == z3.sat:
-        # and with its text in capital letters where that is enough
-        letters = z3.Star(z3.Range("A", "Z"))
-        plain = [z3.Implies(enc.V.is_s(enc.var(n)), z3.InRe(enc.V.sv(enc.var(n)), letters))
-                 for n in names]
-        if solver.check(*kept, *plain) != z3.sat:
-            solver.check(*kept)
     if answer == z3.unknown:
         return _InclusionResult("unknown", f"z3 did not decide it ({solver.reason_unknown()})")
     if answer == z3.unsat:
@@ -1251,19 +1252,113 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
                                    edge, tried)
         return _InclusionResult("proven", f"every record {older.name} admits, {newer.name} admits",
                                float_line=tried)
-    model = solver.model()
-    values: dict[str, Any] = {}
-    for name in names:
-        f = _field_at(older, name) or _field_at(newer, name)
-        present, value = _value(enc, model, enc.var(name), f)
-        if present:
-            values[name] = value
-    if _admits(older, values) and not _admits(newer, values):
+    def read(model: Any) -> dict[str, Any]:
+        found: dict[str, Any] = {}
+        for name in names:
+            f = _field_at(older, name) or _field_at(newer, name)
+            present, value = _value(enc, model, enc.var(name), f)
+            if present:
+                found[name] = value
+        return found
+
+    def confirmed(found: dict[str, Any]) -> bool:
+        return _admits(older, found) and not _admits(newer, found)
+
+    first = solver.model()
+    values = read(first)
+    if confirmed(values):
+        # every field that is not text stays as the solver first gave it
+        held = [enc.var(n) == first.eval(enc.var(n), model_completion=True)
+                for n in names if not isinstance(values.get(n), str)]
+        values = _most_readable(enc, solver, [*kept, *held], names, values, read, confirmed)
         return _InclusionResult("falsified", f"{older.name} admits it and {newer.name} refuses it",
                                _nest(older, values))
     return _InclusionResult("unknown", f"z3 offered {values!r}, which the validations do not "
                            f"confirm ({older.name} must admit it and {newer.name} refuse it); "
                            "this is a gap in the encoding")
+
+
+#: the seconds a search for a more readable witness may take
+_WITNESS_SECONDS = 3.0
+
+#: the characters of a witness examined one by one, from the start of each text
+_WITNESS_CHARACTERS = 16
+
+#: the ranks a witness character is preferred by, each as code point ranges in order
+_READABILITY = (
+    ((0x41, 0x5A), (0x61, 0x7A)),
+    ((0x30, 0x39),),
+    ((0x20, 0x2F), (0x3A, 0x40), (0x5B, 0x60), (0x7B, 0x7E)),
+    ((0x00, 0x1F), (0x7F, _Z3_MAX_CHAR)),
+)
+
+
+def _most_readable(enc: MembershipEncoding, solver: Any, kept: list[Any], names: list[str],
+                   values: dict[str, Any], read: Any, confirmed: Any) -> dict[str, Any]:
+    """Intent:
+        Returns the confirmed witness the rule of `_schema_inclusion` prefers to `values`, itself
+        a confirmed witness: for each text field in order the shortest text, then each of its
+        first characters in turn in the best readability rank and lowest code point a
+        confirmed witness allows.
+
+    Notes:
+        Each step asks the solver for a witness under one more condition and keeps it only
+        when both validations confirm it. A step the solver does not answer in time, or the
+        time limit, ends the search with what is confirmed so far.
+    """
+    import time
+    z3 = enc.z3
+    deadline = time.monotonic() + _WITNESS_SECONDS
+    best = values
+    fixed = list(kept)
+
+    def better(*conditions: Any) -> bool:
+        nonlocal best
+        if time.monotonic() >= deadline:
+            raise TimeoutError
+        answer = solver.check(*fixed, *conditions)
+        if answer == z3.unknown:
+            raise TimeoutError
+        if answer != z3.sat:
+            return False
+        found = read(solver.model())
+        if not confirmed(found):
+            return False
+        best = found
+        return True
+
+    solver.set("timeout", 250)
+    try:
+        for name in names:
+            if not isinstance(best.get(name), str):
+                continue
+            x = enc.var(name)
+            s = enc.V.sv(x)
+            for length in range(len(best[name])):
+                if better(enc.V.is_s(x), z3.Length(s) == length):
+                    break
+            fixed += [enc.V.is_s(x), z3.Length(s) == len(best[name])]
+            for i in range(min(len(best[name]), _WITNESS_CHARACTERS)):
+                code = z3.StrToCode(z3.SubString(s, i, 1))
+                here = ord(best[name][i])
+                for lo, hi in (span for rank in _READABILITY for span in rank):
+                    if lo <= here <= hi:
+                        hi = here
+                    if better(code >= lo, code <= hi):
+                        low, high = lo, ord(best[name][i])
+                        while low < high:
+                            middle = (low + high) // 2
+                            if better(code >= low, code <= middle):
+                                high = ord(best[name][i])
+                            else:
+                                low = middle + 1
+                        break
+                    if lo <= here <= hi:
+                        break
+                fixed.append(code == ord(best[name][i]))
+    except TimeoutError:
+        pass
+    return best
 
 
 def _text_language(spec: Any) -> _PatternLanguage:
