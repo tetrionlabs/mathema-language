@@ -162,6 +162,7 @@ class MembershipEncoding:
         self.V = v.create()
         self.vars: dict[str, Any] = {}
         self.extra: list[Any] = []
+        self.no_surrogates = ""
 
     def var(self, name: str) -> Any:
         if name not in self.vars:
@@ -342,6 +343,11 @@ class MembershipEncoding:
         elif t.base == "string":
             conds.append(V.is_s(x))
             s = V.sv(x)
+            constrained = c.min_len is not None or c.max_len is not None or c.regex is not None
+            if self.no_surrogates == "every" or (self.no_surrogates and constrained):
+                conds.append(z3.InRe(s, z3.Star(z3.Union(
+                    z3.Range(_z3_text(z3, "\x00"), _z3_text(z3, "\ud7ff")),
+                    z3.Range(_z3_text(z3, "\ue000"), _z3_text(z3, chr(_Z3_MAX_CHAR)))))))
             if c.min_len is not None:
                 conds.append(z3.Length(s) >= c.min_len)
             if c.max_len is not None:
@@ -426,7 +432,17 @@ class MembershipEncoding:
         subcommands)."""
         shapes = []
         for b in _branches(language):
-            shape = self.row(b.schema, names, side, _SUPPORTED[b.ecosystem.name])
+            # pydantic encodes a str it holds to a length, a pattern or a str_ setting, and
+            # refuses one holding a surrogate, so such text is in neither side of those fields
+            self.no_surrogates = ""
+            if b.ecosystem.name == "pydantic":
+                config = getattr(b.ecosystem.model, "model_config", None) or {}
+                self.no_surrogates = "every" if any(k.startswith("str_") for k in config) \
+                    else "constrained"
+            try:
+                shape = self.row(b.schema, names, side, _SUPPORTED[b.ecosystem.name])
+            finally:
+                self.no_surrogates = ""
             # the text of a path a converter builds is never empty
             # (`Path("")` is `.`), so neither is the text the encoding holds
             for dest, convert in (getattr(b.ecosystem, "converters", None) or {}).items():
@@ -1214,8 +1230,16 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     own = set(field_names(older))
     undeclared = [enc.V.is_absent(enc.var(n)) for n in names if n not in own]
     answer = solver.check(*undeclared) if undeclared else solver.check()
+    kept = undeclared
     if answer != z3.sat and undeclared:
-        answer = solver.check()
+        answer, kept = solver.check(), []
+    if answer == z3.sat:
+        # and with its text in capital letters where that is enough
+        letters = z3.Star(z3.Range("A", "Z"))
+        plain = [z3.Implies(enc.V.is_s(enc.var(n)), z3.InRe(enc.V.sv(enc.var(n)), letters))
+                 for n in names]
+        if solver.check(*kept, *plain) != z3.sat:
+            solver.check(*kept)
     if answer == z3.unknown:
         return _InclusionResult("unknown", f"z3 did not decide it ({solver.reason_unknown()})")
     if answer == z3.unsat:
