@@ -23,11 +23,12 @@ Each field value is of a single z3 type holding every kind of value a
 field can take: absent, null, NaN, the two infinities, a bool, an int,
 an exact real and a string. Numbers are exact reals, as mathema's own
 z3 rung reads them. z3's strings hold characters up to U+2FFFF; a
-record whose text uses a higher one reads the same, to every pattern
-and length the encoding holds, as one with that character replaced by a
-character no pattern names, so a proof over z3's characters holds over
-all of Unicode, and a pattern or constant that names such a character is
-not translated.
+record whose text uses a higher one reads, to every pattern and length
+the encoding holds, as one with that character replaced by U+2FFFF: a
+set of characters that holds the higher ones holds U+2FFFF on the older
+side, and one that does not hold them all leaves U+2FFFF out on the
+newer, so a proof over z3's characters holds over all of Unicode. A
+pattern or constant that names such a character is not translated.
 
 `_schema_inclusion` decides inclusion end to end (a value in one and not
 the other, built and confirmed by both languages' own validation before
@@ -515,9 +516,9 @@ class _Regex:
         """
         z3, name = self.z3, str(op)
         if name == "LITERAL":
-            return z3.Re(z3.StringVal(self._char(arg, pattern)))
+            return self._range(arg, arg, False, pattern)
         if name == "NOT_LITERAL":
-            return z3.Diff(z3.AllChar(self.R), z3.Re(z3.StringVal(self._char(arg, pattern))))
+            return z3.Diff(z3.AllChar(self.R), self._range(arg, arg, True, pattern))
         if name == "ANY":
             return z3.Diff(z3.AllChar(self.R), z3.Re(z3.StringVal("\n")))
         if name == "IN":
@@ -530,6 +531,9 @@ class _Regex:
         if name in ("MAX_REPEAT", "MIN_REPEAT", "POSSESSIVE_REPEAT"):
             lo, hi, sub = arg
             inner = self._seq(sub, pattern)
+            if hi == 0:
+                # z3 reads an upper bound of 0 as no upper bound
+                return z3.Re(z3.StringVal(""))
             if hi == sre_maxrepeat():
                 return z3.Concat(z3.Loop(inner, lo, lo), z3.Star(inner)) if lo else z3.Star(inner)
             return z3.Loop(inner, lo, hi)
@@ -552,6 +556,30 @@ class _Regex:
         if code > _Z3_MAX_CHAR:
             raise Untranslated(f"the pattern {pattern!r}, past the characters z3 holds")
         return chr(code)
+
+    def _range(self, lo: int, hi: int, complemented: bool, pattern: str) -> Any:
+        """Intent:
+            Returns the characters `lo` to `hi` as a z3 regular expression, for a set that is
+            itself read (`complemented` false) or whose complement is.
+
+        Raises:
+            Untranslated: a code point is past the last character z3's strings hold.
+
+        Notes:
+            The last character z3 holds stands for every character past it. Such a range
+            holds none of those, so it does not hold the last character where it must admit
+            at most what `re` does: read directly on the newer side, or complemented on the
+            older, whose complement then holds the last character as it holds all past it.
+        """
+        z3 = self.z3
+        self._char(hi, pattern)
+        if hi == _Z3_MAX_CHAR and self.widen == complemented:
+            hi -= 1
+        if lo > hi:
+            return z3.Empty(self.R)
+        if lo == hi:
+            return z3.Re(z3.StringVal(chr(lo)))
+        return z3.Range(chr(lo), chr(hi))
 
     def _category(self, name: str, pattern: str) -> Any:
         """Intent:
@@ -585,16 +613,16 @@ class _Regex:
                 category.
         """
         z3 = self.z3
-        negate = False
+        negate = any(str(op) == "NEGATE" for op, _ in items)
         parts = []
         for op, arg in items:
             name = str(op)
             if name == "NEGATE":
-                negate = True
+                continue
             elif name == "LITERAL":
-                parts.append(z3.Re(z3.StringVal(self._char(arg, pattern))))
+                parts.append(self._range(arg, arg, negate, pattern))
             elif name == "RANGE":
-                parts.append(z3.Range(self._char(arg[0], pattern), self._char(arg[1], pattern)))
+                parts.append(self._range(arg[0], arg[1], negate, pattern))
             elif name == "CATEGORY":
                 parts.append(self._category(str(arg), pattern))
             else:

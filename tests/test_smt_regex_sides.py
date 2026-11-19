@@ -86,3 +86,44 @@ def test_what_is_read_stays_inside_its_two_sides(pattern):
     assert bracketed(pattern, texts) == []
     smt.MembershipEncoding(z3)._regex(pattern, "older")
     smt.MembershipEncoding(z3)._regex(pattern, "newer")
+
+
+def _model(pattern):
+    pydantic = pytest.importorskip("pydantic")
+
+    class M(pydantic.BaseModel):
+        s: str = pydantic.Field(pattern=pattern)
+    return M
+
+
+@pytest.mark.parametrize("pattern", [r"a{0}", r"a{0,0}", r"(?:ab){0}", r"xa{0}y", r"[ab]{0}?"])
+def test_a_repeat_of_at_most_zero_is_the_empty_string(pattern):
+    assert bracketed(pattern, ["", "a", "aa", "aaa", "ab", "xy", "xay", "b"]) == []
+    assert not inside(pattern, "newer", "a") or re.fullmatch(pattern, "a")
+
+
+@pytest.mark.parametrize("older, newer, counterexample", [
+    (r"^a{1,3}b", r"^a{0}b(.|\n)*$", "ab"),
+    (r"^[^\d]$", r"^b$", "a"),
+    ("^٣", r"^[^\d](.|\n)*$", "٣"),
+    (r"(?i)^a", r"^a(.|\n)*$", "A"),
+    (r"(?s)^a.b", r"^a[^\n]b(.|\n)*$", "a\nb"),
+    (r"(?m)^a", r"^a(.|\n)*$", "b\na"),
+    (r"(?i)^k", r"^[kK](.|\n)*$", "K"),
+    (r"^.", "^[\\x00-\U0002FFFF](.|\\n)*$", "\U00030000"),
+    ("^[^a]", "^[\\x00-\U0002FFFF](.|\\n)*$", "\U00030000"),
+    ("^[^\U0002FFFF]$", "^[\\x00-\U0002FFFE]$", "\U00030000"),
+])
+def test_an_inclusion_with_a_counterexample_is_not_proven(older, newer, counterexample):
+    assert re.search(older, counterexample) and not re.search(newer, counterexample)
+    result = smt._schema_inclusion(_model(older), _model(newer))
+    assert result.verdict != "proven", str(result)
+
+
+def test_the_last_z3_character_stands_for_every_character_past_it():
+    last = chr(smt._Z3_MAX_CHAR)
+    # a set that holds a character past z3's holds the last one on the older side
+    assert inside("[^" + last + "]", "older", last) and inside(".", "older", last)
+    # a set that does not hold every character past z3's leaves the last one out on the newer
+    assert not inside(last, "newer", last) and not inside("[a-" + last + "]", "newer", last)
+    assert inside("[^a]", "newer", last) and inside(last, "older", last)
