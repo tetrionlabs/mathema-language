@@ -168,7 +168,7 @@ def test_a_term_is_canonical_plain_data(pattern, flags):
     assert json.loads(text) == doc
     assert doc["kind"] == "regular_language" and doc["version"] == rx.TERM_VERSION
     assert doc["alphabet"] == [[0, 0x10FFFF]]
-    assert doc["source"]["dialect"] == "python-re" and doc["source"]["pattern"] == pattern
+    assert doc["source"]["dialect"] == "python" and doc["source"]["pattern"] == pattern
     ops = {"empty", "epsilon", "literal", "chars", "concat", "union", "inter", "complement",
            "repeat"}
     for key in ("language", "at_least", "at_most"):

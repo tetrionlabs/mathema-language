@@ -450,6 +450,23 @@ def _power(pieces: list, n: int) -> list:
     return out
 
 
+def _boundary(word: Any, other: Any, negated: bool, in_empty: bool) -> list:
+    """Intent:
+        Returns the pieces of a word boundary between the sets `word` and `other` (an edge of
+        the string counting as `other`), or, when `negated`, of its absence, which holds in the
+        empty string only when `in_empty`.
+    """
+    if not negated:
+        return [((False, word, False), _EPS, (True, other, False)),
+                ((True, other, False), _EPS, (False, word, False))]
+    pieces = [((False, word, False), _EPS, (False, word, False)),
+              ((False, other, False), _EPS, (True, other, False)),
+              (_AT_EDGE, _EPS, (False, other, False))]
+    if in_empty:
+        pieces.append((_AT_EDGE, _EPS, _AT_EDGE))
+    return pieces
+
+
 #: the largest repeat count of a sub-pattern with assertions that is written out
 _UNROLL = 32
 
@@ -584,15 +601,7 @@ class _Regex:
             word_item = list(parser.parse(r"\w", flags & re.ASCII))[0]
             word = _item_chars(*word_item, flags & ~re.IGNORECASE)
             other = _cs_complement(word)
-            if name == "AT_BOUNDARY":
-                return [((False, word, False), _EPS, (True, other, False)),
-                        ((True, other, False), _EPS, (False, word, False))]
-            pieces = [((False, word, False), _EPS, (False, word, False)),
-                      ((False, other, False), _EPS, (True, other, False)),
-                      (_AT_EDGE, _EPS, (False, other, False))]
-            if _B_IN_EMPTY:
-                pieces.append((_AT_EDGE, _EPS, _AT_EDGE))
-            return pieces
+            return _boundary(word, other, name == "AT_NON_BOUNDARY", _B_IN_EMPTY)
         raise NotRegular(f"the pattern {self.pattern!r} ({name.lower()})")
 
     def language(self, mode: str) -> tuple:
@@ -690,27 +699,49 @@ def from_node(node: dict) -> tuple:
     raise ValueError(f"not a term node: {node!r}")
 
 
-def term(pattern: Any, flags: int = 0, predicate: str = "matches") -> dict:
+#: the dialects a pattern is written in, by canonical name
+DIALECTS = ("python", "javascript")
+
+
+def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str = "python") -> dict:
     """Intent:
-        Returns the term of the strings for which `predicate` holds of a Python pattern under
-        `flags`: exact, or, for a construct that is not regular, an at-least and at-most pair.
+        Returns the term of the strings for which `predicate` holds of a pattern under `flags`:
+        exact, or, for a construct that is not regular, an at-least and at-most pair. A
+        `python` pattern takes `re`'s flags as an int, a `javascript` pattern its flag letters.
 
     Raises:
         NotRegular: the pattern does not compile, is a bytes pattern, or uses LOCALE.
-        ValueError: `predicate` is not one of `PREDICATES`.
+        ValueError: `predicate` is not one of `PREDICATES`, or `dialect` not one of `DIALECTS`.
+
+    Notes:
+        A javascript pattern without the `u` or `v` flag reads a string by its UTF-16 code
+        units, so its term states the alphabet of code units, `[[0, 65535]]`, and a string is
+        a member when its code units are.
     """
     if predicate not in PREDICATES:
         raise ValueError(f"a predicate is one of {sorted(PREDICATES)}, not {predicate!r}")
-    regex = _Regex(pattern, int(flags), relax=True)
-    language = to_node(regex.language(PREDICATES[predicate]))
-    source_pattern = pattern.pattern if isinstance(pattern, re.Pattern) else pattern
-    words = sorted(word for flag, word in FLAG_WORDS.items() if regex.flags & flag)
+    if dialect not in DIALECTS:
+        raise ValueError(f"a dialect is one of {list(DIALECTS)}, not {dialect!r}")
+    source: dict[str, Any] = {"dialect": dialect}
+    alphabet = [[0, _MAX_CODE]]
+    if dialect == "javascript":
+        from ._ecma import Ecma
+        regex: Any = Ecma(pattern, flags or "")
+        language = to_node(regex.language(regex.mode(predicate)))
+        source.update(pattern=pattern, flags=regex.flag_words(), predicate=predicate)
+        if not regex.unicode:
+            alphabet = [[0, 0xFFFF]]
+    else:
+        regex = _Regex(pattern, int(flags), relax=True)
+        language = to_node(regex.language(PREDICATES[predicate]))
+        source.update(
+            pattern=pattern.pattern if isinstance(pattern, re.Pattern) else pattern,
+            flags=sorted(word for flag, word in FLAG_WORDS.items() if regex.flags & flag),
+            predicate=predicate, python=sys.version.split()[0])
+    source["unicode"] = unicodedata.unidata_version
     doc: dict[str, Any] = {
-        "kind": "regular_language", "version": TERM_VERSION, "alphabet": [[0, _MAX_CODE]],
-        "exact": not regex.not_exact,
-        "source": {"dialect": "python-re", "pattern": source_pattern, "flags": words,
-                   "predicate": predicate, "python": sys.version.split()[0],
-                   "unicode": unicodedata.unidata_version}}
+        "kind": "regular_language", "version": TERM_VERSION, "alphabet": alphabet,
+        "exact": not regex.not_exact, "source": source}
     if regex.not_exact:
         doc["at_least"] = language
         doc["at_most"] = {"op": "empty"}
@@ -800,9 +831,38 @@ def holds(r: tuple, text: str) -> bool:
 def member(doc: dict, text: str, bound: str = "language") -> bool:
     """Intent:
         Returns whether `text` is in a term's language, or in its `at_least` or `at_most` bound
-        (an exact term's language is both).
+        (an exact term's language is both), read by its UTF-16 code units when the term's
+        alphabet is the code units.
     """
+    if doc.get("alphabet") == [[0, 0xFFFF]]:
+        text = code_units(text)
     return holds(from_node(doc["language"] if "language" in doc else doc[bound]), text)
+
+
+def code_units(text: str) -> str:
+    """Intent:
+        Returns `text` as its UTF-16 code units, one character each: a character past U+FFFF
+        becomes its two surrogates.
+    """
+    out = []
+    for c in text:
+        code = ord(c)
+        if code > 0xFFFF:
+            code -= 0x10000
+            out.append(chr(0xD800 + (code >> 10)) + chr(0xDC00 + (code & 0x3FF)))
+        else:
+            out.append(c)
+    return "".join(out)
+
+
+def code_points(text: str) -> str:
+    """Intent:
+        Returns `text` with each high surrogate followed by a low one read as the one character
+        the pair encodes, as a reader of UTF-16 by code points reads it.
+    """
+    return re.sub("[\ud800-\udbff][\udc00-\udfff]",
+                  lambda m: chr(0x10000 + ((ord(m[0][0]) - 0xD800) << 10) + ord(m[0][1]) - 0xDC00),
+                  text)
 
 
 def runs(pattern: Any, flags: int, predicate: str, text: str) -> bool:
@@ -823,10 +883,10 @@ def runs(pattern: Any, flags: int, predicate: str, text: str) -> bool:
     raise ValueError(f"a predicate is one of {sorted(PREDICATES)}, not {predicate!r}")
 
 
-def admits(pattern: Any, flags: int, predicate: str, text: str) -> bool:
+def admits(pattern: Any, flags: Any, predicate: str, text: str, dialect: str = "python") -> bool:
     r"""Intent:
         Returns whether `text` is in the term of the pattern under `predicate`: its language
-        when exact, else its at-least bound.
+        when exact, else its at-least bound. A `javascript` pattern takes its flag letters.
 
     Claims:
         dollar_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a", "a\n"}, f("a$", 0, "matches", text) == runs("a$", 0, "matches", text)
@@ -836,18 +896,25 @@ def admits(pattern: Any, flags: int, predicate: str, text: str) -> bool:
         words_agree_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a b", "\u0663", "\U00030000", "_"}, f("\\b\\w+\\b", 0, "contains", text) == runs("\\b\\w+\\b", 0, "contains", text)
         digits_agree_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"1.5", "\u0663.\u0663", "1.", "12"}, f("\\d+(?:\\.\\d+)?", 0, "matches", text) == runs("\\d+(?:\\.\\d+)?", 0, "matches", text)
         a_backreference_is_bounded: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"aa", "aaaa", "aaa"}, (f("(a+)\\1", 0, "matches", text) or not runs("(a+)\\1", 0, "matches", text)) == True
+        javascript_anchors_are_python_absolute_ones: for text in L[unicode] ∪ {"abc", "abc\n", "a\nb", "A"}, f("^[a-z]+$", "u", "contains", text, "javascript") == f("\\A[a-z]+\\Z", 0, "contains", text)
+        javascript_digits_are_python_ascii_digits: for text in L[unicode] ∪ {"12", "\u0663", "1\n"}, f("^\\d+$", "u", "contains", text, "javascript") == f("\\A\\d+\\Z", 256, "contains", text)
+        javascript_digits_are_among_python_digits: for text in L[unicode] ∪ {"12", "\u0663", "1\n"}, (f("^\\d+$", 0, "contains", text) or not f("^\\d+$", "u", "contains", text, "javascript")) == True
+        javascript_dollar_refuses_a_final_newline: f("^a$", "", "contains", "a\n", "javascript") == False
+        python_dollar_admits_a_final_newline: f("^a$", 0, "contains", "a\n") == True
 
     Raises:
         NotRegular: the pattern does not compile, is a bytes pattern, or uses LOCALE.
     """
-    key = (pattern, int(flags), predicate)
+    key = (pattern, flags, predicate, dialect)
     if key not in _ADMITTED:
-        doc = term(pattern, flags, predicate)
-        _ADMITTED[key] = from_node(doc["language"] if doc["exact"] else doc["at_least"])
-    return holds(_ADMITTED[key], text)
+        doc = term(pattern, flags, predicate, dialect)
+        units = doc["alphabet"] == [[0, 0xFFFF]]
+        _ADMITTED[key] = (from_node(doc["language"] if doc["exact"] else doc["at_least"]), units)
+    expression, units = _ADMITTED[key]
+    return holds(expression, code_units(text) if units else text)
 
 
-_ADMITTED: dict[tuple[Any, int, str], tuple] = {}
+_ADMITTED: dict[tuple[Any, Any, str, str], tuple[tuple, bool]] = {}
 
 
 def shortest(r: tuple, limit: int = 12) -> str | None:
