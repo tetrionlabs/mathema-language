@@ -302,8 +302,9 @@ def test_at_most_holds_only_members_when_a_bound_carries_a_zone_whose_offset_cha
 
 
 def test_the_url_language_and_its_term_agree_on_a_user_part_with_a_delete_character():
-    from mathema_language.text.url_language import URL_PATTERN
     import re
+
+    from mathema_language.text.url_language import URL_PATTERN
     doc = URL.to_json()["definition"]
     for text in ["x://a\x7f@h", "http://u\x7fser@example.com/", "http://user@example.com/a\x7fb",
                  "http://u~ser@example.com/", "http://u!ser@example.com/", "http://u\x80ser@example.com/"]:

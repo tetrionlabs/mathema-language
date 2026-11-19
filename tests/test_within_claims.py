@@ -13,7 +13,7 @@ mathema = pytest.importorskip("mathema")
 
 import mathema_language.text.within as within  # noqa: E402
 
-FUNCTIONS = [within._reads, within._escapes, within._matches, within._in_term]
+FUNCTIONS = [within._reads, within._escapes, within._matches, within._in_term, within._certain]
 
 
 def _declared(fn) -> list[str]:

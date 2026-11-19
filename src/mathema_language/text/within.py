@@ -991,9 +991,17 @@ def _reads(base: str, text: str, *regions: str) -> bool:
         the_whole_ipv4_space_holds_every_address: for text in L[ipv4], f("ipv4", text, "0.0.0.0/0") == True
         the_whole_ipv6_space_holds_every_address: for text in L[ipv6], f("ipv6", text, "::/0") == True
         every_date_is_between_the_first_and_the_last: for text in L[iso_date], f("iso_date", text, "0001-01-01", "9999-12-31") == True
-        answers_any_text_for_a_block: for text in L[unicode], f("ipv4", text, "10.0.0.0/8") in {True, False}
-        answers_any_text_for_an_interval: for text in L[unicode], f("iso_date", text, "2026-01-01", "2026-12-31") in {True, False}
-        answers_any_text_for_a_subtree: for text in L[unicode], f("path", text, "/workspace") in {True, False}
+        an_address_of_a_block_is_in_the_block_around_it: for text in L[mathema_language.text.within._INNER_IPV4], f("ipv4", text, "10.0.0.0/8") == True
+        an_address_of_a_block_is_not_in_its_other_half: for text in L[mathema_language.text.within._INNER_IPV4], f("ipv4", text, "10.128.0.0/9") == False
+        an_ipv6_address_of_a_block_is_in_the_block_around_it: for text in L[mathema_language.text.within._INNER_IPV6], f("ipv6", text, "2001:db8::/32") == True
+        a_path_of_a_subtree_is_under_its_parent: for text in L[mathema_language.text.within._INNER_PATH], f("path", text, "/workspace") == True
+        a_date_of_a_month_is_in_its_year: for text in L[mathema_language.text.within._INNER_DATES], f("iso_date", text, "2026-01-01", "2026-12-31") == True
+        a_date_of_march_is_not_in_april: for text in L[mathema_language.text.within._INNER_DATES], f("iso_date", text, "2026-04-01", "2026-04-30") == False
+        a_url_under_a_prefix_is_in_its_origin: for text in L[mathema_language.text.within._INNER_URL], f("url", text, "https://example.com") == True
+        the_addresses_beside_a_block_are_outside_it: for text in {"10.0.255.255", "10.2.0.0", "9.255.255.255", "10.1.0.0/16", "010.1.0.0", "10.1.0.0 "}, f("ipv4", text, "10.1.0.0/16") == False
+        the_paths_beside_a_root_are_outside_it: for text in {"/workspace2", "/workspac", "/workspace/../etc", "/", "//workspace", ""}, f("path", text, "/workspace") == False
+        the_urls_beside_a_prefix_are_outside_it: for text in {"https://user@example.com/api", "https://example.com@evil.example/api", "https://example.com:8443/api", "https://example.com.evil.example/api", "https://example.com/apiv2", "https://example.com/api/../admin", "https://example.com/api/%2e%2e/admin", "http://example.com/api"}, f("url", text, "https://example.com/api") == False
+        the_days_beside_an_interval_are_outside_it: for text in {"2026-02-28", "2026-04-01", "2026-W09-6", "20260401", "2026-03-01T00:00:00"}, f("iso_date", text, "2026-03-01", "2026-03-31") == False
 
     Raises:
         ValueError: `within` has no meaning for `base`, or a region has not the form it takes.
@@ -1007,13 +1015,14 @@ def _escapes(base: str, text: str, inner: str, outer: str) -> bool:
         within the one region `outer`: a witness that `inner` is not inside `outer`.
 
     Claims:
-        no_address_of_a_block_escapes_the_block_around_it: for text in L[ipv4], f("ipv4", text, "10.1.0.0/16", "10.0.0.0/8") == False
-        no_text_at_all_escapes_the_block_around_it: for text in L[unicode], f("ipv4", text, "10.1.0.0/16", "10.0.0.0/8") == False
+        no_address_of_a_block_escapes_the_block_around_it: for text in L[mathema_language.text.within._INNER_IPV4], f("ipv4", text, "10.1.0.0/16", "10.0.0.0/8") == False
+        every_address_of_a_block_escapes_its_other_half: for text in L[mathema_language.text.within._INNER_IPV4], f("ipv4", text, "10.1.0.0/16", "10.128.0.0/9") == True
         an_address_escapes_the_smaller_block: f("ipv4", "10.2.0.0", "10.0.0.0/8", "10.1.0.0/16") == True
-        no_path_of_a_subtree_escapes_its_parent: for text in L[path], f("path", text, "/workspace/src", "/workspace") == False
+        no_path_of_a_subtree_escapes_its_parent: for text in L[mathema_language.text.within._INNER_PATH], f("path", text, "/workspace/src", "/workspace") == False
         a_path_escapes_the_subtree: f("path", "/workspace/README.md", "/workspace", "/workspace/src") == True
         a_sibling_prefix_is_not_under_the_root: f("path", "/workspace2", "/", "/workspace") == True
-        no_address_escapes_the_ipv6_block_around_it: for text in L[ipv6], f("ipv6", text, "2001:db8:1::/48", "2001:db8::/32") == False
+        no_address_escapes_the_ipv6_block_around_it: for text in L[mathema_language.text.within._INNER_IPV6], f("ipv6", text, "2001:db8:1::/48", "2001:db8::/32") == False
+        no_url_under_a_prefix_escapes_its_origin: for text in L[mathema_language.text.within._INNER_URL], f("url", text, "https://example.com/api", "https://example.com") == False
 
     Raises:
         ValueError: `within` has no meaning for `base`, or a region has not the form it takes.
@@ -1027,12 +1036,16 @@ def _matches(base: str, text: str, *regions: str) -> bool:
         pattern read in full.
 
     Claims:
-        the_ipv4_pattern_agrees_on_addresses: let reads = mathema_language.text.within._reads, for text in L[ipv4], f("ipv4", text, "10.0.0.0/8") == reads("ipv4", text, "10.0.0.0/8")
-        the_ipv4_pattern_agrees_on_any_text: let reads = mathema_language.text.within._reads, for text in L[unicode], f("ipv4", text, "10.0.0.0/8") == reads("ipv4", text, "10.0.0.0/8")
-        the_ipv6_pattern_agrees_on_addresses: let reads = mathema_language.text.within._reads, for text in L[ipv6], f("ipv6", text, "8000::/1") == reads("ipv6", text, "8000::/1")
-        the_date_pattern_agrees_on_dates: let reads = mathema_language.text.within._reads, for text in L[iso_date], f("iso_date", text, "1900-03-01", "2100-02-28") == reads("iso_date", text, "1900-03-01", "2100-02-28")
-        the_date_pattern_agrees_on_any_text: let reads = mathema_language.text.within._reads, for text in L[unicode], f("iso_date", text, "1900-03-01", "2100-02-28") == reads("iso_date", text, "1900-03-01", "2100-02-28")
-        the_path_pattern_agrees_on_paths: let reads = mathema_language.text.within._reads, for text in L[path], f("path", text, "/workspace", "/data") == reads("path", text, "/workspace", "/data")
+        the_ipv4_pattern_admits_the_addresses_of_a_block_inside: for text in L[mathema_language.text.within._INNER_IPV4], f("ipv4", text, "10.0.0.0/8") == True
+        the_ipv4_pattern_agrees_on_half_of_all_addresses: let reads = mathema_language.text.within._reads, for text in L[ipv4], f("ipv4", text, "128.0.0.0/1") == reads("ipv4", text, "128.0.0.0/1")
+        the_ipv4_pattern_refuses_the_text_beside_a_block: for text in {"10.0.255.255", "10.2.0.0", "9.255.255.255", "10.1.0.0/16", "010.1.0.0", "10.1.0.0 ", "10.1.0", "10.1.0.0.0"}, f("ipv4", text, "10.1.0.0/16") == False
+        the_ipv6_pattern_admits_every_spelling_of_a_block_inside: for text in L[mathema_language.text.within._INNER_IPV6], f("ipv6", text, "2001:db8::/32") == True
+        the_ipv6_pattern_agrees_on_half_of_all_addresses: let reads = mathema_language.text.within._reads, for text in L[ipv6], f("ipv6", text, "8000::/1") == reads("ipv6", text, "8000::/1")
+        the_date_pattern_admits_the_dates_of_a_month_inside: for text in L[mathema_language.text.within._INNER_DATES], f("iso_date", text, "2026-01-01", "2026-12-31") == True
+        the_date_pattern_agrees_on_dates_either_side_of_a_bound: let reads = mathema_language.text.within._reads, for text in L[iso_date], f("iso_date", text, "0001-01-01", "5000-06-15") == reads("iso_date", text, "0001-01-01", "5000-06-15")
+        the_date_pattern_refuses_the_days_beside_an_interval: for text in {"2026-02-28", "2026-04-01", "2026-W09-6", "20260401", "2026-03-01T00:00:00", "2026-03-32", "2026-3-01"}, f("iso_date", text, "2026-03-01", "2026-03-31") == False
+        the_url_pattern_admits_the_urls_under_a_prefix: for text in L[mathema_language.text.within._INNER_URL], f("url", text, "https://example.com/api") == True
+        the_url_pattern_refuses_the_urls_beside_a_prefix: for text in {"https://user@example.com/api", "https://example.com@evil.example/api", "https://example.com:8443/api", "https://example.com.evil.example/api", "https://example.com/apiv2", "https://example.com/api/../admin", "https://example.com/api/%2e%2e/admin", "http://example.com/api"}, f("url", text, "https://example.com/api") == False
 
     Raises:
         ValueError: `within` has no meaning for `base`, a region has not the form it takes, or
@@ -1050,14 +1063,36 @@ def _in_term(base: str, text: str, *regions: str) -> bool:
         `regions`: in its language where the term is exact, else in its `at_least` bound.
 
     Claims:
-        the_ipv4_term_agrees_on_addresses: let reads = mathema_language.text.within._reads, for text in L[ipv4], f("ipv4", text, "10.0.0.0/8") == reads("ipv4", text, "10.0.0.0/8")
-        the_date_term_agrees_on_dates: let reads = mathema_language.text.within._reads, for text in L[iso_date], f("iso_date", text, "2024-02-29", "2026-11-19") == reads("iso_date", text, "2024-02-29", "2026-11-19")
-        the_datetime_bound_over_every_date_holds_every_datetime: for text in L[iso_datetime], f("iso_datetime", text, "0001-01-01T00:00:00", "9999-12-31T23:59:59.999999") == True
+        the_ipv4_term_admits_the_addresses_of_a_block_inside: for text in L[mathema_language.text.within._INNER_IPV4], f("ipv4", text, "10.0.0.0/8") == True
+        the_ipv4_term_agrees_on_half_of_all_addresses: let reads = mathema_language.text.within._reads, for text in L[ipv4], f("ipv4", text, "128.0.0.0/1") == reads("ipv4", text, "128.0.0.0/1")
+        the_date_term_agrees_on_dates_either_side_of_a_bound: let reads = mathema_language.text.within._reads, for text in L[iso_date], f("iso_date", text, "0001-01-01", "5000-06-15") == reads("iso_date", text, "0001-01-01", "5000-06-15")
+        the_path_term_agrees_with_the_pattern_on_paths: let reads = mathema_language.text.within._reads, for text in L[path], f("path", text, "/workspace") == reads("path", text, "/workspace")
+        the_path_term_refuses_the_paths_beside_a_root: for text in {"/workspace2", "/workspac", "/workspace/../etc", "/", "//workspace", ""}, f("path", text, "/workspace") == False
+        the_datetime_bound_holds_every_member_at_any_offset: for text in L[mathema_language.text.within._OFFSET_DATETIMES], f("iso_datetime", text, "2026-01-02T00:30:00+14:00", "2026-01-05T00:00:00+14:00") == True
+        the_datetime_bound_holds_the_first_instant_two_written_days_away: f("iso_datetime", "2025-12-31T22:30:00-12:00", "2026-01-02T00:30:00+14:00", "2026-01-05T00:00:00+14:00") == True
 
     Raises:
         ValueError: `within` has no meaning for `base`, or a region has not the form it takes.
     """
     return _regular.member(_built(base, regions).definition(), text, "at_least")
+
+
+def _certain(text: str, first: str, last: str) -> bool:
+    """Intent:
+        Whether `text` is in the `at_most` bound of the datetime interval from `first` to
+        `last`: a text the term states is certainly a member.
+
+    Claims:
+        what_is_certain_between_naive_bounds_is_a_member: let reads = mathema_language.text.within._reads, for text in L[mathema_language.text.within._CERTAIN_NAIVE], reads("iso_datetime", text, "2026-11-19T09:00:00.5", "2026-11-19T17:30:00") == True
+        what_is_certain_between_aware_bounds_is_a_member: let reads = mathema_language.text.within._reads, for text in L[mathema_language.text.within._CERTAIN_AWARE], reads("iso_datetime", text, "2026-01-02T00:30:00+14:00", "2026-01-05T00:00:00+14:00") == True
+        the_certain_texts_are_in_the_bound: for text in L[mathema_language.text.within._CERTAIN_NAIVE], f(text, "2026-11-19T09:00:00.5", "2026-11-19T17:30:00") == True
+        nothing_is_certain_past_the_bounds_or_the_day: for text in {"2026-11-19T09:00:00", "2026-11-19T17:30:01", "2026-11-19T24:00:00", "2026-11-20T09:00:01", "2026-11-19T12:00:00+00:00", "2026-11-19T12:00:00\\n"}, f(text, "2026-11-19T09:00:00.5", "2026-11-19T17:30:00") == False
+        a_whole_second_inside_is_certain: for text in {"2026-11-19T09:00:01", "2026-11-19T12:00:00", "2026-11-19T17:30:00"}, f(text, "2026-11-19T09:00:00.5", "2026-11-19T17:30:00") == True
+
+    Raises:
+        ValueError: a bound is not a datetime, or the bounds are not in order.
+    """
+    return _regular.member(_built("iso_datetime", (first, last)).definition(), text, "at_most")
 
 
 def within(language: Any, *regions: Any) -> Any:
@@ -1082,3 +1117,31 @@ def within(language: Any, *regions: Any) -> Any:
 __all__ = ["WITHIN", "BoundaryKind", "WithinLanguage", "claim_text", "ipv4_within", "ipv6_within",
            "iso_date_within", "iso_datetime_within", "suggest_within", "url_within", "within",
            "within_examples", "within_refusal"]
+
+
+#: languages the claims on this module quantify over, each named by its dotted path
+_INNER_IPV4 = ipv4_within("10.1.0.0/16")
+_INNER_IPV6 = ipv6_within("2001:db8:1::/48")
+_INNER_PATH = path_within("/workspace/src")
+_INNER_DATES = iso_date_within("2026-03-01", "2026-03-31")
+_INNER_URL = url_within("https://example.com/api")
+_OFFSET_DATETIMES = iso_datetime_within("2026-01-02T00:30:00+14:00", "2026-01-05T00:00:00+14:00")
+
+
+def _certain_language(language: WithinLanguage) -> TextLanguage:
+    """Intent:
+        The text language of a datetime interval's `at_most` bound: the texts its term states
+        are certainly members, drawn from the bound's own expression.
+    """
+    from .regex import draw_matching
+
+    assert language.bounds is not None
+    most = language.bounds[1]
+    return TextLanguage(
+        f"certain of ({language.name})", level="regular",
+        accepts=lambda text: re.fullmatch(most, text) is not None,
+        generate=lambda rng: draw_matching(rng, most) or "")
+
+
+_CERTAIN_NAIVE = _certain_language(iso_datetime_within("2026-11-19T09:00:00.5", "2026-11-19T17:30:00"))
+_CERTAIN_AWARE = _certain_language(_OFFSET_DATETIMES)
