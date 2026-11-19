@@ -11,7 +11,9 @@ files a tool should never touch (`.git/config`, `~/.ssh/id_rsa`).
 `path_within(root)` is the language of paths confined to `root`: a
 relative path with no `..` segment, or an absolute path that is the root
 itself or starts with the root and a `/`, again with no `..` segment. A
-claim spells it `L[path, within "/workspace"]`. It is decided on the
+claim spells it `L[path, within "/workspace"]`. Given several roots it is
+the union: an absolute path is at or under any one of them, spelled
+`L[path, within ("/workspace", "/data")]`. It is decided on the
 text, never by resolving it: `a/../b` stays inside the root but is
 refused, since a rule that resolves `..` is not one an SMT solver can
 decide, and a path that names what it means is the one to accept. It
@@ -78,19 +80,60 @@ def _normal_root(root: str) -> str:
     return posixpath.normpath(root) if root != "/" else "/"
 
 
-def within_pattern(root: str) -> str:
+def _normal_roots(root: str, more: tuple[str, ...]) -> tuple[str, ...]:
+    """Intent:
+        The normalised forms of the roots, in the order given, each once.
+
+    Raises:
+        ValueError: a root is not an absolute path without a NUL or a `..` segment.
+    """
+    return tuple(dict.fromkeys(_normal_root(r) for r in (root, *more)))
+
+
+def _absolute(root: str) -> str:
+    """Intent:
+        The regular expression of the absolute paths at or under the normalised `root` that
+        name no `..` segment.
+    """
+    return (r"/(?:" + _RELATIVE + r")?" if root == "/"
+            else re.escape(root) + r"(?:/" + _SEGMENT + r")*")
+
+
+def within_pattern(root: str, *more: str) -> str:
     """The regular expression, read in full, of the paths `path_within`
-    admits for `root`."""
-    root = _normal_root(root)
-    absolute = (r"/(?:" + _RELATIVE + r")?" if root == "/"
-                else re.escape(root) + r"(?:/" + _SEGMENT + r")*")
-    return r"(?:" + _RELATIVE + r"|" + absolute + r")"
+    admits for `root`, or for the union of `root` and `more`.
+
+    Raises:
+        ValueError: a root is not an absolute path without a NUL or a `..` segment.
+    """
+    roots = _normal_roots(root, more)
+    return r"(?:" + "|".join([_RELATIVE, *(_absolute(r) for r in roots)]) + r")"
+
+
+def _near(roots: tuple[str, ...]) -> tuple[str, ...]:
+    """Intent:
+        Absolute paths just beside each root: a sibling whose name starts with the root's
+        (`/workspace2` for `/workspace`), the root's name cut short, and a climb out of the
+        root through `..`.
+    """
+    out: list[str] = []
+    for root in roots:
+        if root == "/":
+            out += ["/../etc", "//etc"]
+            continue
+        out += [root + "2", root + "x", root + "/../etc", root + "/.."]
+        if len(posixpath.basename(root)) > 1:
+            out.append(root[:-1])
+    return tuple(dict.fromkeys(out))
 
 
 @dataclass(frozen=True)
 class PathLanguage(TextLanguage):
-    """A path language defined by `pattern`, read in full."""
+    """A path language defined by `pattern`, read in full. `near` are
+    paths beside its boundary, offered as values outside it where the
+    pattern refuses them."""
     pattern: str = PATH_PATTERN
+    near: tuple[str, ...] = ()
 
     def contains(self, value: Any) -> bool:
         return isinstance(value, str) and re.fullmatch(self.pattern, value) is not None
@@ -103,7 +146,7 @@ class PathLanguage(TextLanguage):
         return tuple(own) + tuple(h for h in super().hazards() if h.value not in seen)
 
     def outside(self, rng: random.Random) -> Any:
-        order = [text for text, _ in _HAZARDS] + ["", "a\x00b", "../../x"]
+        order = [text for text, _ in _HAZARDS] + ["", "a\x00b", "../../x", *self.near]
         rng.shuffle(order)
         for text in order:
             if not self.contains(text):
@@ -114,10 +157,11 @@ class PathLanguage(TextLanguage):
 _POOL = "abc.xyz/-_ 0é"
 
 
-def _generate(pattern: str) -> Any:
+def _generate(pattern: str, roots: tuple[str, ...] = ()) -> Any:
     """Intent:
         A generator of random paths matching `pattern` in full: one to four short segments,
-        sometimes absolute, falling back to `a` after forty misses.
+        sometimes absolute, and under one of `roots` in half the draws when there are any,
+        falling back to `a` after forty misses.
     """
     def draw(rng: random.Random) -> str:
         for _ in range(40):
@@ -125,7 +169,9 @@ def _generate(pattern: str) -> Any:
             parts = ["".join(rng.choice(_POOL.replace("/", "")) for _ in range(rng.randint(1, 6)))
                      for _ in range(depth)]
             text = "/".join(parts)
-            if rng.random() < 0.3:
+            if roots and rng.random() < 0.5:
+                text = rng.choice(roots).rstrip("/") + "/" + text
+            elif rng.random() < 0.3:
                 text = "/" + text
             if re.fullmatch(pattern, text):
                 return text
@@ -139,16 +185,34 @@ PATH = PathLanguage(
     extra_hazards=tuple(HazardValue("text", text, note) for text, note in _HAZARDS))
 
 
-def path_within(root: str) -> PathLanguage:
+def _quoted(text: str) -> str:
+    """Intent:
+        `text` between double quotes, as a region is written inside `within (...)`: a backslash
+        and a double quote each take a backslash before them.
+    """
+    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def path_within(root: str, *more: str) -> PathLanguage:
     """The paths confined to `root`, which is an absolute path: relative
     paths with no `..` segment, and absolute paths that are `root` or lie
-    under it, with no `..` segment."""
-    pattern = within_pattern(root)
+    under it, with no `..` segment. With `more` roots, the union: an
+    absolute path is at or under any one of them.
+
+    Raises:
+        ValueError: a root is not an absolute path without a NUL or a `..` segment.
+    """
+    roots = _normal_roots(root, more)
+    pattern = within_pattern(*roots)
+    name = (f'path, within "{roots[0]}"' if len(roots) == 1
+            else "path, within (" + ", ".join(_quoted(r) for r in roots) + ")")
+    hazards = tuple(HazardValue("text", text, note) for text, note in _HAZARDS)
+    hazards += tuple(HazardValue("text", r, "a root itself") for r in roots)
+    hazards += tuple(HazardValue("text", r.rstrip("/") + "/", "a root with a trailing slash") for r in roots)
     return PathLanguage(
-        f'path, within "{_normal_root(root)}"', level="predicate",
-        accepts=lambda s: re.fullmatch(pattern, s) is not None, generate=_generate(pattern),
-        pool=_POOL, simplest="a", pattern=pattern,
-        extra_hazards=tuple(HazardValue("text", text, note) for text, note in _HAZARDS))
+        name, level="predicate",
+        accepts=lambda s: re.fullmatch(pattern, s) is not None, generate=_generate(pattern, roots),
+        pool=_POOL, simplest="a", pattern=pattern, extra_hazards=hazards, near=_near(roots))
 
 
 __all__ = ["PATH", "PATH_PATTERN", "PathLanguage", "path_within", "within_pattern"]
