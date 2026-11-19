@@ -118,6 +118,7 @@ SHAPES = [
 ]
 
 
+@pytest.mark.running_unicode
 @pytest.mark.parametrize("name, pattern, flags, predicate, reading", PATTERNS, ids=[p[0] for p in PATTERNS])
 def test_a_pattern_reads_in_plain_words(name, pattern, flags, predicate, reading):
     said = explain(_regular.term(pattern, flags, predicate))
@@ -128,6 +129,7 @@ def test_a_pattern_reads_in_plain_words(name, pattern, flags, predicate, reading
         assert said == reading.format(**SIZES)
 
 
+@pytest.mark.running_unicode
 @pytest.mark.parametrize("shape, base, reading", SHAPES, ids=[s[0] for s in SHAPES])
 def test_a_shape_reads_in_plain_words(shape, base, reading):
     assert explain(Shape(shape, base).term()) == reading.format(**SIZES)
@@ -138,6 +140,7 @@ def test_there_are_at_least_twenty_five_pinned_readings_and_the_package_own_vali
     assert sum(name.startswith("own: ") for name, *_ in PATTERNS) >= 5
 
 
+@pytest.mark.running_unicode
 def test_the_path_within_pattern_reads_as_a_choice_between_a_relative_path_and_the_root():
     from mathema_language.text.path_language import within_pattern
     said = explain(_regular.term(within_pattern("/ws"), 0, "matches"))
@@ -158,6 +161,7 @@ def test_terms_with_one_canonical_form_read_the_same(one, other):
     assert explain(a) == explain({**a, "language": _regular.canonical(a["language"])})
 
 
+@pytest.mark.running_unicode
 def test_equal_readings_follow_from_equal_hashes_on_generated_patterns():
     import random
     rng = random.Random(31)
@@ -185,8 +189,16 @@ def test_a_term_stated_as_bounds_reads_each_bound_for_what_it_is():
                              'every accepted text fits: one or more of: 0-9; not every text that fits is '
                              'accepted; certainly accepted: "0"')
     assert explain({**pair, "source": {}}).startswith("approximate; every accepted text fits: ")
+    letters = "letters, which differ slightly between Python versions"
+    assert explain({**pair, "source": {"not_exact": [letters]}}).startswith(
+        "approximate because it holds letters, which differ slightly between Python versions; "
+        "every accepted text fits: one or more of: 0-9; ")
+    assert explain({**pair, "source": {"not_exact": ["a lookahead", letters]}}).startswith(
+        "approximate because the pattern uses a lookahead and it holds letters, which differ slightly "
+        "between Python versions; every accepted text fits: ")
 
 
+@pytest.mark.running_unicode
 @pytest.mark.parametrize("ranges, said", [
     ([[0, 0x10FFFF]], "any character"), ([[48, 57]], "0-9"), ([[97, 122], [48, 57]], "0-9, a-z"),
     ([[65, 90], [97, 122]], "ASCII letters"), ([[32, 32], [9, 10]], "tab, newline, space"),
@@ -200,6 +212,7 @@ def test_a_character_set_reads_compactly(ranges, said):
     assert describe_characters(ranges) == said
 
 
+@pytest.mark.running_unicode
 def test_a_named_class_reads_by_name_with_its_size_and_never_as_a_dump():
     for pattern, name, size in [(r"\d", "digits", SIZES["digits"]), (r"\s", "whitespace", SIZES["space"]),
                                 (r"\w", "word characters", SIZES["word"])]:

@@ -43,6 +43,7 @@ def test_the_canonical_text_names_alphabets_in_a_fixed_order_then_characters_by_
     assert parse_alphabet(canonical) == found and parse_alphabet(canonical).text == canonical
 
 
+@pytest.mark.running_unicode
 def test_named_alphabets_are_the_registered_alphabet_languages_and_three_more():
     assert named_ranges("upper") == ((65, 90),) and named_ranges("lower") == ((97, 122),)
     assert named_ranges("hex") == ((48, 57), (65, 70), (97, 102))
@@ -89,6 +90,7 @@ def test_alphabets_add_and_a_string_adds_each_of_its_characters():
         alphabet("lower") + 3
 
 
+@pytest.mark.running_unicode
 @pytest.mark.parametrize("expression", ['lower + digit + "_"', "hex", "upper", 'alnum + "-" + "." + "_"',
                                         "unicode_alpha + digit", '"a" + "b"', "unicode", "ascii"])
 def test_the_language_over_an_alphabet_draws_directly_and_states_an_exact_term(expression):

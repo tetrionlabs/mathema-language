@@ -47,6 +47,7 @@ def test_a_postcode_shape_admits_two_letters_two_digits_an_optional_space_a_digi
     assert _regular.member(POSTCODE.term(), text) == inside
 
 
+@pytest.mark.running_unicode
 def test_a_letter_and_a_digit_follow_the_base_language():
     ascii_, unicode_ = Shape("Aa9X", "ascii"), Shape("Aa9X")
     assert unicode_.base == "unicode"
@@ -128,6 +129,7 @@ def _random_shape(rng: random.Random, depth: int = 0) -> str:
     return "".join(out)
 
 
+@pytest.mark.running_unicode
 @pytest.mark.parametrize("base, alphabet, length", [
     ("ascii", "aB1-A9 [b\n", 3), ("ascii", "aB1-", 5), ("unicode", "aB1-é٣Éǅ²", 3),
 ], ids=["ascii", "ascii long", "unicode"])
@@ -149,6 +151,7 @@ def test_the_reading_the_pattern_and_the_term_agree_on_every_short_text(base, al
     assert admitted > 500
 
 
+@pytest.mark.running_unicode
 def test_the_term_is_exact_plain_data_and_is_the_term_of_the_pattern():
     doc = POSTCODE.term()
     assert doc["exact"] is True and doc["kind"] == "regular_language"
@@ -167,6 +170,7 @@ SHAPES = ["AA99[ ]9AA", "9{0+}", "a{1+}", "X{2}", "[a[9]]{2}", "'ID-'9{4,6}", "A
           "X{0+}", "[a]", "\\A\\9", "a{2,3}[ 9{1,2}]'b'", "'ab'{1,2}9", "'it''s' 9"]
 
 
+@pytest.mark.running_unicode
 @pytest.mark.parametrize("base", ["ascii", "unicode"])
 @pytest.mark.parametrize("written", SHAPES)
 def test_every_member_written_from_a_shape_is_a_member_and_every_near_miss_is_not(written, base):
@@ -185,6 +189,7 @@ def test_every_member_written_from_a_shape_is_a_member_and_every_near_miss_is_no
         assert not _regular.member(doc, text), (text, note)
 
 
+@pytest.mark.running_unicode
 def test_the_members_of_a_shape_take_both_branches_and_both_ends_of_every_count():
     assert set(Shape("AA99[ ]9AA", "ascii").members()) >= {"AA000AA", "AA00 0AA", "ZZ00 0ZZ", "zz00 0zz",
                                                            "AA99 9AA"}
@@ -495,6 +500,7 @@ def test_a_binding_may_give_a_built_in_symbol_another_alphabet_and_is_written_af
     assert both.matches("Q_f") and not both.matches("q_f")
 
 
+@pytest.mark.running_unicode
 @pytest.mark.parametrize("build, error, said", [
     (lambda: Shape("AA", "ascii", W="upper"), ShapeError, "expected the bound symbol W somewhere in the picture"),
     (lambda: Shape("'W'9", "ascii", W="upper"), ShapeError, "expected the bound symbol W somewhere in the picture"),

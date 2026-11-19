@@ -39,7 +39,10 @@ one canonical form read the same whatever pattern they came from.
 A term that is not exact is read as what it is, a pair of bounds:
 the reading names the constructs that made it approximate (the source's
 `not_exact` list), then reads `at_least`, which every accepted text
-fits, and `at_most`, the texts certainly accepted.
+fits, and `at_most`, the texts certainly accepted. A cause that ends
+`between Python versions` is a character class that is not one set on
+every supported Python, and reads `approximate because it holds
+letters, which differ slightly between Python versions`.
 """
 from __future__ import annotations
 
@@ -58,6 +61,10 @@ _MAX_PARTS = 8
 
 #: the names a reading gives to whole character sets, by their ranges, while it runs
 _NAMES: contextvars.ContextVar[dict[Ranges, str]] = contextvars.ContextVar("set names", default={})  # noqa: B039
+
+#: how a cause in a term's `not_exact` list ends when the term is a bound because a Unicode
+#: class is not the same set on every supported Python
+_BETWEEN_VERSIONS = "between Python versions"
 
 _NAMED_CHARACTERS = {" ": "space", "\n": "newline", "\t": "tab", "\r": "carriage return"}
 
@@ -370,7 +377,11 @@ def _explain(term: dict[str, Any]) -> str:
     if "at_least" not in term or "at_most" not in term:
         raise ValueError("a term states its language, or an at_least and an at_most bound")
     causes = list((term.get("source") or {}).get("not_exact") or [])
-    why = (" because the pattern uses " + _and(causes)) if causes else ""
+    versions = [c for c in causes if c.endswith(_BETWEEN_VERSIONS)]
+    uses = [c for c in causes if not c.endswith(_BETWEEN_VERSIONS)]
+    reasons = ([f"the pattern uses {_and(uses)}"] if uses else []) + (
+        [f"it holds {_and(versions)}"] if versions else [])
+    why = (" because " + " and ".join(reasons)) if reasons else ""
     most = _regular.canonical(term["at_most"])
     certain = ("no text is known to be accepted for certain" if most == {"op": "empty"}
                else "certainly accepted: " + _read(most, 0))

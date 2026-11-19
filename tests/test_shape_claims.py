@@ -23,6 +23,7 @@ def _declared(fn) -> list[str]:
     return re.findall(r"^\s+(\w+): ", section, flags=re.MULTILINE)
 
 
+@pytest.mark.running_unicode
 @pytest.mark.parametrize("fn", FUNCTIONS, ids=lambda fn: fn.__name__)
 def test_every_declared_claim_holds(fn):
     names = _declared(fn)

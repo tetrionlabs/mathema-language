@@ -896,7 +896,9 @@ def _reads(shape: str, base: str, text: str) -> bool:
         digits_are_any_number_of_digits: for text in L[digit], f("9{0+}", "ascii", text) == True
         ascii_text_is_any_number_of_ascii_characters: for text in L[ascii], f("X{0+}", "ascii", text) == True
         ascii_letters_are_any_number_of_letters: for text in L[alpha], f("A{0+}", "ascii", text) == True
-        answers_any_text: for text in L[unicode], f("AA99[ ]9AA", "ascii", text) in {True, False}
+        a_drawn_postcode_is_a_member: for text in L[mathema_language.text.shape._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
+        a_near_miss_of_a_postcode_is_not: for text in L[mathema_language.text.shape._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
+        a_postcode_is_also_seven_or_eight_of_anything: for text in L[mathema_language.text.shape._POSTCODES], f("X{7,8}", "ascii", text) == True
         a_postcode_is_a_member: f("AA99[ ]9AA", "ascii", "SW19 3AB") == True
         a_trailing_newline_is_not: f("AA99[ ]9AA", "ascii", "SW19 3AB\\n") == False
 
@@ -913,9 +915,12 @@ def _pattern_reads(shape: str, base: str, text: str) -> bool:
         expression read in full.
 
     Claims:
-        the_pattern_agrees_on_ascii_text: let reads = mathema_language.text.shape._reads, for text in L[ascii], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == reads("a{2,3}[ 9{1,2}]'b'", "ascii", text)
+        the_pattern_admits_every_drawn_member: for text in L[mathema_language.text.shape._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
+        the_pattern_refuses_every_near_miss: for text in L[mathema_language.text.shape._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
+        the_pattern_admits_every_drawn_member_of_a_counted_shape: for text in L[mathema_language.text.shape._COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == True
+        the_pattern_refuses_every_near_miss_of_a_counted_shape: for text in L[mathema_language.text.shape._NEAR_COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == False
+        the_pattern_agrees_on_digits_either_side_of_a_count: let reads = mathema_language.text.shape._reads, for text in L[digit, len <= 6], f("9{2,4}", "unicode", text) == reads("9{2,4}", "unicode", text)
         the_pattern_agrees_on_any_text: let reads = mathema_language.text.shape._reads, for text in L[unicode], f("A{0+}9{0+}X{0,2}", "unicode", text) == reads("A{0+}9{0+}X{0,2}", "unicode", text)
-        the_pattern_agrees_on_digits: let reads = mathema_language.text.shape._reads, for text in L[digit], f("9{2,4}", "unicode", text) == reads("9{2,4}", "unicode", text)
 
     Raises:
         ShapeError: the shape does not read.
@@ -929,8 +934,11 @@ def _term_reads(shape: str, base: str, text: str) -> bool:
         Whether `text` is in the shape's regular-language term.
 
     Claims:
-        the_term_agrees_on_ascii_text: let reads = mathema_language.text.shape._reads, for text in L[ascii], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == reads("a{2,3}[ 9{1,2}]'b'", "ascii", text)
-        the_term_agrees_on_any_text: let reads = mathema_language.text.shape._reads, for text in L[unicode], f("A{0+}9{0+}X{0,2}", "unicode", text) == reads("A{0+}9{0+}X{0,2}", "unicode", text)
+        the_term_admits_every_drawn_member: for text in L[mathema_language.text.shape._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
+        the_term_refuses_every_near_miss: for text in L[mathema_language.text.shape._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
+        the_term_admits_every_drawn_member_of_a_counted_shape: for text in L[mathema_language.text.shape._COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == True
+        the_term_refuses_every_near_miss_of_a_counted_shape: for text in L[mathema_language.text.shape._NEAR_COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == False
+        the_term_agrees_on_digits_either_side_of_a_count: let reads = mathema_language.text.shape._reads, for text in L[digit, len <= 6], f("9{2,4}", "unicode", text) == reads("9{2,4}", "unicode", text)
         the_term_agrees_on_alphanumerics: let reads = mathema_language.text.shape._reads, for text in L[unicode_alnum], f("A{0+}9{0+}", "unicode", text) == reads("A{0+}9{0+}", "unicode", text)
 
     Raises:
@@ -965,6 +973,25 @@ def _shape(shape: str, base: str) -> Shape:
         ValueError: the base is not one of `BASES`.
     """
     return Shape(shape, base)
+
+
+def _near_language(shape: Shape) -> TextLanguage:
+    """Intent:
+        The text language of a shape's near misses: texts one step outside it, drawn from its
+        own `near_misses`.
+    """
+    def draw(rng: random.Random) -> str:
+        return rng.choice(shape.near_misses(rng))[0]
+
+    return TextLanguage(f"near misses of shape ({shape.arguments})", level="predicate",
+                        accepts=lambda text: not shape.matches(text), generate=draw)
+
+
+#: languages the claims on this module quantify over, each named by its dotted path
+_POSTCODES = shape_language("AA99[ ]9AA", "ascii")
+_NEAR_POSTCODES = _near_language(Shape("AA99[ ]9AA", "ascii"))
+_COUNTED = shape_language("a{2,3}[ 9{1,2}]'b'", "ascii")
+_NEAR_COUNTED = _near_language(Shape("a{2,3}[ 9{1,2}]'b'", "ascii"))
 
 
 # -- the word ----------------------------------------------------------------------
