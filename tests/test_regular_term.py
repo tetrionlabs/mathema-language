@@ -123,7 +123,7 @@ def test_a_large_bound_is_kept_as_a_count():
     for pattern in (r"a{1000}", r"[ab]{2,4000}"):
         assert disagreements(pattern, 0, texts, ("matches", "starts with")) == []
     node = rx.term(r"a{1000}")["language"]
-    assert node == {"op": "repeat", "arg": {"op": "literal", "text": "a"}, "min": 1000, "max": 1000}
+    assert node == {"op": "repeat", "arg": {"op": "literal", "codes": [97]}, "min": 1000, "max": 1000}
 
 
 @pytest.mark.parametrize("pattern, named", [
@@ -198,7 +198,7 @@ def test_the_hash_reads_the_meaning_not_the_source():
     moved = dict(a, source={**a["source"], "python": "0.0.0"})
     assert rx.term_hash(moved) == rx.term_hash(a)
     assert rx.term_hash(rx.term(r"a$", 0, "contains")) != rx.term_hash(a)
-    split = {**a, "language": {"op": "concat", "args": [{"op": "literal", "text": "a"},
+    split = {**a, "language": {"op": "concat", "args": [{"op": "literal", "codes": [97]},
                                                          {"op": "epsilon"}]}}
     assert rx.term_hash(split) == rx.term_hash(a)
 
@@ -214,7 +214,7 @@ def test_complement_and_intersection_are_read():
     letters = {"op": "repeat", "arg": {"op": "chars", "ranges": [[97, 122]]}, "min": 1, "max": None}
     no_x = {"op": "complement", "arg": {"op": "concat", "args": [
         {"op": "repeat", "arg": {"op": "chars", "ranges": [[0, 0x10FFFF]]}, "min": 0, "max": None},
-        {"op": "literal", "text": "x"},
+        {"op": "literal", "codes": [120]},
         {"op": "repeat", "arg": {"op": "chars", "ranges": [[0, 0x10FFFF]]}, "min": 0, "max": None}]}}
     doc = {"language": {"op": "inter", "args": [letters, no_x]}}
     assert rx.member(doc, "abc") and not rx.member(doc, "axc") and not rx.member(doc, "")
@@ -311,3 +311,52 @@ def test_the_package_own_validators_agree_with_re_on_a_corpus():
     total = sum(len(corpus) * len(PREDICATES) for _ in OWN_PATTERNS)
     wrong = [w for pattern, flags in OWN_PATTERNS for w in disagreements(pattern, flags, corpus)]
     assert wrong == [], (len(wrong), total, wrong[:5])
+
+
+# -- review findings -----------------------------------------------------------
+
+@pytest.mark.parametrize("pattern, flags", [
+    (r"(?a:\w)\w", 0), (r"(?a:\d)", 0), (r"(?a:\s)x", 0), (r"(?a:(?i:k))", 0), (r"(?i:k)", 0),
+    (r"(?a:\b)\w", 0), (r"(?a:(?u:\w))", 0), (r"(?u:(?a:\w))", 0), (r"(?ai:s)", 0),
+    (r"(?u:\w)\w", re.A), (r"x(?u:\w)", re.A), (r"(?a)(?u:\d)", 0),
+])
+def test_a_scope_that_states_ascii_or_unicode_leaves_the_other(pattern, flags):
+    texts = ["\u017fa", "a\u017f", "aa", "\u0663", "1", "\x1cx", " x", "\u212a", "k", "K", "\u00e9",
+             "s", "S", "\u017f", "\u00e9a", "a", "x\u00e9"]
+    assert disagreements(pattern, flags, texts) == []
+
+
+def test_a_unicode_scope_in_an_ascii_pattern_is_a_bound():
+    # re.search filters starts by the pattern's first set read under the pattern's own
+    # flags, so it misses a match the scope alone would find
+    assert re.fullmatch(r"(?u:\w)", "\u00e9", re.A) and not re.search(r"(?u:\w)", "\u00e9", re.A)
+    doc = rx.term(r"(?u:\w)", re.A, "contains")
+    assert not doc["exact"] and rx.member(doc, "\u00e9", "at_least")
+    assert rx.term(r"(?a:\w)", 0, "contains")["exact"]
+
+
+@pytest.mark.parametrize("pattern", [r"(a)(?i:\1)", r"(?i)((?-i:a))\1", r"(?i)(a)\1", r"(k)(?i:\1)x"])
+def test_a_backreference_under_ignore_case_is_bounded_by_any_case(pattern):
+    texts = ["aA", "aa", "AA", "Aa", "a", "k\u212ax", "kKx", "kkx", ""]
+    for predicate in PREDICATES:
+        assert not rx.term(pattern, 0, predicate)["exact"]
+    assert disagreements(pattern, 0, texts) == []
+
+
+def test_membership_in_a_term_that_is_not_exact_names_a_bound():
+    doc = rx.term(r"(a)\1")
+    with pytest.raises(ValueError, match="not exact"):
+        rx.member(doc, "aa")
+    assert rx.member(doc, "aa", "at_least") and not rx.member(doc, "aa", "at_most")
+
+
+@pytest.mark.parametrize("pattern", [r"(?:\b\w){32}", r"(?:^|a\b){0,32}", r"(?:\Ba|\bb|$){20}"])
+def test_an_assertion_in_a_counted_repeat_is_written_out_in_bounded_time(pattern):
+    import time
+    started = time.monotonic()
+    doc = rx.term(pattern, 0, "contains")
+    assert time.monotonic() - started < 10
+    assert len(json.dumps(doc)) < 2_000_000
+    texts = ["", "a", "ab", "a b", "ba", "aaa", "a" * 32, "ab " * 10]
+    if doc["exact"]:
+        assert disagreements(pattern, 0, texts, ("contains",)) == []

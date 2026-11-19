@@ -12,6 +12,7 @@ import string
 import unicodedata
 
 from ._kit import TextLanguage
+from ._regular import every_string_over
 
 _ASCII_POOL = string.printable + "\x00\x7f"
 _LATIN1_POOL = _ASCII_POOL + "".join(chr(c) for c in range(0x80, 0x100, 5))
@@ -125,7 +126,8 @@ def _is_non_bmp(c: str) -> bool:
 #: every `str`, lone surrogates included: the carrier of text
 UNICODE = TextLanguage(
     "unicode", accepts=_every_str, pool=_UNICODE_POOL,
-    categories=_EVERY_ASSIGNED, planes=(0, 0, 0, 1, 2, 14, 15, 16))
+    categories=_EVERY_ASSIGNED, planes=(0, 0, 0, 1, 2, 14, 15, 16),
+    schema={"definition": every_string_over(((0, 0x10FFFF),), "unicode")})
 
 #: every string over the 128 ascii code points
 ASCII = TextLanguage(

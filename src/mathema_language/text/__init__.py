@@ -24,6 +24,7 @@ from ..vocabulary.text import (
     utf8_len,
 )
 from ._kit import TextLanguage
+from ._regular import pattern_language
 from .alphabets import (
     ALNUM,
     ALPHA,
@@ -64,7 +65,7 @@ LANGUAGES: dict[str, TextLanguage] = {
         BASE64, HEX, SLUG, SHELL_SAFE,
         CONTROL, INVISIBLE, COMBINING, SURROGATE, COMPATIBILITY, ASTRAL)}
 
-__all__ = ["adapt", "ALNUM", "ALPHA", "ASCII", "BASE64", "CONTROL", "COMBINING", "DIGIT",
+__all__ = ["adapt", "pattern_language", "ALNUM", "ALPHA", "ASCII", "BASE64", "CONTROL", "COMBINING", "DIGIT",
            "INVISIBLE", "HEX", "IDENTIFIER", "IPV4", "IPV6", "ISO_DATE",
            "ISO_DATETIME", "JSON", "LANGUAGES", "LATIN1", "COMPATIBILITY",
            "ASTRAL", "PRINTABLE", "SHELL_SAFE", "SLUG", "SURROGATE", "UNICODE_ALNUM", "UNICODE_ALPHA",
@@ -78,18 +79,11 @@ def adapt(hint: object) -> Any:
     for `Annotated[str, ...]` every `str` refined by the length markers
     it carries (`max_length`, `min_length`, read by attribute, as
     `annotated_types` and pydantic spell them), nothing for any other
-    annotation. A compiled `re.Pattern` over text is the language of the
-    strings it matches in full, stating its regular-language term.
+    annotation.
     Registered under `mathema.language_adaptors` as `text`, so a `str`
     parameter with no stated domain infers `L[unicode]`."""
-    import re
     import typing
 
-    if isinstance(hint, re.Pattern):
-        if not isinstance(hint.pattern, str):
-            return None
-        from ._regular import pattern_language
-        return pattern_language(hint)
     if hint is str:
         return UNICODE
     if typing.get_origin(hint) is typing.Annotated and typing.get_args(hint)[:1] == (str,):

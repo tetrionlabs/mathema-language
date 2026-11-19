@@ -667,16 +667,16 @@ def _squeezed(z3: Any, wanted: Any) -> list[Any]:
 
 
 def _decides(pattern: Any, flags: int, mode: str, side: str, text: str) -> bool:
-    """Intent:
+    r"""Intent:
         Returns whether z3 finds the string `text` in the translation of
         `re.<mode>(pattern, ., flags)` on `side`, asked over the atoms of the pattern's own
         sets, a character past U+2FFFF read as U+2FFFF.
 
     Claims:
-        end_anchor_agrees_with_re: let runs = mathema_language.smt._runs, for text in L[unicode], f("a$", 0, "search", "older", text) == runs("a$", 0, "search", text)
-        fullmatch_agrees_with_re: let runs = mathema_language.smt._runs, for text in L[unicode], f("^a(?:b|c)*", 0, "fullmatch", "newer", text) == runs("^a(?:b|c)*", 0, "fullmatch", text)
-        ignorecase_agrees_with_re: let runs = mathema_language.smt._runs, for text in L[unicode], f("[a-z]+", 2, "match", "older", text) == runs("[a-z]+", 2, "match", text)
-        multiline_agrees_with_re: let runs = mathema_language.smt._runs, for text in L[unicode], f("^b$", 8, "search", "newer", text) == runs("^b$", 8, "search", text)
+        end_anchor_agrees_with_re: let runs = mathema_language.smt._runs, for text in {"", "a", "\n", "aa", "a\n", "\na", "\n\n", "aaa", "aa\n", "a\na", "a\n\n", "\naa", "\na\n", "\n\na", "\n\n\n"}, f("a$", 0, "search", "older", text) == runs("a$", 0, "search", text)
+        fullmatch_agrees_with_re: let runs = mathema_language.smt._runs, for text in {"", "a", "b", "c", "aa", "ab", "ac", "ba", "bb", "bc", "ca", "cb", "cc", "aaa", "aab", "aac", "aba", "abb", "abc", "aca", "acb", "acc", "baa", "bab", "bac", "bba", "bbb", "bbc", "bca", "bcb", "bcc", "caa", "cab", "cac", "cba", "cbb", "cbc", "cca", "ccb", "ccc"}, f("^a(?:b|c)*", 0, "fullmatch", "newer", text) == runs("^a(?:b|c)*", 0, "fullmatch", text)
+        ignorecase_agrees_with_re: let runs = mathema_language.smt._runs, for text in {"", "a", "A", "1", "aa", "aA", "a1", "Aa", "AA", "A1", "1a", "1A", "11", "aaa", "aaA", "aa1", "aAa", "aAA", "aA1", "a1a", "a1A", "a11", "Aaa", "AaA", "Aa1", "AAa", "AAA", "AA1", "A1a", "A1A", "A11", "1aa", "1aA", "1a1", "1Aa", "1AA", "1A1", "11a", "11A", "111"}, f("[a-z]+", 2, "match", "older", text) == runs("[a-z]+", 2, "match", text)
+        multiline_agrees_with_re: let runs = mathema_language.smt._runs, for text in {"", "a", "b", "\n", "aa", "ab", "a\n", "ba", "bb", "b\n", "\na", "\nb", "\n\n", "aaa", "aab", "aa\n", "aba", "abb", "ab\n", "a\na", "a\nb", "a\n\n", "baa", "bab", "ba\n", "bba", "bbb", "bb\n", "b\na", "b\nb", "b\n\n", "\naa", "\nab", "\na\n", "\nba", "\nbb", "\nb\n", "\n\na", "\n\nb", "\n\n\n"}, f("^b$", 8, "search", "newer", text) == runs("^b$", 8, "search", text)
 
     Raises:
         Untranslated: the pattern holds a construct the translation does not read.
@@ -875,6 +875,16 @@ def untranslated(language: Any) -> str | None:
         unread = _unread_pydantic(ecosystem.model, schema)
         if unread:
             return f"{language.name}: {unread}"
+        config = getattr(ecosystem.model, "model_config", None) or {}
+        for path, pattern, nested in _patterns(schema.fields, ""):
+            if config.get("regex_engine") == "python-re" and not nested:
+                continue
+            differs = _rust_reads_differently(pattern)
+            if differs:
+                return (f"{language.name}: the pattern {pattern!r} on {path} ({differs}; pydantic "
+                        "validates patterns with the rust regex engine, which is not shown to "
+                        "read this as Python's re does, unless the model sets "
+                        "regex_engine='python-re')")
     if ecosystem.name == "argparse":
         for dest, convert in (getattr(ecosystem, "converters", None) or {}).items():
             if dest in {f.name for f in schema.fields} \
@@ -885,6 +895,109 @@ def untranslated(language: Any) -> str | None:
         if keywords:
             return f"{language.name}: the JSON Schema keyword {sorted(keywords)[0]!r}"
     return None
+
+
+def _patterns(fields: Any, prefix: str) -> list[tuple[str, str, bool]]:
+    """Intent:
+        Returns every pattern a record's fields state, with the dotted path of its field and
+        whether the field lies inside a nested record or a list.
+    """
+    out = []
+    for f in fields or ():
+        path = f"{prefix}.{f.name}"
+        regex = getattr(f.constraints, "regex", None)
+        if regex is not None:
+            out.append((path, regex, bool(prefix)))
+        for t in (f.type, f.type.item, f.type.key, f.type.value):
+            if t is not None and t.fields:
+                out.extend((p, r, True) for p, r, _ in _patterns(t.fields, path))
+    return out
+
+
+#: the escapes Python's re and the rust regex engine read as the same character or assertion
+_SHARED_ESCAPES = set(".^$*+?()[]{}|\\-/") | set("ntrfvxuUA")
+
+
+def _rust_reads_differently(pattern: str) -> str | None:
+    """Intent:
+        Names the first construct of `pattern` that the rust regex engine is not shown to read
+        as Python's `re` does, or returns None when every construct is one both read alike:
+        literal characters, `.`, classes of literals and ranges, groups, alternation, greedy and
+        lazy repeats, `^`, `\\A`, and `$`.
+
+    Notes:
+        `$` is the end of the text alone in rust and also before a final newline in Python;
+        the encoding's two sides already bracket both (a search that allows the newline on the
+        older side, a full match on the newer). The classes `\\s` and `\\w` hold different
+        characters in the two engines, `\\b` follows `\\w`, `\\<` and `\\>` are word edges in
+        rust and literals in Python, and inside a class rust reads `&&`, `--`, `~~` and a
+        nested `[` as set operations where Python reads literals. `\\d` and the inline flags
+        are refused as not shown to agree.
+    """
+    parser, _, _ = _rx._sre()
+    try:
+        parsed = parser.parse(pattern)
+    except (re.error, ValueError, TypeError) as e:
+        return f"it does not compile ({e})"
+    if parsed.state.flags & (re.IGNORECASE | re.MULTILINE | re.DOTALL | re.VERBOSE | re.ASCII):
+        return "an inline flag"
+    in_class, i = False, 0
+    while i < len(pattern):
+        c = pattern[i]
+        if c == "\\":
+            following = pattern[i + 1:i + 2]
+            if following not in _SHARED_ESCAPES:
+                return f"the escape \\{following}"
+            i += 2
+            continue
+        if in_class:
+            if c == "[":
+                return "a [ inside a class"
+            if c in "&-~" and pattern[i + 1:i + 2] == c:
+                return f"{c}{c} inside a class"
+            in_class = c != "]"
+        elif c == "[":
+            in_class = True
+            i += 2 if pattern[i + 1:i + 2] == "^" else 1
+            if pattern[i:i + 1] == "]":
+                return "a class starting with ]"
+            continue
+        i += 1
+
+    def walk(items: Any) -> str | None:
+        for op, arg in items:
+            name = str(op)
+            if name in ("LITERAL", "NOT_LITERAL", "ANY"):
+                continue
+            if name == "IN":
+                odd = [str(o) for o, _ in arg if str(o) not in ("LITERAL", "RANGE", "NEGATE")]
+                if odd:
+                    return f"a class holding a {odd[0].lower()}"
+            elif name in ("MAX_REPEAT", "MIN_REPEAT"):
+                found = walk(arg[2])
+                if found:
+                    return found
+            elif name == "SUBPATTERN":
+                if arg[1] or arg[2]:
+                    return "a scoped flag"
+                found = walk(arg[3])
+                if found:
+                    return found
+            elif name == "BRANCH":
+                for branch in arg[1]:
+                    found = walk(branch)
+                    if found:
+                        return found
+            elif name == "AT" and str(arg) in ("AT_BEGINNING", "AT_BEGINNING_STRING", "AT_END"):
+                continue
+            else:
+                return {"POSSESSIVE_REPEAT": "a possessive repeat", "GROUPREF": "a backreference",
+                        "ATOMIC_GROUP": "an atomic group", "ASSERT": "a lookaround",
+                        "ASSERT_NOT": "a lookaround", "AT": f"the assertion {arg}",
+                        "CATEGORY": "a character category"}.get(name, name.lower())
+        return None
+
+    return walk(parsed)
 
 
 #: the pydantic field metadata the adaptor reads into the neutral model,

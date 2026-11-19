@@ -535,7 +535,15 @@ class _Regex:
             return self._repeat(body, lo, None if hi == constants.MAXREPEAT else hi)
         if name == "SUBPATTERN":
             group, add, remove = arg[0], arg[1], arg[2]
+            kinds = re.ASCII | re.UNICODE | re.LOCALE
+            if add & kinds:
+                # a scope that states ASCII or UNICODE leaves the other
+                flags &= ~kinds
             pieces = self._seq(arg[-1], (flags | add) & ~remove)
+            if add & re.UNICODE and self.flags & re.ASCII:
+                # re.search skips a start whose character the pattern's first set, read by
+                # the pattern's own flags, does not hold, so it finds no more than this reading
+                pieces = self._wider("a unicode scope in an ascii pattern", pieces)
             if group is not None:
                 self.groups[group] = pieces
             return pieces
@@ -547,7 +555,10 @@ class _Regex:
             return self._wider("an atomic group", self._seq(arg, flags))
         if name == "GROUPREF":
             group = self.groups.get(arg)
-            body = _alt(*[r for _, r, _ in group]) if group else _ANY_STAR
+            # under IGNORECASE a backreference matches any text equal to the capture up to
+            # case, which the group's own language need not hold
+            exact_case = group and not flags & re.IGNORECASE
+            body = _alt(*[r for _, r, _ in group]) if exact_case else _ANY_STAR
             return self._wider("a backreference", [(_TRIVIAL, body, _TRIVIAL)])
         if name == "GROUPREF_EXISTS":
             _, yes, no = arg
@@ -637,33 +648,25 @@ class _Regex:
 
 def to_node(r: tuple) -> dict:
     """Intent:
-        Returns the expression `r` as a term node: one-character sets of one code point and
-        runs of them as literal text.
+        Returns the expression `r` as a term node in canonical form.
     """
+    return canonical(_to_node(r))
+
+
+def _to_node(r: tuple) -> dict:
     kind = r[0]
     if kind == "eps":
         return {"op": "epsilon"}
     if kind == "empty":
         return {"op": "empty"}
     if kind == "chars":
-        s = r[1]
-        if len(s) == 1 and s[0][0] == s[0][1]:
-            return {"op": "literal", "text": chr(s[0][0])}
-        return {"op": "chars", "ranges": [[lo, hi] for lo, hi in s]}
-    if kind == "cat":
-        args: list[dict] = []
-        for p in r[1:]:
-            node = to_node(p)
-            if node["op"] == "literal" and args and args[-1]["op"] == "literal":
-                args[-1] = {"op": "literal", "text": args[-1]["text"] + node["text"]}
-            else:
-                args.append(node)
-        return args[0] if len(args) == 1 else {"op": "concat", "args": args}
-    if kind in ("alt", "inter"):
-        return {"op": "union" if kind == "alt" else "inter", "args": [to_node(p) for p in r[1:]]}
+        return {"op": "chars", "ranges": [[lo, hi] for lo, hi in r[1]]}
+    if kind in ("cat", "alt", "inter"):
+        op = {"cat": "concat", "alt": "union", "inter": "inter"}[kind]
+        return {"op": op, "args": [_to_node(p) for p in r[1:]]}
     if kind == "not":
-        return {"op": "complement", "arg": to_node(r[1])}
-    return {"op": "repeat", "arg": to_node(r[1]), "min": r[2], "max": r[3]}
+        return {"op": "complement", "arg": _to_node(r[1])}
+    return {"op": "repeat", "arg": _to_node(r[1]), "min": r[2], "max": r[3]}
 
 
 def from_node(node: dict) -> tuple:
@@ -671,17 +674,18 @@ def from_node(node: dict) -> tuple:
         Returns the expression a term node states.
 
     Raises:
-        ValueError: the node is not one of the term's forms.
+        ValueError: the node is not one of the term's forms (see `canonical`).
     """
-    op = node.get("op")
+    node = canonical(node)
+    op = node["op"]
     if op == "epsilon":
         return _EPS
     if op == "empty":
         return _EMPTY_RE
     if op == "literal":
-        return _cat(*[("chars", ((ord(c), ord(c)),)) for c in node["text"]])
+        return _cat(*[("chars", ((c, c),)) for c in node["codes"]])
     if op == "chars":
-        return _chars_re(_cs_union(*[((lo, hi),) for lo, hi in node["ranges"]]))
+        return ("chars", tuple((lo, hi) for lo, hi in node["ranges"]))
     if op == "concat":
         return _cat(*[from_node(a) for a in node["args"]])
     if op == "union":
@@ -693,10 +697,7 @@ def from_node(node: dict) -> tuple:
         return out
     if op == "complement":
         return ("not", from_node(node["arg"]))
-    if op == "repeat":
-        return _loop(from_node(node["arg"]), int(node["min"]),
-                     None if node["max"] is None else int(node["max"]))
-    raise ValueError(f"not a term node: {node!r}")
+    return _loop(from_node(node["arg"]), node["min"], node["max"])
 
 
 #: the dialects a pattern is written in, by canonical name
@@ -751,32 +752,163 @@ def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str 
     return doc
 
 
-def canonical(node: dict) -> dict:
+#: the language of every string, which an intersection drops
+_EVERY_STRING = {"op": "repeat", "arg": {"op": "chars", "ranges": [[0, _MAX_CODE]]},
+                 "min": 0, "max": None}
+
+
+def _code(value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= _MAX_CODE:
+        raise ValueError(f"not a code point: {value!r}")
+    return value
+
+
+def _ranges(spans: Any) -> list[list[int]]:
     """Intent:
-        Returns a term node in canonical form: nested operations of one kind flattened, empty
-        strings dropped from concatenations, unions without repeats, sets as sorted disjoint
-        non-adjacent ranges and runs of single characters as literal text.
+        Returns code point ranges sorted, with overlapping and adjacent ones merged.
 
     Raises:
-        ValueError: the node is not one of the term's forms.
+        ValueError: a range is not two code points in order.
     """
-    return to_node(from_node(node))
+    if not isinstance(spans, list):
+        raise ValueError(f"not a list of ranges: {spans!r}")
+    for span in spans:
+        if not isinstance(span, list) or len(span) != 2 or _code(span[0]) > _code(span[1]):
+            raise ValueError(f"not a range of code points: {span!r}")
+    return [[lo, hi] for lo, hi in _cs_union(tuple((lo, hi) for lo, hi in spans))]
+
+
+def _text(node: dict) -> str:
+    """The serialisation the hash reads and arguments are ordered by."""
+    import json
+    return json.dumps(node, sort_keys=True, ensure_ascii=True, separators=(",", ":"))
+
+
+def canonical(node: dict) -> dict:
+    """Intent:
+        Returns a term node in canonical form, by these rules, each applied to a node whose
+        arguments are already canonical:
+
+        1. `chars`: ranges sorted, overlapping and adjacent ones merged; no range is `empty`;
+           one range of one code point is a `literal` of that code point.
+        2. `literal`: `codes` is a list of code points; none is `epsilon`.
+        3. `concat`: nested `concat` flattened; `epsilon` arguments dropped; with an `empty`
+           argument it is `empty`; neighbouring `literal` arguments joined into one; no
+           argument left is `epsilon`, one is that argument.
+        4. `union`: nested `union` flattened; `empty` arguments dropped; equal arguments kept
+           once; arguments sorted by their serialisation; none left is `empty`, one is that
+           argument.
+        5. `inter`: nested `inter` flattened; with an `empty` argument it is `empty`; the
+           language of every string (a `repeat` from 0 with no maximum of the `chars` of all
+           code points) dropped; equal arguments kept once; arguments sorted by their
+           serialisation; none left is the language of every string, one is that argument.
+        6. `repeat`: `max` 0, or an `epsilon` argument, is `epsilon`; an `empty` argument is
+           `epsilon` when `min` is 0 and `empty` otherwise; `min` and `max` both 1 is the
+           argument.
+        7. `complement`, `epsilon` and `empty` are kept as they are.
+
+        A node carries exactly the keys of its form. The serialisation is JSON with sorted
+        keys, no white space and ASCII only; text is carried as code points, so it is one to
+        one.
+
+    Raises:
+        ValueError: the node is not one of the forms, a code point is not an integer from 0
+            to 0x10FFFF, a range is out of order, or a repeat's `min` is negative or above
+            its `max`.
+    """
+    if not isinstance(node, dict):
+        raise ValueError(f"not a term node: {node!r}")
+    op = node.get("op")
+    keys = {"empty": set(), "epsilon": set(), "literal": {"codes"}, "chars": {"ranges"},
+            "concat": {"args"}, "union": {"args"}, "inter": {"args"}, "complement": {"arg"},
+            "repeat": {"arg", "min", "max"}}
+    if op not in keys or set(node) != keys[op] | {"op"}:
+        raise ValueError(f"not a term node: {node!r}")
+    if op in ("empty", "epsilon"):
+        return {"op": op}
+    if op == "literal":
+        if not isinstance(node["codes"], list):
+            raise ValueError(f"not a list of code points: {node['codes']!r}")
+        codes = [_code(c) for c in node["codes"]]
+        return {"op": "literal", "codes": codes} if codes else {"op": "epsilon"}
+    if op == "chars":
+        spans = _ranges(node["ranges"])
+        if not spans:
+            return {"op": "empty"}
+        if len(spans) == 1 and spans[0][0] == spans[0][1]:
+            return {"op": "literal", "codes": [spans[0][0]]}
+        return {"op": "chars", "ranges": spans}
+    if op == "complement":
+        return {"op": "complement", "arg": canonical(node["arg"])}
+    if op == "repeat":
+        arg, lo, hi = canonical(node["arg"]), node["min"], node["max"]
+        for bound in (lo, hi):
+            if bound is not None and (isinstance(bound, bool) or not isinstance(bound, int)
+                                      or bound < 0):
+                raise ValueError(f"not a repeat count: {bound!r}")
+        if lo is None or (hi is not None and hi < lo):
+            raise ValueError(f"a repeat from {lo!r} to {hi!r}")
+        if hi == 0 or arg == {"op": "epsilon"}:
+            return {"op": "epsilon"}
+        if arg == {"op": "empty"}:
+            return {"op": "epsilon"} if lo == 0 else {"op": "empty"}
+        if lo == hi == 1:
+            return arg
+        return {"op": "repeat", "arg": arg, "min": lo, "max": hi}
+    if not isinstance(node["args"], list):
+        raise ValueError(f"not a list of nodes: {node['args']!r}")
+    args: list[dict] = []
+    for arg in map(canonical, node["args"]):
+        args.extend(arg["args"] if arg["op"] == op else [arg])
+    if op == "concat":
+        if {"op": "empty"} in args:
+            return {"op": "empty"}
+        joined: list[dict] = []
+        for arg in args:
+            if arg["op"] == "epsilon":
+                continue
+            if arg["op"] == "literal" and joined and joined[-1]["op"] == "literal":
+                joined[-1] = {"op": "literal", "codes": joined[-1]["codes"] + arg["codes"]}
+            else:
+                joined.append(arg)
+        none: dict = {"op": "epsilon"}
+    else:
+        if op == "inter" and {"op": "empty"} in args:
+            return {"op": "empty"}
+        drop = {"op": "empty"} if op == "union" else _EVERY_STRING
+        by_text = {_text(arg): arg for arg in args if arg != drop}
+        joined = [by_text[key] for key in sorted(by_text)]
+        none = drop
+    if not joined:
+        return dict(none)
+    return joined[0] if len(joined) == 1 else {"op": op, "args": joined}
 
 
 def term_hash(doc: dict) -> str:
     """Intent:
-        Returns the SHA-256 of a term's meaning: its alphabet, whether it is exact, and its
-        language or bounds, in canonical JSON (sorted keys, ASCII). Its `source` is provenance
-        and is not read, so a term compiled again to the same language hashes the same.
+        Returns the SHA-256 of a term's meaning: its version, alphabet, whether it is exact,
+        and its language or its two bounds, each node in canonical form and the alphabet's
+        ranges merged, serialised as `canonical` states. Its `kind` and `source` are not read,
+        so a term compiled again to the same language hashes the same.
+
+    Raises:
+        ValueError: a node or the alphabet is not well formed.
     """
     import hashlib
-    import json
-    meaning = {key: doc[key] for key in ("alphabet", "exact") if key in doc}
+    return hashlib.sha256(canonical_text(doc).encode("ascii")).hexdigest()
+
+
+def canonical_text(doc: dict) -> str:
+    """Intent:
+        Returns the text `term_hash` hashes: the JSON object of `version`, `alphabet`, `exact`
+        and `language` (or `at_least` and `at_most`), keys sorted, no white space.
+    """
+    meaning: dict[str, Any] = {"version": doc["version"], "alphabet": _ranges(doc["alphabet"]),
+                               "exact": bool(doc["exact"])}
     for key in ("language", "at_least", "at_most"):
         if key in doc:
             meaning[key] = canonical(doc[key])
-    text = json.dumps(meaning, sort_keys=True, ensure_ascii=True, separators=(",", ":"))
-    return hashlib.sha256(text.encode("ascii")).hexdigest()
+    return _text(meaning)
 
 
 # -- membership by derivatives -------------------------------------------------
@@ -833,7 +965,12 @@ def member(doc: dict, text: str, bound: str = "language") -> bool:
         Returns whether `text` is in a term's language, or in its `at_least` or `at_most` bound
         (an exact term's language is both), read by its UTF-16 code units when the term's
         alphabet is the code units.
+
+    Raises:
+        ValueError: the term is not exact and `bound` names neither bound.
     """
+    if "language" not in doc and bound not in ("at_least", "at_most"):
+        raise ValueError("the term is not exact: ask for its at_least or its at_most bound")
     if doc.get("alphabet") == [[0, 0xFFFF]]:
         text = code_units(text)
     return holds(from_node(doc["language"] if "language" in doc else doc[bound]), text)
@@ -883,38 +1020,93 @@ def runs(pattern: Any, flags: int, predicate: str, text: str) -> bool:
     raise ValueError(f"a predicate is one of {sorted(PREDICATES)}, not {predicate!r}")
 
 
-def admits(pattern: Any, flags: Any, predicate: str, text: str, dialect: str = "python") -> bool:
+def admits(pattern: Any, flags: Any, predicate: str, text: str, dialect: str = "python",
+           bound: str = "at_least") -> bool:
     r"""Intent:
         Returns whether `text` is in the term of the pattern under `predicate`: its language
-        when exact, else its at-least bound. A `javascript` pattern takes its flag letters.
+        when exact, else the `bound` named, `at_least` or `at_most`. A `javascript` pattern
+        takes its flag letters.
 
     Claims:
-        dollar_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a", "a\n"}, f("a$", 0, "matches", text) == runs("a$", 0, "matches", text)
-        search_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a", "a\n", "a\n\n", "ba"}, f("\\Aa$", 0, "contains", text) == runs("\\Aa$", 0, "contains", text)
-        match_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"Ab1", "\u212a", "1a"}, f("[a-z]+", 2, "starts with", text) == runs("[a-z]+", 2, "starts with", text)
-        ends_with_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a\nb", "b\n", "ab", "a\nb\n"}, f("^b$", 8, "ends with", text) == runs("^b$", 8, "ends with", text)
-        words_agree_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a b", "\u0663", "\U00030000", "_"}, f("\\b\\w+\\b", 0, "contains", text) == runs("\\b\\w+\\b", 0, "contains", text)
-        digits_agree_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"1.5", "\u0663.\u0663", "1.", "12"}, f("\\d+(?:\\.\\d+)?", 0, "matches", text) == runs("\\d+(?:\\.\\d+)?", 0, "matches", text)
-        a_backreference_is_bounded: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"aa", "aaaa", "aaa"}, (f("(a+)\\1", 0, "matches", text) or not runs("(a+)\\1", 0, "matches", text)) == True
-        javascript_anchors_are_python_absolute_ones: for text in L[unicode] ∪ {"abc", "abc\n", "a\nb", "A"}, f("^[a-z]+$", "u", "contains", text, "javascript") == f("\\A[a-z]+\\Z", 0, "contains", text)
-        javascript_digits_are_python_ascii_digits: for text in L[unicode] ∪ {"12", "\u0663", "1\n"}, f("^\\d+$", "u", "contains", text, "javascript") == f("\\A\\d+\\Z", 256, "contains", text)
-        javascript_digits_are_among_python_digits: for text in L[unicode] ∪ {"12", "\u0663", "1\n"}, (f("^\\d+$", 0, "contains", text) or not f("^\\d+$", "u", "contains", text, "javascript")) == True
-        javascript_dollar_refuses_a_final_newline: f("^a$", "", "contains", "a\n", "javascript") == False
-        python_dollar_admits_a_final_newline: f("^a$", 0, "contains", "a\n") == True
+        dollar_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in {"", "a", "\n", "aa", "a\n", "\na", "\n\n", "aaa", "aa\n", "a\na", "a\n\n", "\naa", "\na\n", "\n\na", "\n\n\n"}, f("a$", 0, "matches", text) == runs("a$", 0, "matches", text)
+        search_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in {"", "a", "b", "\n", "aa", "ab", "a\n", "ba", "bb", "b\n", "\na", "\nb", "\n\n", "aaa", "aab", "aa\n", "aba", "abb", "ab\n", "a\na", "a\nb", "a\n\n", "baa", "bab", "ba\n", "bba", "bbb", "bb\n", "b\na", "b\nb", "b\n\n", "\naa", "\nab", "\na\n", "\nba", "\nbb", "\nb\n", "\n\na", "\n\nb", "\n\n\n"}, f("\\Aa$", 0, "contains", text) == runs("\\Aa$", 0, "contains", text)
+        match_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in {"", "a", "A", "1", "\n", "aa", "aA", "a1", "a\n", "Aa", "AA", "A1", "A\n", "1a", "1A", "11", "1\n", "\na", "\nA", "\n1", "\n\n", "aaa", "aaA", "aa1", "aa\n", "aAa", "aAA", "aA1", "aA\n", "a1a", "a1A", "a11", "a1\n", "a\na", "a\nA", "a\n1", "a\n\n", "Aaa", "AaA", "Aa1", "Aa\n", "AAa", "AAA", "AA1", "AA\n", "A1a", "A1A", "A11", "A1\n", "A\na", "A\nA", "A\n1", "A\n\n", "1aa", "1aA", "1a1", "1a\n", "1Aa", "1AA", "1A1", "1A\n", "11a", "11A", "111", "11\n", "1\na", "1\nA", "1\n1", "1\n\n", "\naa", "\naA", "\na1", "\na\n", "\nAa", "\nAA", "\nA1", "\nA\n", "\n1a", "\n1A", "\n11", "\n1\n", "\n\na", "\n\nA", "\n\n1", "\n\n\n"}, f("[a-z]+", 2, "starts with", text) == runs("[a-z]+", 2, "starts with", text)
+        ends_with_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in {"", "a", "b", "\n", "aa", "ab", "a\n", "ba", "bb", "b\n", "\na", "\nb", "\n\n", "aaa", "aab", "aa\n", "aba", "abb", "ab\n", "a\na", "a\nb", "a\n\n", "baa", "bab", "ba\n", "bba", "bbb", "bb\n", "b\na", "b\nb", "b\n\n", "\naa", "\nab", "\na\n", "\nba", "\nbb", "\nb\n", "\n\na", "\n\nb", "\n\n\n"}, f("^b$", 8, "ends with", text) == runs("^b$", 8, "ends with", text)
+        words_agree_with_re: let runs = mathema_language.text._regular.runs, for text in {"", "a", " ", "\u00b2", "\n", "aa", "a ", "a\u00b2", "a\n", " a", "  ", " \u00b2", " \n", "\u00b2a", "\u00b2 ", "\u00b2\u00b2", "\u00b2\n", "\na", "\n ", "\n\u00b2", "\n\n", "aaa", "aa ", "aa\u00b2", "aa\n", "a a", "a  ", "a \u00b2", "a \n", "a\u00b2a", "a\u00b2 ", "a\u00b2\u00b2", "a\u00b2\n", "a\na", "a\n ", "a\n\u00b2", "a\n\n", " aa", " a ", " a\u00b2", " a\n", "  a", "   ", "  \u00b2", "  \n", " \u00b2a", " \u00b2 ", " \u00b2\u00b2", " \u00b2\n", " \na", " \n ", " \n\u00b2", " \n\n", "\u00b2aa", "\u00b2a ", "\u00b2a\u00b2", "\u00b2a\n", "\u00b2 a", "\u00b2  ", "\u00b2 \u00b2", "\u00b2 \n", "\u00b2\u00b2a", "\u00b2\u00b2 ", "\u00b2\u00b2\u00b2", "\u00b2\u00b2\n", "\u00b2\na", "\u00b2\n ", "\u00b2\n\u00b2", "\u00b2\n\n", "\naa", "\na ", "\na\u00b2", "\na\n", "\n a", "\n  ", "\n \u00b2", "\n \n", "\n\u00b2a", "\n\u00b2 ", "\n\u00b2\u00b2", "\n\u00b2\n", "\n\na", "\n\n ", "\n\n\u00b2", "\n\n\n"}, f("\\b\\w+\\b", 0, "contains", text) == runs("\\b\\w+\\b", 0, "contains", text)
+        digits_agree_with_re: let runs = mathema_language.text._regular.runs, for text in {"", "1", ".", "\u0663", "\n", "11", "1.", "1\u0663", "1\n", ".1", "..", ".\u0663", ".\n", "\u06631", "\u0663.", "\u0663\u0663", "\u0663\n", "\n1", "\n.", "\n\u0663", "\n\n", "111", "11.", "11\u0663", "11\n", "1.1", "1..", "1.\u0663", "1.\n", "1\u06631", "1\u0663.", "1\u0663\u0663", "1\u0663\n", "1\n1", "1\n.", "1\n\u0663", "1\n\n", ".11", ".1.", ".1\u0663", ".1\n", "..1", "...", "..\u0663", "..\n", ".\u06631", ".\u0663.", ".\u0663\u0663", ".\u0663\n", ".\n1", ".\n.", ".\n\u0663", ".\n\n", "\u066311", "\u06631.", "\u06631\u0663", "\u06631\n", "\u0663.1", "\u0663..", "\u0663.\u0663", "\u0663.\n", "\u0663\u06631", "\u0663\u0663.", "\u0663\u0663\u0663", "\u0663\u0663\n", "\u0663\n1", "\u0663\n.", "\u0663\n\u0663", "\u0663\n\n", "\n11", "\n1.", "\n1\u0663", "\n1\n", "\n.1", "\n..", "\n.\u0663", "\n.\n", "\n\u06631", "\n\u0663.", "\n\u0663\u0663", "\n\u0663\n", "\n\n1", "\n\n.", "\n\n\u0663", "\n\n\n"}, f("\\d+(?:\\.\\d+)?", 0, "matches", text) == runs("\\d+(?:\\.\\d+)?", 0, "matches", text)
+        scoped_ascii_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in {"", "a", "\u017f", "\n", "aa", "a\u017f", "a\n", "\u017fa", "\u017f\u017f", "\u017f\n", "\na", "\n\u017f", "\n\n", "aaa", "aa\u017f", "aa\n", "a\u017fa", "a\u017f\u017f", "a\u017f\n", "a\na", "a\n\u017f", "a\n\n", "\u017faa", "\u017fa\u017f", "\u017fa\n", "\u017f\u017fa", "\u017f\u017f\u017f", "\u017f\u017f\n", "\u017f\na", "\u017f\n\u017f", "\u017f\n\n", "\naa", "\na\u017f", "\na\n", "\n\u017fa", "\n\u017f\u017f", "\n\u017f\n", "\n\na", "\n\n\u017f", "\n\n\n"}, f("(?a:\\w)\\w", 0, "matches", text) == runs("(?a:\\w)\\w", 0, "matches", text)
+        a_backreference_is_bounded_below: let runs = mathema_language.text._regular.runs, for text in {"", "a", "A", "\n", "aa", "aA", "a\n", "Aa", "AA", "A\n", "\na", "\nA", "\n\n", "aaa", "aaA", "aa\n", "aAa", "aAA", "aA\n", "a\na", "a\nA", "a\n\n", "Aaa", "AaA", "Aa\n", "AAa", "AAA", "AA\n", "A\na", "A\nA", "A\n\n", "\naa", "\naA", "\na\n", "\nAa", "\nAA", "\nA\n", "\n\na", "\n\nA", "\n\n\n"}, (f("(a+)(?i:\\1)", 0, "matches", text, "python", "at_least") or not runs("(a+)(?i:\\1)", 0, "matches", text)) == True
+        a_backreference_is_bounded_above: let runs = mathema_language.text._regular.runs, for text in {"", "a", "A", "\n", "aa", "aA", "a\n", "Aa", "AA", "A\n", "\na", "\nA", "\n\n", "aaa", "aaA", "aa\n", "aAa", "aAA", "aA\n", "a\na", "a\nA", "a\n\n", "Aaa", "AaA", "Aa\n", "AAa", "AAA", "AA\n", "A\na", "A\nA", "A\n\n", "\naa", "\naA", "\na\n", "\nAa", "\nAA", "\nA\n", "\n\na", "\n\nA", "\n\n\n"}, (runs("(a+)(?i:\\1)", 0, "matches", text) or not f("(a+)(?i:\\1)", 0, "matches", text, "python", "at_most")) == True
+        the_json_round_trip_keeps_membership: let again = mathema_language.text._regular.admits_after_json, for text in {"", "a", "b", "\n", "aa", "ab", "a\n", "ba", "bb", "b\n", "\na", "\nb", "\n\n", "aaa", "aab", "aa\n", "aba", "abb", "ab\n", "a\na", "a\nb", "a\n\n", "baa", "bab", "ba\n", "bba", "bbb", "bb\n", "b\na", "b\nb", "b\n\n", "\naa", "\nab", "\na\n", "\nba", "\nbb", "\nb\n", "\n\na", "\n\nb", "\n\n\n"}, f("^a(?:b|$)", 8, "contains", text) == again("^a(?:b|$)", 8, "contains", text)
+        javascript_anchors_are_python_absolute_ones: for text in {"", "a", "A", "\n", "aa", "aA", "a\n", "Aa", "AA", "A\n", "\na", "\nA", "\n\n", "aaa", "aaA", "aa\n", "aAa", "aAA", "aA\n", "a\na", "a\nA", "a\n\n", "Aaa", "AaA", "Aa\n", "AAa", "AAA", "AA\n", "A\na", "A\nA", "A\n\n", "\naa", "\naA", "\na\n", "\nAa", "\nAA", "\nA\n", "\n\na", "\n\nA", "\n\n\n"}, f("^[a-z]+$", "u", "contains", text, "javascript") == f("\\A[a-z]+\\Z", 0, "contains", text)
+        javascript_digits_are_python_ascii_digits: for text in {"", "1", "\u0663", "\n", "11", "1\u0663", "1\n", "\u06631", "\u0663\u0663", "\u0663\n", "\n1", "\n\u0663", "\n\n", "111", "11\u0663", "11\n", "1\u06631", "1\u0663\u0663", "1\u0663\n", "1\n1", "1\n\u0663", "1\n\n", "\u066311", "\u06631\u0663", "\u06631\n", "\u0663\u06631", "\u0663\u0663\u0663", "\u0663\u0663\n", "\u0663\n1", "\u0663\n\u0663", "\u0663\n\n", "\n11", "\n1\u0663", "\n1\n", "\n\u06631", "\n\u0663\u0663", "\n\u0663\n", "\n\n1", "\n\n\u0663", "\n\n\n"}, f("^\\d+$", "u", "contains", text, "javascript") == f("\\A\\d+\\Z", 256, "contains", text)
+        javascript_digits_are_among_python_digits: for text in {"", "1", "\u0663", "\n", "11", "1\u0663", "1\n", "\u06631", "\u0663\u0663", "\u0663\n", "\n1", "\n\u0663", "\n\n", "111", "11\u0663", "11\n", "1\u06631", "1\u0663\u0663", "1\u0663\n", "1\n1", "1\n\u0663", "1\n\n", "\u066311", "\u06631\u0663", "\u06631\n", "\u0663\u06631", "\u0663\u0663\u0663", "\u0663\u0663\n", "\u0663\n1", "\u0663\n\u0663", "\u0663\n\n", "\n11", "\n1\u0663", "\n1\n", "\n\u06631", "\n\u0663\u0663", "\n\u0663\n", "\n\n1", "\n\n\u0663", "\n\n\n"}, (f("^\\d+$", 0, "contains", text) or not f("^\\d+$", "u", "contains", text, "javascript")) == True
 
     Raises:
         NotRegular: the pattern does not compile, is a bytes pattern, or uses LOCALE.
     """
-    key = (pattern, flags, predicate, dialect)
+    key = (pattern, flags, predicate, dialect, bound)
     if key not in _ADMITTED:
         doc = term(pattern, flags, predicate, dialect)
         units = doc["alphabet"] == [[0, 0xFFFF]]
-        _ADMITTED[key] = (from_node(doc["language"] if doc["exact"] else doc["at_least"]), units)
+        _ADMITTED[key] = (from_node(doc["language"] if doc["exact"] else doc[bound]), units)
     expression, units = _ADMITTED[key]
     return holds(expression, code_units(text) if units else text)
 
 
-_ADMITTED: dict[tuple[Any, Any, str, str], tuple[tuple, bool]] = {}
+def admits_after_json(pattern: Any, flags: Any, predicate: str, text: str) -> bool:
+    """Intent:
+        Returns whether `text` is in the at-least reading of the pattern's term after the term
+        is written as JSON text and read back.
+    """
+    import json
+    doc = json.loads(json.dumps(term(pattern, flags, predicate), ensure_ascii=True))
+    return member(doc, text, "at_least")
+
+
+def exact(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str = "python") -> bool:
+    r"""Intent:
+        Returns whether the pattern's term under `predicate` is exact.
+
+    Claims:
+        anchors_and_flags_are_exact: f("(?m)^a$|\\Ab\\Z", 2) == True
+        unicode_classes_are_exact: f("\\b\\w+\\s\\d", 0, "contains") == True
+        a_backreference_is_not: f("(a)\\1", 0) == False
+        a_lookahead_is_not: f("(?=a)a", 0, "contains") == False
+        a_possessive_repeat_is_not: f("a*+a", 0) == False
+        a_javascript_property_is_not: f("\\p{L}", "u", "matches", "javascript") == False
+        a_javascript_sticky_pattern_is: f("a$", "my", "contains", "javascript") == True
+
+    Raises:
+        NotRegular: the pattern does not compile.
+    """
+    return bool(term(pattern, flags, predicate, dialect)["exact"])
+
+
+def canonical_is_stable(pattern: Any, flags: Any = 0, predicate: str = "matches",
+                        dialect: str = "python") -> bool:
+    r"""Intent:
+        Returns whether the canonical form of each node of the pattern's term is its own
+        canonical form, and the term's hash is unchanged by canonicalising its nodes.
+
+    Claims:
+        an_anchored_pattern: f("^a(?:b|$)", 8, "contains") == True
+        a_unicode_class: f("\\b\\w+\\b", 0, "ends with") == True
+        a_bounded_pair: f("(a)\\1|b", 0, "matches") == True
+        a_javascript_pattern: f("^[a-z]+$", "im", "contains", "javascript") == True
+    """
+    doc = term(pattern, flags, predicate, dialect)
+    again = dict(doc)
+    for key in ("language", "at_least", "at_most"):
+        if key in doc:
+            once = canonical(doc[key])
+            if canonical(once) != once:
+                return False
+            again[key] = once
+    return term_hash(again) == term_hash(doc)
+
+
+_ADMITTED: dict[tuple[Any, Any, str, str, str], tuple[tuple, bool]] = {}
 
 
 def shortest(r: tuple, limit: int = 12) -> str | None:
@@ -946,30 +1138,88 @@ def shortest(r: tuple, limit: int = 12) -> str | None:
     return None
 
 
-def pattern_language(compiled: re.Pattern) -> Any:
+def every_string_over(chars: Any, name: str) -> dict:
     """Intent:
-        Returns the text language of the strings `compiled` matches in full: membership by
-        `re` itself, the pattern's `matches` term as its stated definition, draws from the
-        pattern's parse tree or, failing that, a shortest member of the term.
+        Returns the term of every string over the code points `chars` (sorted disjoint
+        ranges), the empty string included, for the alphabet language `name`.
+    """
+    node = {"op": "repeat", "arg": {"op": "chars", "ranges": [[lo, hi] for lo, hi in chars]},
+            "min": 0, "max": None}
+    return {"kind": "regular_language", "version": TERM_VERSION, "alphabet": [[0, _MAX_CODE]],
+            "exact": True, "language": canonical(node),
+            "source": {"alphabet": name, "unicode": unicodedata.unidata_version}}
+
+
+def of_length(doc: dict, lo: int, hi: int | None) -> dict:
+    """Intent:
+        Returns the term of the strings of `doc` whose length in characters of its alphabet is
+        `lo` to `hi` (`None`: unbounded): each language or bound of `doc` met with the strings
+        of that length, and a repeat of single characters from zero read as that repeat with
+        the new counts.
+    """
+    every = {"op": "chars", "ranges": doc["alphabet"]}
+
+    def cut(node: dict) -> dict:
+        node = canonical(node)
+        one_character = node.get("arg", {}).get("op") in ("chars", "literal") and (
+            node["arg"]["op"] == "chars" or len(node["arg"]["codes"]) == 1)
+        if node["op"] == "repeat" and node["min"] == 0 and node["max"] is None and one_character:
+            return canonical({"op": "repeat", "arg": node["arg"], "min": lo, "max": hi})
+        return canonical({"op": "inter", "args": [
+            node, {"op": "repeat", "arg": every, "min": lo, "max": hi}]})
+
+    out = {**doc, "source": {**doc.get("source", {}), "length": [lo, hi]}}
+    for key in ("language", "at_least", "at_most"):
+        if key in doc:
+            out[key] = cut(doc[key])
+    return out
+
+
+#: the predicate a compiled pattern's method reads
+_METHODS = {"fullmatch": "matches", "search": "contains", "match": "starts with"}
+
+
+def pattern_language(source: Any, predicate: str | None = None, flags: int = 0) -> Any:
+    """Intent:
+        Returns the text language of the strings a predicate holds of a Python pattern:
+        membership by `re` itself, the term as its stated `definition`, draws from the
+        pattern's parse tree or, failing that, a shortest member of the term. `source` is a
+        compiled pattern, a pattern's text (with `flags`), or a compiled pattern's bound
+        method `fullmatch`, `search` or `match`, which names its own predicate; the predicate
+        is `matches` when none is given or named.
 
     Raises:
-        NotRegular: the pattern is a bytes pattern.
+        NotRegular: the pattern is a bytes pattern or does not compile.
+        ValueError: `predicate` is not one of `PREDICATES`, or is not the one a bound method
+            names.
     """
     import random as _random
 
     from ._kit import TextLanguage
     from .regex import Unsupported, _emit
 
-    doc = term(compiled, 0, "matches")
+    owner = getattr(source, "__self__", None)
+    if isinstance(owner, re.Pattern):
+        named = _METHODS.get(getattr(source, "__name__", ""))
+        if named is None:
+            raise ValueError(f"{source!r} is not a pattern's fullmatch, search or match")
+        if predicate not in (None, named):
+            raise ValueError(f"{source.__name__} reads as {named!r}, not {predicate!r}")
+        source, predicate = owner, named
+    predicate = predicate or "matches"
+    if isinstance(source, re.Pattern):
+        pattern, flags = source.pattern, source.flags | int(flags)
+    else:
+        pattern = source
+    doc = term(pattern, flags, predicate)
     words = doc["source"]["flags"]
-    name = f"re({compiled.pattern!r}{''.join(', ' + w for w in words)})"
+    name = f"{predicate} (re({pattern!r}{''.join(', ' + w for w in words)}))"
     parser, _, _ = _sre()
-    tree = parser.parse(compiled.pattern, compiled.flags)
-    bound = doc.get("language") or doc["at_least"]
-    fallback = shortest(from_node(bound)) if doc["exact"] else None
+    tree = parser.parse(pattern, flags)
+    fallback = shortest(from_node(doc["language"])) if doc["exact"] else None
 
     def accepts(text: str) -> bool:
-        return compiled.fullmatch(text) is not None
+        return runs(pattern, flags, predicate, text)
 
     def draw(rng: _random.Random) -> str:
         for _ in range(40):

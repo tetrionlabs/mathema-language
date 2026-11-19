@@ -14,6 +14,9 @@ from .._surface import HazardValue, StringLanguage
 from . import generate as _generate
 from .hazards import TEXT_HAZARDS
 
+#: the definition of each alphabet language, by name, built when first asked
+_DEFINITIONS: dict[str, dict] = {}
+
 
 @dataclass(frozen=True)
 class TextLanguage(StringLanguage):
@@ -29,6 +32,26 @@ class TextLanguage(StringLanguage):
     category_share: float = 0.5
     simplest: str = "a"
     extra_hazards: tuple[HazardValue, ...] = ()
+
+    def to_json(self) -> dict:
+        """The language's persisted form; an alphabet language (every
+        string over the characters `char_ok` accepts) also states its
+        `definition`, the regular-language term of those strings."""
+        out = dict(super().to_json())
+        if "definition" not in out and self.level == "alphabet" and self.char_ok is not None:
+            if self.name not in _DEFINITIONS:
+                from ._regular import every_string_over
+                chars, start = [], None
+                for code in range(0x110001):
+                    inside = code < 0x110000 and bool(self.char_ok(chr(code)))
+                    if inside and start is None:
+                        start = code
+                    elif not inside and start is not None:
+                        chars.append((start, code - 1))
+                        start = None
+                _DEFINITIONS[self.name] = every_string_over(chars, self.name)
+            out["definition"] = _DEFINITIONS[self.name]
+        return out
 
     def hazards(self) -> tuple[HazardValue, ...]:
         seen: set[str] = set()
