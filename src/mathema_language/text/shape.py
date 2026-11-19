@@ -646,7 +646,7 @@ def _reads(shape: str, base: str, text: str) -> bool:
         ascii_letters_are_any_number_of_letters: for text in L[alpha], f("A{0+}", "ascii", text) == True
         answers_any_text: for text in L[unicode], f("AA99[ ]9AA", "ascii", text) in {True, False}
         a_postcode_is_a_member: f("AA99[ ]9AA", "ascii", "SW19 3AB") == True
-        a_trailing_newline_is_not: f("AA99[ ]9AA", "ascii", "SW19 3AB\n") == False
+        a_trailing_newline_is_not: f("AA99[ ]9AA", "ascii", "SW19 3AB\\n") == False
 
     Raises:
         ShapeError: the shape does not read.

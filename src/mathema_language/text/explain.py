@@ -362,9 +362,9 @@ def _reading(pattern: str, predicate: str) -> str:
     Claims:
         a_set_reads_the_same_however_it_is_ordered: f("[a-z0-9]+", "matches") == f("[0-9a-z]+", "matches")
         a_count_reads_the_same_however_it_is_spelled: f("a{1,}", "matches") == f("a+", "matches")
-        a_slug_reads_as_words_joined_by_hyphens: f("[a-z0-9]+(?:-[a-z0-9]+)*", "matches") == "one or more of: 0-9, a-z; then any number of: \"-\" followed by one or more of: 0-9, a-z"
-        a_dollar_reads_as_a_final_newline: f("a$", "starts with") == "\"a\"; also accepts one final newline"
-        the_end_of_text_reads_as_no_newline: f("a\\Z", "starts with") == "\"a\""
+        a_slug_reads_as_words_joined_by_hyphens: f("[a-z0-9]+(?:-[a-z0-9]+)*", "matches") == 'one or more of: 0-9, a-z; then any number of: "-" followed by one or more of: 0-9, a-z'
+        a_dollar_reads_as_a_final_newline: f("a$", "starts with") == '"a"; also accepts one final newline'
+        the_end_of_text_reads_as_no_newline: f("a\\Z", "starts with") == '"a"'
 
     Raises:
         NotRegular: the pattern does not compile.
