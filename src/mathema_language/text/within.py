@@ -825,7 +825,7 @@ def _is_block(version: int) -> Callable[[str], bool]:
     return test
 
 
-def _reads(parse: Callable[[Any], Any]) -> Callable[[str], bool]:
+def _parses(parse: Callable[[Any], Any]) -> Callable[[str], bool]:
     """Intent:
         A test of whether `parse` reads text without a ValueError.
     """
@@ -867,13 +867,13 @@ WITHIN: dict[str, BoundaryKind] = {kind.base: kind for kind in (
     BoundaryKind("ipv6", "an IPv6 address", "an address block", 'a CIDR block such as "2001:db8::/32"',
                  ("2001:db8::/32",), None, _is_block(6), ipv6_within),
     BoundaryKind("iso_date", "a date", "an interval of dates", 'an ISO date such as "2026-01-01"',
-                 ("2026-01-01", "2026-12-31"), 2, _reads(_as_date), iso_date_within),
+                 ("2026-01-01", "2026-12-31"), 2, _parses(_as_date), iso_date_within),
     BoundaryKind("iso_datetime", "a datetime", "an interval of datetimes",
                  'an ISO datetime such as "2026-01-01T00:00:00"',
-                 ("2026-01-01T00:00:00", "2026-12-31T23:59:59"), 2, _reads(_as_datetime),
+                 ("2026-01-01T00:00:00", "2026-12-31T23:59:59"), 2, _parses(_as_datetime),
                  iso_datetime_within),
     BoundaryKind("url", "a URL", "an origin or a path prefix", _URL_FORM,
-                 ("https://example.com/api",), None, _reads(_url_region), url_within, registered=False),
+                 ("https://example.com/api",), None, _parses(_url_region), url_within, registered=False),
 )}
 
 
@@ -953,6 +953,98 @@ def suggest_within(base: str, arguments: tuple[str, ...]) -> tuple[str, ...]:
     elif len(arguments) == 1 and isinstance(arguments[0], str):
         out.append(claim_text(base, "starts with", arguments))
     return tuple(out)
+
+
+@functools.lru_cache(maxsize=64)
+def _built(base: str, regions: tuple[str, ...]) -> Any:
+    """Intent:
+        The language named `base` within `regions`.
+
+    Raises:
+        ValueError: `within` has no meaning for `base`, or a region has not the form it takes.
+    """
+    kind = WITHIN.get(base)
+    if kind is None:
+        raise ValueError(within_refusal(base, regions))
+    return kind.build(*regions)
+
+
+def _reads(base: str, text: str, *regions: str) -> bool:
+    """Intent:
+        Whether `text` is in the language named `base` within `regions`, by the standard
+        library's reading of it.
+
+    Claims:
+        the_whole_ipv4_space_holds_every_address: for text in L[ipv4], f("ipv4", text, "0.0.0.0/0") == True
+        the_whole_ipv6_space_holds_every_address: for text in L[ipv6], f("ipv6", text, "::/0") == True
+        every_date_is_between_the_first_and_the_last: for text in L[iso_date], f("iso_date", text, "0001-01-01", "9999-12-31") == True
+        answers_any_text_for_a_block: for text in L[unicode], f("ipv4", text, "10.0.0.0/8") in {True, False}
+        answers_any_text_for_an_interval: for text in L[unicode], f("iso_date", text, "2026-01-01", "2026-12-31") in {True, False}
+        answers_any_text_for_a_subtree: for text in L[unicode], f("path", text, "/workspace") in {True, False}
+
+    Raises:
+        ValueError: `within` has no meaning for `base`, or a region has not the form it takes.
+    """
+    return bool(_built(base, regions).contains(text))
+
+
+def _escapes(base: str, text: str, inner: str, outer: str) -> bool:
+    """Intent:
+        Whether `text` is in the language named `base` within the one region `inner` and not
+        within the one region `outer`: a witness that `inner` is not inside `outer`.
+
+    Claims:
+        no_address_of_a_block_escapes_the_block_around_it: for text in L[ipv4], f("ipv4", text, "10.1.0.0/16", "10.0.0.0/8") == False
+        no_text_at_all_escapes_the_block_around_it: for text in L[unicode], f("ipv4", text, "10.1.0.0/16", "10.0.0.0/8") == False
+        an_address_escapes_the_smaller_block: f("ipv4", "10.2.0.0", "10.0.0.0/8", "10.1.0.0/16") == True
+        no_path_of_a_subtree_escapes_its_parent: for text in L[path], f("path", text, "/workspace/src", "/workspace") == False
+        a_path_escapes_the_subtree: f("path", "/workspace/README.md", "/workspace", "/workspace/src") == True
+        a_sibling_prefix_is_not_under_the_root: f("path", "/workspace2", "/", "/workspace") == True
+        no_address_escapes_the_ipv6_block_around_it: for text in L[ipv6], f("ipv6", text, "2001:db8:1::/48", "2001:db8::/32") == False
+
+    Raises:
+        ValueError: `within` has no meaning for `base`, or a region has not the form it takes.
+    """
+    return _reads(base, text, inner) and not _reads(base, text, outer)
+
+
+def _matches(base: str, text: str, *regions: str) -> bool:
+    """Intent:
+        Whether `text` is in the language named `base` within `regions`, by the language's
+        pattern read in full.
+
+    Claims:
+        the_ipv4_pattern_agrees_on_addresses: let reads = mathema_language.text.within._reads, for text in L[ipv4], f("ipv4", text, "10.0.0.0/8") == reads("ipv4", text, "10.0.0.0/8")
+        the_ipv4_pattern_agrees_on_any_text: let reads = mathema_language.text.within._reads, for text in L[unicode], f("ipv4", text, "10.0.0.0/8") == reads("ipv4", text, "10.0.0.0/8")
+        the_ipv6_pattern_agrees_on_addresses: let reads = mathema_language.text.within._reads, for text in L[ipv6], f("ipv6", text, "8000::/1") == reads("ipv6", text, "8000::/1")
+        the_date_pattern_agrees_on_dates: let reads = mathema_language.text.within._reads, for text in L[iso_date], f("iso_date", text, "1900-03-01", "2100-02-28") == reads("iso_date", text, "1900-03-01", "2100-02-28")
+        the_date_pattern_agrees_on_any_text: let reads = mathema_language.text.within._reads, for text in L[unicode], f("iso_date", text, "1900-03-01", "2100-02-28") == reads("iso_date", text, "1900-03-01", "2100-02-28")
+        the_path_pattern_agrees_on_paths: let reads = mathema_language.text.within._reads, for text in L[path], f("path", text, "/workspace", "/data") == reads("path", text, "/workspace", "/data")
+
+    Raises:
+        ValueError: `within` has no meaning for `base`, a region has not the form it takes, or
+            the language states no pattern.
+    """
+    pattern = _built(base, regions).pattern
+    if not isinstance(pattern, str):
+        raise ValueError(f"L[{base}] within {regions!r} states no pattern")
+    return re.fullmatch(pattern, text) is not None
+
+
+def _in_term(base: str, text: str, *regions: str) -> bool:
+    """Intent:
+        Whether `text` is in the regular-language term of the language named `base` within
+        `regions`: in its language where the term is exact, else in its `at_least` bound.
+
+    Claims:
+        the_ipv4_term_agrees_on_addresses: let reads = mathema_language.text.within._reads, for text in L[ipv4], f("ipv4", text, "10.0.0.0/8") == reads("ipv4", text, "10.0.0.0/8")
+        the_date_term_agrees_on_dates: let reads = mathema_language.text.within._reads, for text in L[iso_date], f("iso_date", text, "2024-02-29", "2026-11-19") == reads("iso_date", text, "2024-02-29", "2026-11-19")
+        the_datetime_bound_over_every_date_holds_every_datetime: for text in L[iso_datetime], f("iso_datetime", text, "0001-01-01T00:00:00", "9999-12-31T23:59:59.999999") == True
+
+    Raises:
+        ValueError: `within` has no meaning for `base`, or a region has not the form it takes.
+    """
+    return _regular.member(_built(base, regions).definition(), text, "at_least")
 
 
 def within(language: Any, *regions: Any) -> Any:
