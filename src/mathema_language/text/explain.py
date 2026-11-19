@@ -29,6 +29,7 @@ one canonical form read the same whatever pattern they came from.
   `whitespace` (what `\\s` matches), `word characters` (what `\\w`
   matches), each over Unicode with its size, or `ASCII letters`. A set
   that holds one of those classes names it and lists the rest; a set
+  the caller names (a shape's bound alphabet) reads by that name; a set
   easier to say by what it leaves out reads `any character except: ...`.
   A long list is cut after eight parts, with the number of characters
   left unsaid.
@@ -42,6 +43,7 @@ fits, and `at_most`, the texts certainly accepted.
 """
 from __future__ import annotations
 
+import contextvars
 import functools
 import json
 import sys
@@ -53,6 +55,9 @@ Ranges = tuple[tuple[int, int], ...]
 
 #: the most parts a character set lists before the rest is counted
 _MAX_PARTS = 8
+
+#: the names a reading gives to whole character sets, by their ranges, while it runs
+_NAMES: contextvars.ContextVar[dict[Ranges, str]] = contextvars.ContextVar("set names", default={})  # noqa: B039
 
 _NAMED_CHARACTERS = {" ": "space", "\n": "newline", "\t": "tab", "\r": "carriage return"}
 
@@ -158,6 +163,8 @@ def describe_characters(ranges: Any) -> str:
         one set reads one way however it is written.
     """
     given = tuple(_regular._cs_union(*[((int(lo), int(hi)),) for lo, hi in ranges]))
+    if given in _NAMES.get():
+        return _NAMES.get()[given]
     if given == _regular._FULL:
         return "any character"
     left_out = tuple(_regular._cs_complement(given))
@@ -326,7 +333,7 @@ def explain_node(node: dict[str, Any]) -> str:
     return _read(_regular.canonical(node), 0)
 
 
-def explain(term: dict[str, Any]) -> str:
+def explain(term: dict[str, Any], names: Any = None) -> str:
     """Intent:
         Returns what text a regular-language term admits, in plain words. An exact term is
         read as fact. A term stated as bounds says so, names the constructs that made it
@@ -339,6 +346,22 @@ def explain(term: dict[str, Any]) -> str:
     Notes:
         Only the term's meaning is read (`exact`, `language` or the two bounds) and, for
         bounds, the source's `not_exact` list. Terms with one canonical form read the same.
+        `names` maps a character set, as a tuple of inclusive ranges, to the name the reading
+        gives it in place of its ranges: a shape names the alphabets its symbols are bound to.
+    """
+    token = _NAMES.set({tuple(tuple(r) for r in ranges): str(name) for ranges, name in (names or {}).items()})
+    try:
+        return _explain(term)
+    finally:
+        _NAMES.reset(token)
+
+
+def _explain(term: dict[str, Any]) -> str:
+    """Intent:
+        The reading of a term under the set names in force.
+
+    Raises:
+        ValueError: the document is not a regular-language term.
     """
     if not isinstance(term, dict) or term.get("kind") != "regular_language":
         raise ValueError("explain reads a regular-language term")

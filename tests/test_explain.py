@@ -107,13 +107,13 @@ PATTERNS = [
 SHAPES = [
     ('AA99[ ]9AA', 'ascii',
      'exactly 2 of: ASCII letters; then exactly 2 of: 0-9; then optionally: " "; then one of: 0-9; then exactly 2 of: ASCII letters'),
-    ('ID-9{4,6}', 'ascii',
+    ("'ID-'9{4,6}", 'ascii',
      '"ID-"; then 4 to 6 of: 0-9'),
     ('A{1+}-9{2}', 'unicode',
      'one or more of: letters (Unicode, {letters} characters); then "-"; then exactly 2 of: digits (Unicode, {digits} characters)'),
     ('X{0+}', 'unicode',
      'any text'),
-    ('a{2,3}[ 9{1,2}]b', 'ascii',
+    ("a{2,3}[ 9{1,2}]'b'", 'ascii',
      '2 to 3 of: a-z; then optionally: " " followed by 1 to 2 of: 0-9; then "b"'),
 ]
 

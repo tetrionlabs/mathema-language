@@ -25,7 +25,7 @@ from mathema_language.text.shape import (
     SHAPE,
     Shape,
     ShapeError,
-    claim_text,
+    UnknownSymbol,
     class_ranges,
     shape_examples,
     shape_language,
@@ -65,8 +65,8 @@ def test_a_letter_and_a_digit_follow_the_base_language():
 
 @pytest.mark.parametrize("written, canonical", [
     ("AA99[ ]9AA", "AA99[ ]9AA"), ("A{2}9{2,2}", "A{2}9{2}"), ("9{1}", "9"), ("[-9]{0,1}", "[-9]"),
-    (r"\-\b\A", r"-b\A"), ("9{0+}a{1+}", "9{0+}a{1+}"), ("[a[9]]{2}", "[a[9]]{2}"), (r"\[\]\{\}\\", r"\[\]\{\}\\"),
-    ("9{0,1}", "9{0,1}"), ("ID-9{4,6}", "ID-9{4,6}"), (" {2}", " {2}"), ("[a]{1}", "[a]{1}"),
+    (r"\-\b\A", "-'bA'"), ("9{0+}a{1+}", "9{0+}a{1+}"), ("[a[9]]{2}", "[a[9]]{2}"), (r"\[\]\{\}\\", r"\[\]\{\}\\"),
+    ("9{0,1}", "9{0,1}"), ("'ID'-9{4,6}", "'ID'-9{4,6}"), (" {2}", " {2}"), ("[a]{1}", "[a]{1}"),
 ])
 def test_the_canonical_text_is_the_shape_as_written_with_needless_marks_dropped(written, canonical):
     shape = Shape(written, "ascii")
@@ -92,6 +92,9 @@ def test_the_canonical_text_is_the_shape_as_written_with_needless_marks_dropped(
     ("9{3,2}", 1, "a count from n to m with m at least n and at least 1"),
     ("9{0}", 1, "a count from n to m with m at least n and at least 1"),
     ("AA\\", 3, "a character after the backslash"),
+    ("9'ab", 4, "\"'\" to close the quoted text opened at position 1"),
+    ("9''9", 2, "at least one character between the quotes"),
+    ("'a'" + "'", 4, "\"'\" to close the quoted text opened at position 0"),
 ])
 def test_a_shape_that_does_not_read_says_what_was_expected_and_where(written, position, expected):
     with pytest.raises(ShapeError) as caught:
@@ -104,7 +107,7 @@ def test_a_shape_over_ascii_holds_no_character_outside_it_and_a_base_is_one_of_t
     with pytest.raises(ShapeError) as caught:
         Shape("A-é", "ascii")
     assert caught.value.position == 2
-    assert Shape("A-é").matches("x-é")
+    assert Shape("A-'é'").matches("x-é")
     with pytest.raises(ValueError):
         Shape("A", "latin-1")
 
@@ -119,7 +122,7 @@ def _random_shape(rng: random.Random, depth: int = 0) -> str:
         elif kind < 0.7:
             atom = rng.choice("Aa9X")
         else:
-            atom = rng.choice(["-", "b", "\\A", "\\9", " ", "\\[", "B"])
+            atom = rng.choice(["-", "'b'", "\\A", "\\9", " ", "\\[", "'B-'", "'it''s'", "\\'"])
         count = rng.choice(["", "", "", "{2}", "{0,1}", "{1,2}", "{0+}", "{1+}", "{2+}", "{0,2}"])
         out.append(atom + count)
     return "".join(out)
@@ -149,7 +152,7 @@ def test_the_reading_the_pattern_and_the_term_agree_on_every_short_text(base, al
 def test_the_term_is_exact_plain_data_and_is_the_term_of_the_pattern():
     doc = POSTCODE.term()
     assert doc["exact"] is True and doc["kind"] == "regular_language"
-    assert doc["source"] == {"dialect": "shape", "shape": "AA99[ ]9AA", "base": "ascii",
+    assert doc["source"] == {"dialect": "shape", "shape": "AA99[ ]9AA", "base": "ascii", "bindings": {},
                              "unicode": doc["source"]["unicode"]}
     assert json.loads(json.dumps(doc)) == doc
     rng = random.Random(22)
@@ -160,8 +163,8 @@ def test_the_term_is_exact_plain_data_and_is_the_term_of_the_pattern():
                     == _regular.term_hash(_regular.term(shape.pattern, 0, "matches"))), written
 
 
-SHAPES = ["AA99[ ]9AA", "9{0+}", "a{1+}", "X{2}", "[a[9]]{2}", "ID-9{4,6}", "A[-A]{0,2}", "9{3}-9{4}",
-          "X{0+}", "[a]", "\\A\\9", "a{2,3}[ 9{1,2}]b"]
+SHAPES = ["AA99[ ]9AA", "9{0+}", "a{1+}", "X{2}", "[a[9]]{2}", "'ID-'9{4,6}", "A[-A]{0,2}", "9{3}-9{4}",
+          "X{0+}", "[a]", "\\A\\9", "a{2,3}[ 9{1,2}]'b'", "'ab'{1,2}9", "'it''s' 9"]
 
 
 @pytest.mark.parametrize("base", ["ascii", "unicode"])
@@ -185,7 +188,7 @@ def test_every_member_written_from_a_shape_is_a_member_and_every_near_miss_is_no
 def test_the_members_of_a_shape_take_both_branches_and_both_ends_of_every_count():
     assert set(Shape("AA99[ ]9AA", "ascii").members()) >= {"AA000AA", "AA00 0AA", "ZZ00 0ZZ", "zz00 0zz",
                                                            "AA99 9AA"}
-    assert set(Shape("ID-9{4,6}", "ascii").members()) >= {"ID-0000", "ID-000000", "ID-9999", "ID-999999"}
+    assert set(Shape("'ID-'9{4,6}", "ascii").members()) >= {"ID-0000", "ID-000000", "ID-9999", "ID-999999"}
     assert set(Shape("a{1+}[-9]", "ascii").members()) >= {"a", "aaa", "a-0", "aaa-0", "zzz-0"}
     assert set(Shape("A9").members()) >= {"A0", "É0", "中0", "A٣"}
 
@@ -204,8 +207,9 @@ def test_the_near_misses_of_a_shape_are_each_one_step_outside_it():
     assert dict(Shape("X{2}", "ascii").near_misses()) == {
         "xxx": "any one character once more than its count allows",
         "x": "any one character once fewer than its count allows",
-        "xx\n": "a member with a trailing newline", " xx": "a member after a space"}
-    counted = dict(Shape("ID-9{4,6}[-aa]", "ascii").near_misses())
+        "xx\n": "a member with a trailing newline", " xx": "a member after a space",
+        "\u00e9x": "a character of another class in place of any one character"}
+    counted = dict(Shape("'ID'-9{4,6}[-aa]", "ascii").near_misses())
     assert {"ID-000": "a digit once fewer than its count allows",
             "ID-0000000": "a digit once more than its count allows",
             "ID-0000-a": "an optional part cut one character short"}.items() <= counted.items()
@@ -225,7 +229,7 @@ def test_a_shape_is_a_text_language_whose_draws_are_written_directly():
     assert all(not language.contains(text) for text in outside) and len(outside) > 50
     assert any(text.endswith("\n") for text in outside) and any("  " in text for text in outside)
     stated = language.to_json()
-    assert stated["shape"] == {"base": "ascii", "shape": "AA99[ ]9AA"}
+    assert stated["shape"] == {"base": "ascii", "shape": "AA99[ ]9AA", "bindings": {}}
     assert stated["definition"] == POSTCODE.term()
     assert shape_language(POSTCODE).name == language.name
 
@@ -241,7 +245,7 @@ class Address:
 
 @dataclasses.dataclass
 class Customer:
-    reference: typing.Annotated[str, Shape("ID-9{4,6}", "ascii")]
+    reference: typing.Annotated[str, Shape("'ID-'9{4,6}", "ascii")]
     address: Address
 
 
@@ -291,7 +295,7 @@ def test_a_dataclass_field_two_records_deep_holds_its_shape():
     assert len({row.customer.address.postcode for row in drawn}) > 30
     field = _field_json(language.to_json(), "customer", "address", "postcode")
     assert field["pattern"] == POSTCODE.pattern
-    assert field["x-mathema"]["shape"] == {"base": "ascii", "shape": "AA99[ ]9AA"}
+    assert field["x-mathema"]["shape"] == {"base": "ascii", "shape": "AA99[ ]9AA", "bindings": {}}
     assert field["x-mathema"]["definition"] == POSTCODE.term()
 
 
@@ -382,9 +386,11 @@ def test_a_refusal_says_what_the_word_expects(base, arguments, said):
 
 @pytest.mark.parametrize("base, arguments, suggested", [
     ("iso_date", ("9999-99-99",), ('L[ascii, shape ("9999-99-99")]', 'L[unicode, shape ("9999-99-99")]')),
-    ("ascii", ("A-é",), ('L[unicode, shape ("A-é")]',)),
+    ("ascii", ("A-é",), ("L[unicode, shape (\"A-'é'\")]",)),
     ("ascii", ("[a-z",), ('L[ascii, shape ("AA99[ ]9AA")]',)),
-    ("ascii", ("[a-z]+(",), ()),
+    ("ascii", ("[a-z]+(",), ("L[ascii, shape (\"[a-'z']+(\")]",)),
+    ("ascii", ("KEY-99",), ("L[ascii, shape (\"'KEY'-99\")]",)),
+    ("json", ("ID-9999",), ("L[ascii, shape (\"'ID'-9999\")]", "L[unicode, shape (\"'ID'-9999\")]")),
     ("unicode", ("[a-z]{2,}",), ('L[unicode, matches (re(r"[a-z]{2,}", python))]',)),
     ("ascii", ("AA", "99"), ('L[ascii, shape ("AA99[ ]9AA")]',)),
     ("json", ("[",), ('L[ascii, shape ("AA99[ ]9AA")]',)),
@@ -395,5 +401,163 @@ def test_a_refused_use_suggests_the_claim_that_was_meant(base, arguments, sugges
     for text in suggested:
         if ", shape (" in text:
             name = text[2:text.index(",")]
-            argument = arguments if text == claim_text(name, "shape", arguments) else SHAPE[name].example
-            assert shape_refusal(name, argument) is None
+            picture = text[text.index('("') + 2:text.rindex('")')]
+            assert shape_refusal(name, (picture,)) is None
+
+
+# --- letters and digits are symbols; literal text is quoted; symbols are bound to alphabets
+
+
+@pytest.mark.parametrize("written, said", [
+    ("KEY-99", "K, E and Y are not symbols. For the literal text write 'KEY': shape (\"'KEY'-99\"). "
+               "To use K as a symbol, bind it: shape (\"KEY-99\", K = ...)"),
+    ("ID-9999", "I and D are not symbols. For the literal text write 'ID': shape (\"'ID'-9999\"). "
+                "To use I as a symbol, bind it: shape (\"ID-9999\", I = ...)"),
+    ("9b", "b is not a symbol. For the literal text write 'b': shape (\"9'b'\"). "
+           "To use b as a symbol, bind it: shape (\"9b\", b = ...)"),
+    ("AB-12-B", "B, 1 and 2 are not symbols. For the literal text write 'B' and '12': "
+                "shape (\"A'B'-'12'-'B'\"). To use B as a symbol, bind it: shape (\"AB-12-B\", B = ...)"),
+    ("9é", "é is not a symbol. For the literal text write 'é': shape (\"9'é'\"). "
+           "To use é as a symbol, bind it: shape (\"9é\", é = ...)"),
+])
+def test_a_letter_or_digit_that_is_no_symbol_is_refused_with_both_ways_to_mend_it(written, said):
+    with pytest.raises(UnknownSymbol) as caught:
+        Shape(written)
+    assert str(caught.value) == said
+    assert isinstance(caught.value, ShapeError) and caught.value.position == written.index(caught.value.symbols[0])
+    mended = Shape(caught.value.quoted)
+    assert mended.shape == caught.value.quoted
+
+
+def test_the_refusal_keeps_the_bindings_that_were_given():
+    with pytest.raises(UnknownSymbol) as caught:
+        Shape("KEY-U9", "ascii", U="upper")
+    assert str(caught.value) == (
+        "K, E and Y are not symbols. For the literal text write 'KEY': shape (\"'KEY'-U9\", U = upper). "
+        "To use K as a symbol, bind it: shape (\"KEY-U9\", U = upper, K = ...)")
+    assert shape_refusal("ascii", ("KEY-U9",), {"U": "upper"}) == str(caught.value)
+    assert suggest_shape("ascii", ("KEY-U9",), {"U": "upper"}) == (
+        "L[ascii, shape (\"'KEY'-U9\", U = upper)]",)
+
+
+@pytest.mark.parametrize("written, canonical, member, not_member", [
+    ("'INV-'9{4}", "'INV-'9{4}", "INV-2026", "inv-2026"), ("'-'9", "-9", "-1", "'-'1"),
+    (r"\K\E\Y-99", "'KEY'-99", "KEY-12", "KEX-12"), ("'ab'{2}9", "'ab'{2}9", "abab1", "ab1"),
+    ("'--'{2}", "'--'{2}", "----", "---"), ("'-'{2}", "-{2}", "--", "-"), ("'it''s'9", "'it''s'9", "it's1", "its1"),
+    (r"\'9\'", r"\'9\'", "'1'", "1"), (r"\K{2}'ab'", r"\K{2}'ab'", "KKab", "Kab"),
+    (r"\K'EE'{2}", r"\K'EE'{2}", "KEEEE", "KEE"), ("'[]'", r"\[\]", "[]", ""), ("' 'A' '", " A ", " x ", "x"),
+    (r"'A'\9'X'", "'A9X'", "A9X", "B1Y"), ("['ID']9", "['ID']9", "ID1", "I1"),
+])
+def test_literal_text_is_quoted_and_the_canonical_picture_quotes_only_letters_and_digits(
+        written, canonical, member, not_member):
+    shape = Shape(written, "ascii")
+    assert shape.shape == canonical
+    again = Shape(canonical, "ascii")
+    assert again.shape == canonical and again.pattern == shape.pattern
+    for reading in (shape.matches, lambda t: re.fullmatch(shape.pattern, t) is not None,
+                    lambda t: _regular.member(shape.term(), t)):
+        assert reading(member) and not reading(not_member)
+
+
+def test_a_symbol_is_bound_to_an_alphabet_after_the_picture():
+    from mathema_language.text.alphabet import alphabet
+
+    word = Shape("AW{0+}", "ascii", W='alnum + "_"')
+    assert word.arguments == '"AW{0+}", W = alnum + "_"'
+    assert word.matches("a_1") and word.matches("Z") and not word.matches("_a") and not word.matches("a-")
+    hexes = Shape("HH:HH:HH", "ascii", H="hex")
+    assert hexes.matches("0a:FF:9c") and not hexes.matches("0g:FF:9c")
+    key = Shape("'KEY-'U{3}9{4}", "ascii", U="upper")
+    assert key.arguments == "\"'KEY-'U{3}9{4}\", U = upper"
+    assert key.matches("KEY-ABC1234") and not key.matches("KEY-abc1234")
+    assert Shape("AW{0+}", "ascii", W=alphabet("alnum") + "_") == word
+    other = Shape("AW{0+}", "ascii", bindings={"W": '"_" + alnum'})
+    assert other == word and hash(word) == hash(other)
+    assert word != Shape("AW{0+}", "ascii", W="alnum")
+    assert eval(repr(word), {"Shape": Shape}) == word
+    language = shape_language("AW{0+}", "ascii", {"W": 'alnum + "_"'})
+    assert language.name == 'ascii, shape ("AW{0+}", W = alnum + "_")'
+    assert languages.language_problems(language) == []
+    assert language.to_json()["shape"] == {"base": "ascii", "shape": "AW{0+}", "bindings": {"W": 'alnum + "_"'}}
+    assert word.term()["source"]["bindings"] == {"W": 'alnum + "_"'}
+
+
+def test_a_binding_may_give_a_built_in_symbol_another_alphabet_and_is_written_after_the_picture():
+    upper = Shape("AA99", "ascii", A="upper")
+    assert upper.arguments == '"AA99", A = upper'
+    assert upper.matches("AB12") and not upper.matches("ab12") and Shape("AA99", "ascii").matches("ab12")
+    clock = Shape("99:99", "ascii", bindings={"9": "hex"})
+    assert clock.arguments == '"99:99", 9 = hex'
+    assert clock.matches("ff:0A") and not Shape("99:99", "ascii").matches("ff:0A")
+    assert eval(repr(clock), {"Shape": Shape}) == clock
+    both = Shape("ZA9", "ascii", bindings={"9": "hex", "Z": "upper", "A": 'lower + "_"'})
+    assert both.arguments == '"ZA9", 9 = hex, A = lower + "_", Z = upper'
+    assert both.matches("Q_f") and not both.matches("q_f")
+
+
+@pytest.mark.parametrize("build, error, said", [
+    (lambda: Shape("AA", "ascii", W="upper"), ShapeError, "expected the bound symbol W somewhere in the picture"),
+    (lambda: Shape("'W'9", "ascii", W="upper"), ShapeError, "expected the bound symbol W somewhere in the picture"),
+    (lambda: Shape("AW", "ascii", W="uper"), ValueError, "did you mean upper?"),
+    (lambda: Shape("AW", "ascii", W="unicode_alpha"), ValueError, "holds a character outside ASCII"),
+    (lambda: Shape("AW", "ascii", bindings={"WW": "upper"}), ValueError, "a bound symbol is one letter or digit"),
+    (lambda: Shape("A-", "ascii", bindings={"-": "upper"}), ValueError, "a bound symbol is one letter or digit"),
+    (lambda: Shape("AW", "ascii", W=3), ValueError, "an alphabet is an alphabet expression"),
+])
+def test_a_binding_that_is_unused_or_does_not_read_is_refused(build, error, said):
+    with pytest.raises(error) as caught:
+        build()
+    assert said in str(caught.value)
+    assert Shape("AW", "unicode", W="unicode_alpha").matches("xé")
+
+
+BOUND = [("AW{0+}", {"W": 'alnum + "_"'}), ("HH[:HH]{0,2}", {"H": "hex"}), ("'KEY-'U{3}9{4}", {"U": "upper"}),
+         ("AA99", {"A": "upper"}), ("99:99", {"9": "hex"}), ("S{1+}[.S{1+}]", {"S": 'lower + digit + "-"'}),
+         ("QX", {"Q": '"a" + "b"'})]
+
+
+@pytest.mark.parametrize("written, bindings", BOUND, ids=[b[0] for b in BOUND])
+def test_a_bound_shape_agrees_three_ways_and_writes_members_and_near_misses(written, bindings):
+    shape = Shape(written, "ascii", bindings)
+    compiled, doc = re.compile(shape.pattern), shape.term()
+    assert _regular.term_hash(doc) == _regular.term_hash(_regular.term(shape.pattern, 0, "matches"))
+    rng = random.Random(28)
+    members = list(shape.members()) + [shape.draw(rng) for _ in range(200)]
+    assert len(set(members)) > 5
+    for text in members:
+        assert shape.matches(text) and compiled.fullmatch(text) and _regular.member(doc, text), text
+    near = list(shape.near_misses()) + [m for seed in range(20) for m in shape.near_misses(random.Random(seed))]
+    assert any("another class" in note for _, note in near)
+    for text, _note in near:
+        assert not shape.matches(text) and not compiled.fullmatch(text) and not _regular.member(doc, text), text
+    for n in range(4):
+        for letters in itertools.product("aB1-_:.fGK", repeat=n):
+            text = "".join(letters)
+            assert shape.matches(text) == (compiled.fullmatch(text) is not None), text
+
+
+def test_the_reading_of_a_shape_names_a_bound_symbol_by_its_alphabet():
+    assert Shape("AW{0+}", "ascii", W='alnum + "_"').explain() == (
+        'one of: ASCII letters; then any number of: alnum + "_"')
+    assert Shape("HH:HH", "ascii", H="hex").explain() == 'exactly 2 of: hex; then ":"; then exactly 2 of: hex'
+    assert Shape("'KEY-'U{3}9{4}", "ascii", U="upper").explain() == (
+        '"KEY-"; then exactly 3 of: upper; then exactly 4 of: 0-9')
+    assert Shape("AA99", "ascii", A="upper").explain() == "exactly 2 of: upper; then exactly 2 of: 0-9"
+    assert Shape("AA99", "ascii").explain() == "exactly 2 of: ASCII letters; then exactly 2 of: 0-9"
+
+
+def test_a_bound_shape_marks_a_record_field():
+    from mathema_language.schema.adaptors.dataclass import adapt
+
+    @dataclasses.dataclass
+    class Account:
+        name: typing.Annotated[str, Shape("AW{2,31}", "ascii", W='lower + digit + "_"', A="lower")]
+
+    language = adapt(Account)
+    assert language.contains(Account("a_1")) and not language.contains(Account("A_1"))
+    assert not language.contains(Account("a_"))
+    rng = random.Random(29)
+    assert all(language.contains(language.sample(rng)) for _ in range(40))
+    field = language.to_json()["properties"]["name"]["x-mathema"]
+    assert field["shape"] == {"base": "ascii", "shape": "AW{2,31}",
+                              "bindings": {"A": "lower", "W": 'lower + digit + "_"'}}

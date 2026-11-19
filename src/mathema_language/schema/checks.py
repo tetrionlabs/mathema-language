@@ -447,8 +447,8 @@ def json_schema(obj: NeutralType | Field | RowSchema) -> dict[str, Any]:
             if value is not None:
                 out[key] = value
         if c.shape is not None:
-            out.setdefault("x-mathema", {}).update(
-                shape={"base": c.shape.base, "shape": c.shape.shape}, definition=c.shape.term())
+            from ..text.shape import shape_json
+            out.setdefault("x-mathema", {}).update(shape=shape_json(c.shape), definition=c.shape.term())
         if c.min_len is not None:
             out["minLength" if obj.type.base in ("string", "binary") else "minItems"] = c.min_len
         if c.max_len is not None:
