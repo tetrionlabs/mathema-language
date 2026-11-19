@@ -3,11 +3,10 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
-## Unreleased
+## 0.3.0
 
-- The text hazards no longer include paths, hosts or code:
-  `../../../etc/passwd`, `\\example.com`, `http:///example.com`,
-  `www.example.org ` and `javascript:alert(1)` are gone.
+For mathema 0.6.6 (`mathema>=0.6.6,<0.7`).
+
 - The z3 membership encoding reads command lines: an argparse parser's
   namespace language, each subcommand a shape of its own, with flags,
   choices, typed values, `pathlib.Path` arguments as their text, and
