@@ -805,6 +805,51 @@ def member(doc: dict, text: str, bound: str = "language") -> bool:
     return holds(from_node(doc["language"] if "language" in doc else doc[bound]), text)
 
 
+def runs(pattern: Any, flags: int, predicate: str, text: str) -> bool:
+    """Intent:
+        Returns whether `predicate` holds of `text` for the pattern, by running `re`: `matches`
+        is `fullmatch`, `contains` is `search`, `starts with` is `match`, and `ends with` is a
+        `fullmatch` from some position to the end, read in the whole string.
+    """
+    compiled = re.compile(pattern, flags)
+    if predicate == "matches":
+        return compiled.fullmatch(text) is not None
+    if predicate == "contains":
+        return compiled.search(text) is not None
+    if predicate == "starts with":
+        return compiled.match(text) is not None
+    if predicate == "ends with":
+        return any(compiled.fullmatch(text, i) is not None for i in range(len(text) + 1))
+    raise ValueError(f"a predicate is one of {sorted(PREDICATES)}, not {predicate!r}")
+
+
+def admits(pattern: Any, flags: int, predicate: str, text: str) -> bool:
+    r"""Intent:
+        Returns whether `text` is in the term of the pattern under `predicate`: its language
+        when exact, else its at-least bound.
+
+    Claims:
+        dollar_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a", "a\n"}, f("a$", 0, "matches", text) == runs("a$", 0, "matches", text)
+        search_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a", "a\n", "a\n\n", "ba"}, f("\\Aa$", 0, "contains", text) == runs("\\Aa$", 0, "contains", text)
+        match_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"Ab1", "\u212a", "1a"}, f("[a-z]+", 2, "starts with", text) == runs("[a-z]+", 2, "starts with", text)
+        ends_with_agrees_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a\nb", "b\n", "ab", "a\nb\n"}, f("^b$", 8, "ends with", text) == runs("^b$", 8, "ends with", text)
+        words_agree_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"a b", "\u0663", "\U00030000", "_"}, f("\\b\\w+\\b", 0, "contains", text) == runs("\\b\\w+\\b", 0, "contains", text)
+        digits_agree_with_re: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"1.5", "\u0663.\u0663", "1.", "12"}, f("\\d+(?:\\.\\d+)?", 0, "matches", text) == runs("\\d+(?:\\.\\d+)?", 0, "matches", text)
+        a_backreference_is_bounded: let runs = mathema_language.text._regular.runs, for text in L[unicode] ∪ {"aa", "aaaa", "aaa"}, (f("(a+)\\1", 0, "matches", text) or not runs("(a+)\\1", 0, "matches", text)) == True
+
+    Raises:
+        NotRegular: the pattern does not compile, is a bytes pattern, or uses LOCALE.
+    """
+    key = (pattern, int(flags), predicate)
+    if key not in _ADMITTED:
+        doc = term(pattern, flags, predicate)
+        _ADMITTED[key] = from_node(doc["language"] if doc["exact"] else doc["at_least"])
+    return holds(_ADMITTED[key], text)
+
+
+_ADMITTED: dict[tuple[Any, int, str], tuple] = {}
+
+
 def shortest(r: tuple, limit: int = 12) -> str | None:
     """Intent:
         Returns a shortest string in the expression `r` of at most `limit` characters, found
