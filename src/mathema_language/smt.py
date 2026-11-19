@@ -729,7 +729,7 @@ def _nonempty(r: tuple) -> tuple:
         return _alt(*[_nonempty(p) for p in r[1:]])
     if kind == "inter":
         return _inter(_nonempty(r[1]), r[2])
-    sub, lo, hi = r[1], r[2], r[3]
+    sub, hi = r[1], r[3]
     if not _nullable(sub):
         return _loop(sub, 1, hi)
     return _cat(_loop(sub, 0, None if hi is None else hi - 1), _nonempty(sub))
@@ -1057,7 +1057,7 @@ def _z3_text(z3: Any, text: str) -> Any:
         Returns `text` as a z3 string, every character written as its code point so that none
         is read as part of an escape.
     """
-    return z3.StringVal("".join("\\u{%x}" % ord(c) for c in text))
+    return z3.StringVal("".join(f"\\u{{{ord(c):x}}}" for c in text))
 
 
 def _text_of(model: Any, x: Any) -> str:
@@ -1145,7 +1145,7 @@ class _Alphabet:
         reps: dict[tuple, int] = {}
         self.rep_at: list[int] = []
         for start in self.starts:
-            key = tuple(self._has(s, starts, start) for s, starts in zip(sets, starts_of))
+            key = tuple(self._has(s, starts, start) for s, starts in zip(sets, starts_of, strict=True))
             self.rep_at.append(reps.setdefault(key, start))
         self.reps = sorted(set(self.rep_at))
 
@@ -1195,6 +1195,12 @@ def _decides(pattern: Any, flags: int, mode: str, side: str, text: str) -> bool:
         `re.<mode>(pattern, ., flags)` on `side`, asked over the atoms of the pattern's own
         sets, a character past U+2FFFF read as U+2FFFF.
 
+    Claims:
+        end_anchor_agrees_with_re: let runs = mathema_language.smt._runs, for text in L[unicode], f("a$", 0, "search", "older", text) == runs("a$", 0, "search", text)
+        fullmatch_agrees_with_re: let runs = mathema_language.smt._runs, for text in L[unicode], f("^a(?:b|c)*", 0, "fullmatch", "newer", text) == runs("^a(?:b|c)*", 0, "fullmatch", text)
+        ignorecase_agrees_with_re: let runs = mathema_language.smt._runs, for text in L[unicode], f("[a-z]+", 2, "match", "older", text) == runs("[a-z]+", 2, "match", text)
+        multiline_agrees_with_re: let runs = mathema_language.smt._runs, for text in L[unicode], f("^b$", 8, "search", "newer", text) == runs("^b$", 8, "search", text)
+
     Raises:
         Untranslated: the pattern holds a construct the translation does not read.
         RuntimeError: z3 did not decide it.
@@ -1234,14 +1240,38 @@ def _pattern(z3: Any, pattern: Any, flags: int, mode: str, x: Any, side: str) ->
 
 
 def _exact(pattern: Any, flags: int = 0) -> bool:
-    """Intent:
+    r"""Intent:
         Returns whether the two sides of the translation of `pattern` coincide: whether every
         character set it names treats the code points above U+2FFFF as it treats U+2FFFF.
+
+    Claims:
+        refuses_a_backreference: raises(f("(a)\\1", 0), Untranslated)
+        refuses_a_named_backreference: raises(f("(?P<n>a)(?P=n)", 0), Untranslated)
+        refuses_a_lookahead: raises(f("(?=a)b", 0), Untranslated)
+        refuses_a_lookbehind: raises(f("(?<=a)b", 0), Untranslated)
+        refuses_a_conditional: raises(f("(a)?(?(1)b|c)", 0), Untranslated)
+        refuses_an_atomic_group: raises(f("(?>a)", 0), Untranslated)
+        refuses_a_possessive_repeat: raises(f("a*+a", 0), Untranslated)
+        refuses_an_open_class: raises(f("[a", 0), Untranslated)
+        refuses_reversed_bounds: raises(f("a{2,1}", 0), Untranslated)
+        anchors_are_exact: f("^(?:a|b$)c?$", 8) == True
+        a_negated_class_is_exact: f("[^a-z]+", 2) == True
+        end_of_string_is_exact: f("\\Aa\\Z", 0) == True
+        digits_are_exact: f("\\d+", 0) == True
+        words_split_past_z3_characters: f("\\w", 0) == False
+        a_character_past_z3_is_not_exact: f("[\\U00030000]", 0) == False
 
     Raises:
         Untranslated: the pattern holds a construct the translation does not read, named.
     """
     return all(_cs_exact(s) for s in _translated(pattern, flags).sets())
+
+
+def _runs(pattern: Any, flags: int, mode: str, text: str) -> bool:
+    """Intent:
+        Returns whether `re.<mode>(pattern, text, flags)` finds a match.
+    """
+    return getattr(re, mode)(pattern, text, flags) is not None
 
 
 @dataclass(frozen=True)
@@ -1641,7 +1671,7 @@ def _solve_text(wanted: Any, inside: list[bool], timeout_ms: int) -> tuple[str, 
     x = z3.String("x")
     solver = z3.Solver()
     solver.set("timeout", timeout_ms)
-    for regex, keep in zip(_squeezed(z3, wanted), inside):
+    for regex, keep in zip(_squeezed(z3, wanted), inside, strict=True):
         solver.add(z3.InRe(x, regex) if keep else z3.Not(z3.InRe(x, regex)))
     answer = solver.check()
     if answer == z3.unsat:

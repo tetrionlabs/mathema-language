@@ -17,7 +17,6 @@ that reading."""
 import os
 import random
 import re
-import unicodedata
 
 import pytest
 
