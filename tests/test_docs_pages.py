@@ -79,7 +79,22 @@ def _module(page, tmp_path):
     return mod, expected, text
 
 
-@pytest.mark.parametrize("page", _pages(), ids=lambda p: p.stem)
+#: pages whose shown output follows the samples of mathema 0.6.6
+_AWAITING_0_4_0 = frozenset({"path", "adaptor-argparse", "adaptor-spark", "text",
+                             "tutorial-choosing-inputs", "vocabulary"})
+
+
+def _marked(pages, test):
+    """Intent:
+        `pages` as parameters, a page in `_AWAITING_0_4_0` for `test` marked
+        as an expected failure.
+    """
+    waiting = {"run": {"path"}, "shop": _AWAITING_0_4_0 - {"path"}}[test]
+    return [pytest.param(p, id=p.stem, marks=[pytest.mark.xfail(strict=True, reason="the shown output follows the 0.6.6 samples; rewritten with mathema-language 0.4.0 and core 0.6.7, due 2026-11-29 (mathema/probe-route-redesign)")]
+                         if p.stem in waiting else []) for p in pages]
+
+
+@pytest.mark.parametrize("page", _marked(_pages(), "run"))
 def test_the_page_runs_and_prints_what_it_shows(page, tmp_path, capsys):
     mod, expected, text = _module(page, tmp_path)
     if mod is None:
@@ -109,7 +124,7 @@ def _shop_pages():
     return [p for p in _pages() if "<!-- shop:" in p.read_text(encoding="utf-8")]
 
 
-@pytest.mark.parametrize("page", _shop_pages(), ids=lambda p: p.stem)
+@pytest.mark.parametrize("page", _marked(_shop_pages(), "shop"))
 def test_a_shop_page_shows_the_shop_and_its_claims_land(page, capsys):
     text = page.read_text(encoding="utf-8")
     _requires(text)

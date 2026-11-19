@@ -3,7 +3,9 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
-## Unreleased
+## 0.3.0
+
+For mathema 0.6.6.1 (`mathema>=0.6.6.1,<0.7`).
 
 - The z3 membership encoding reads command lines: an argparse parser's
   namespace language, each subcommand a shape of its own, with flags,
@@ -13,12 +15,15 @@ release onward.
 - A positional argument taking several values (`nargs="+"`, `"*"` or a
   count) is never `None` in the argparse namespace language, as
   argparse never gives it one; it was read as nullable.
-- `L[path]` is path text, with the paths code gets wrong as its hazards
-  (`..` climbs, absolute paths, a leading dash, `~`, `.git/config`), and
+- `L[path]` is path text, and
   `mathema_language.text.path_language.path_within(root)` the paths
   confined to a root (no `..` segment; an absolute path only at or under
   the root), rendered `L[path, within "/root"]`. Both are defined by a
-  regular expression the z3 encoding reads exactly.
+  regular expression the z3 encoding reads exactly. Their hazards are
+  the paths code reads wrongly: a doubled or trailing slash, a leading
+  `./`, a newline or leading space in a name, names outside ASCII, and a
+  name longer than most filesystems allow. None names a real place or
+  climbs out of the directory it starts in.
 - `mathema_language.openapi.operation(spec, operation_id)` reads an
   OpenAPI 3 operation as the language of the requests it accepts: a
   record of its path, query, header and cookie parameters and its JSON

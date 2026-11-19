@@ -2,11 +2,12 @@
 # Copyright 2026 Tetrion Ltd
 """`L[path]`: POSIX path text, any non-empty string without a NUL, the
 way a program receives a path from a command line, a form or a config
-file. Its hazards are the paths code that joins, opens or checks them
-gets wrong: `..` segments that climb out, absolute paths where a
-relative one was expected, doubled and trailing slashes, a leading dash
-read as an option, a newline in a name, a home-directory tilde, and the
-files a tool should never touch (`.git/config`, `~/.ssh/id_rsa`).
+file. Its hazards are the paths code that joins or splits them reads
+wrongly: doubled and trailing slashes, a leading `./`, a newline or a
+leading space in a name, names outside ASCII, and a name longer than
+most filesystems allow. None names a real place or climbs out of the
+directory it starts in, since a function under test may open or remove
+what it is given.
 
 `path_within(root)` is the language of paths confined to `root`: a
 relative path with no `..` segment, or an absolute path that is the root
@@ -43,21 +44,11 @@ _RELATIVE = _NONEMPTY_SEGMENT + r"(?:/" + _SEGMENT + r")*"
 PATH_PATTERN = r"[^\x00]+"
 
 _HAZARDS = (
-    ("..", "the parent directory"),
-    ("../etc/passwd", "a climb out of the directory"),
-    ("a/../../b", "a climb that starts inside"),
-    ("a/../b", "a '..' that stays inside once resolved"),
-    ("/etc/passwd", "an absolute path where a relative one was expected"),
-    ("/", "the filesystem root"),
-    (".", "the current directory"),
     ("a//b", "a doubled slash"),
     ("a/", "a trailing slash"),
     ("./a", "a leading './'"),
-    ("-rf", "a name that starts with a dash, read as an option"),
     ("a\nb", "a newline in a name"),
     (" a", "a leading space"),
-    ("~/.ssh/id_rsa", "a home-directory tilde, expanded only by a shell"),
-    (".git/config", "a repository's own configuration"),
     ("café/ü.txt", "names outside ASCII"),
     ("a" * 300, "a name longer than most filesystems allow"),
 )
@@ -103,7 +94,7 @@ class PathLanguage(TextLanguage):
         return tuple(own) + tuple(h for h in super().hazards() if h.value not in seen)
 
     def outside(self, rng: random.Random) -> Any:
-        order = [text for text, _ in _HAZARDS] + ["", "a\x00b", "../../x"]
+        order = [text for text, _ in _HAZARDS] + ["", "a\x00b"]
         rng.shuffle(order)
         for text in order:
             if not self.contains(text):
