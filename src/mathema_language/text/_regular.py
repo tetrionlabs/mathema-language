@@ -60,8 +60,8 @@ PREDICATES = {"matches": "fullmatch", "contains": "search", "starts with": "matc
               "ends with": "ends"}
 
 #: the flags a term's source names, by word
-FLAG_WORDS = {re.IGNORECASE: "ignore case", re.MULTILINE: "multiline", re.DOTALL: "dotall",
-              re.ASCII: "ascii", re.VERBOSE: "verbose"}
+FLAG_WORDS = {re.IGNORECASE: "ignore case", re.MULTILINE: "multi line", re.DOTALL: "dot all",
+              re.ASCII: "ascii only", re.VERBOSE: "verbose"}
 
 
 class NotRegular(ValueError):
@@ -718,6 +718,34 @@ def term(pattern: Any, flags: int = 0, predicate: str = "matches") -> dict:
     else:
         doc["language"] = language
     return doc
+
+
+def canonical(node: dict) -> dict:
+    """Intent:
+        Returns a term node in canonical form: nested operations of one kind flattened, empty
+        strings dropped from concatenations, unions without repeats, sets as sorted disjoint
+        non-adjacent ranges and runs of single characters as literal text.
+
+    Raises:
+        ValueError: the node is not one of the term's forms.
+    """
+    return to_node(from_node(node))
+
+
+def term_hash(doc: dict) -> str:
+    """Intent:
+        Returns the SHA-256 of a term's meaning: its alphabet, whether it is exact, and its
+        language or bounds, in canonical JSON (sorted keys, ASCII). Its `source` is provenance
+        and is not read, so a term compiled again to the same language hashes the same.
+    """
+    import hashlib
+    import json
+    meaning = {key: doc[key] for key in ("alphabet", "exact") if key in doc}
+    for key in ("language", "at_least", "at_most"):
+        if key in doc:
+            meaning[key] = canonical(doc[key])
+    text = json.dumps(meaning, sort_keys=True, ensure_ascii=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("ascii")).hexdigest()
 
 
 # -- membership by derivatives -------------------------------------------------
