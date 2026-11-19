@@ -11,7 +11,7 @@ files a tool should never touch (`.git/config`, `~/.ssh/id_rsa`).
 `path_within(root)` is the language of paths confined to `root`: a
 relative path with no `..` segment, or an absolute path that is the root
 itself or starts with the root and a `/`, again with no `..` segment. A
-claim spells it `L[path, within "/workspace"]`. Given several roots it is
+claim spells it `L[path, within ("/workspace")]`. Given several roots it is
 the union: an absolute path is at or under any one of them, spelled
 `L[path, within ("/workspace", "/data")]`. It is decided on the
 text, never by resolving it: `a/../b` stays inside the root but is
@@ -213,8 +213,7 @@ def path_within(root: str, *more: str) -> PathLanguage:
     """
     roots = _normal_roots(root, more)
     pattern = within_pattern(*roots)
-    name = (f'path, within "{roots[0]}"' if len(roots) == 1
-            else "path, within (" + ", ".join(_quoted(r) for r in roots) + ")")
+    name = "path, within (" + ", ".join(_quoted(r) for r in roots) + ")"
     hazards = tuple(HazardValue("text", text, note) for text, note in _HAZARDS)
     hazards += tuple(HazardValue("text", r, "a root itself") for r in roots)
     hazards += tuple(HazardValue("text", r.rstrip("/") + "/", "a root with a trailing slash") for r in roots)

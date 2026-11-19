@@ -968,6 +968,48 @@ def suggest_within(base: str, arguments: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(out)
 
 
+#: whether the word is also read in its keyword spelling, `within "/root"`, one argument
+#: after the word with no brackets
+WITHIN_KEYWORD = True
+
+_WORD = re.compile(r"\s*within\s*", re.IGNORECASE)
+_ARGUMENT = re.compile(r'\s*"((?:[^"\\]|\\.)*)"\s*')
+
+
+def within_arguments(text: str) -> tuple[str, ...]:
+    """Intent:
+        The arguments of the word as written after a base language, in either spelling: the
+        bracket form `within ("/a", "/b")`, or the keyword form `within "/a"` with one
+        argument. Inside the quotes a backslash makes the next character itself.
+
+    Raises:
+        ValueError: the text is not the word followed by quoted arguments in one of the two
+            spellings.
+    """
+    word = _WORD.match(text)
+    refusal = ValueError(f'within is written within ("/root") or within "/root", not {text!r}')
+    if word is None:
+        raise refusal
+    rest = text[word.end():].strip()
+    bracketed = rest.startswith("(") and rest.endswith(")")
+    if bracketed:
+        rest = rest[1:-1]
+    found: list[str] = []
+    at = 0
+    while True:
+        argument = _ARGUMENT.match(rest, at)
+        if argument is None:
+            raise refusal
+        found.append(re.sub(r"\\(.)", r"\1", argument.group(1), flags=re.DOTALL))
+        at = argument.end()
+        if at >= len(rest):
+            break
+        if not bracketed or rest[at] != ",":
+            raise refusal
+        at += 1
+    return tuple(found)
+
+
 @functools.lru_cache(maxsize=64)
 def _built(base: str, regions: tuple[str, ...]) -> Any:
     """Intent:
@@ -1114,7 +1156,7 @@ def within(language: Any, *regions: Any) -> Any:
     raise ValueError(within_refusal(str(name), tuple(map(str, regions))))
 
 
-__all__ = ["WITHIN", "BoundaryKind", "WithinLanguage", "claim_text", "ipv4_within", "ipv6_within",
+__all__ = ["WITHIN", "WITHIN_KEYWORD", "within_arguments", "BoundaryKind", "WithinLanguage", "claim_text", "ipv4_within", "ipv6_within",
            "iso_date_within", "iso_datetime_within", "suggest_within", "url_within", "within",
            "within_examples", "within_refusal"]
 

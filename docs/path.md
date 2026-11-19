@@ -30,7 +30,7 @@ filesystems allow.
 
 ## Paths within a root
 
-`L[path, within "/workspace"]` is the paths confined to a root: a
+`L[path, within ("/workspace")]` is the paths confined to a root: a
 relative path with no `..` segment, or an absolute path that is the root
 or lies under it, again with no `..` segment.
 
@@ -46,7 +46,7 @@ print(workspace.render(True))
 <!-- output -->
 ```text
 ['reports/q3.csv', '/workspace/out']
-L[path, within "/workspace"]
+L[path, within ("/workspace")]
 ```
 
 It is decided on the text, never by resolving it. `a/../b` stays inside

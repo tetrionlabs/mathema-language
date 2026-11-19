@@ -132,7 +132,7 @@ PATH_CASES = ["a", "a/b", ".", "/workspace", "/workspace/", "/workspace/src/a.py
 
 def test_one_root_reads_as_it_did_and_several_roots_are_their_union():
     one, two = path_within("/workspace"), path_within("/workspace", "/data/")
-    assert one.name == 'path, within "/workspace"'
+    assert one.name == 'path, within ("/workspace")'
     assert two.name == 'path, within ("/workspace", "/data")'
     assert languages.language_problems(two) == []
     rng = random.Random(3)

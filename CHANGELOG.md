@@ -5,6 +5,11 @@ release onward.
 
 ## Unreleased
 
+- Upgrade note for 0.4: a path language confined to one root renders
+  `L[path, within ("/root")]`, the word followed by its arguments in
+  brackets, where it rendered `L[path, within "/root"]`. Text that was
+  stored or compared in the old spelling changes; the old spelling is
+  still read (`within_arguments` reads both to the same arguments).
 - The z3 membership encoding reads command lines: an argparse parser's
   namespace language, each subcommand a shape of its own, with flags,
   choices, typed values, `pathlib.Path` arguments as their text, and
@@ -17,7 +22,7 @@ release onward.
   (`..` climbs, absolute paths, a leading dash, `~`, `.git/config`), and
   `mathema_language.text.path_language.path_within(root)` the paths
   confined to a root (no `..` segment; an absolute path only at or under
-  the root), rendered `L[path, within "/root"]`. Both are defined by a
+  the root), rendered `L[path, within ("/root")]`. Both are defined by a
   regular expression the z3 encoding reads exactly.
 - `mathema_language.openapi.operation(spec, operation_id)` reads an
   OpenAPI 3 operation as the language of the requests it accepts: a
