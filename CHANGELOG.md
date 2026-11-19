@@ -5,7 +5,7 @@ release onward.
 
 ## 0.3.0
 
-For mathema 0.6.6 (`mathema>=0.6.6,<0.7`).
+For mathema 0.6.6.1 (`mathema>=0.6.6.1,<0.7`).
 
 - The z3 membership encoding reads command lines: an argparse parser's
   namespace language, each subcommand a shape of its own, with flags,
