@@ -553,34 +553,45 @@ def _as_datetime(bound: Any) -> _dt.datetime:
     raise ValueError(f'a datetime bound is an ISO datetime such as "2026-01-01T00:00:00", not {bound!r}')
 
 
+def _day_of(instant: _dt.timedelta, days: int) -> _dt.date:
+    """Intent:
+        The date `days` after the date on which `instant` falls when read as a time since
+        0001-01-01T00:00:00, held to the first and last dates there are.
+    """
+    ordinal = 1 + instant.days + days
+    return _dt.date.fromordinal(min(max(ordinal, 1), _dt.date.max.toordinal()))
+
+
 def _datetime_bounds(lo: _dt.datetime, hi: _dt.datetime) -> tuple[str, str]:
     """Intent:
         Two expressions around the datetimes from `lo` to `hi`. The first admits every member:
-        any text that starts with a date, in any spelling, from the day before `lo`'s date to
-        the day after `hi`'s. The second admits only members: the datetimes of `lo`'s day
-        written `YYYY-MM-DDTHH:MM:SS` at `lo`'s own offset, where the whole day's seconds
-        from `lo`'s to the end of the day, or to `hi`'s, are in the interval.
+        any text that starts with a date, in any spelling, from the day before the date of
+        `lo`'s instant to the day after the date of `hi`'s. The second admits only members:
+        the datetimes of `lo`'s written day, written `YYYY-MM-DDTHH:MM:SS` at `lo`'s own
+        offset, from `lo`'s second (the next when `lo` has a fraction) to the end of that
+        written day or to `hi`, whichever comes first.
 
     Notes:
-        An offset moves the written date at most a day from the instant's, in either direction.
+        A member's instant lies between the bounds' instants, and an offset is less than a
+        day either way, so a member's written date is at most a day from the date of its
+        instant. The second expression is counted on `lo`'s wall clock at the one offset `lo`
+        states, so a zone whose offset changes later that day adds no hour to it.
     """
-    first = _step(lo.date(), -1) or lo.date()
-    last = _step(hi.date(), 1) or hi.date()
-    least = _date_pattern(first, last) + ".*"
     lo_i, hi_i = _instant(lo), _instant(hi)
-    day = lo.replace(microsecond=0)
-    start = day if _instant(day) >= lo_i else day + _dt.timedelta(seconds=1) if day.second < 59 else None
+    least = _date_pattern(_day_of(lo_i, -1), _day_of(hi_i, 1)) + ".*"
+    offset = lo.utcoffset() or _dt.timedelta(0)
+    wall = lo.replace(tzinfo=None, microsecond=0)
+    first = (wall.hour * 60 + wall.minute) * 60 + wall.second + (1 if lo.microsecond else 0)
+    midnight = wall.replace(hour=0, minute=0, second=0)
     words: set[str] = set()
-    if start is not None and _instant(start) <= hi_i:
-        end = _instant(start.replace(hour=23, minute=59, second=59))
-        seconds = int((min(end, hi_i) - _instant(start)).total_seconds())
-        base = start.hour * 3600 + start.minute * 60 + start.second
-        for s in range(base, base + seconds + 1):
-            words.add(f"{s // 3600:02d}:{s // 60 % 60:02d}:{s % 60:02d}")
+    for s in range(first, 24 * 60 * 60):
+        if (midnight - _EPOCH) + _dt.timedelta(seconds=s) - offset > hi_i:
+            break
+        words.add(f"{s // 3600:02d}:{s // 60 % 60:02d}:{s % 60:02d}")
     if not words:
         return least, "[^\\x00-\\U0010ffff]"
-    offset = lo.isoformat()[len(lo.replace(tzinfo=None).isoformat()):]
-    most = re.escape(lo.date().isoformat()) + "T" + finite_pattern(words) + re.escape(offset)
+    written = lo.isoformat()[len(lo.replace(tzinfo=None).isoformat()):]
+    most = re.escape(lo.date().isoformat()) + "T" + finite_pattern(words) + re.escape(written)
     return least, most
 
 
@@ -616,7 +627,8 @@ def iso_datetime_within(first: Any, last: Any) -> WithinLanguage:
 
     zones: list[_dt.tzinfo | None] = [None]
     if aware:
-        zones = [lo.tzinfo, hi.tzinfo, _dt.timezone.utc, _dt.timezone(_dt.timedelta(hours=1)),
+        zones = [_dt.timezone(lo.utcoffset() or _dt.timedelta(0)),
+                 _dt.timezone(hi.utcoffset() or _dt.timedelta(0)), _dt.timezone.utc, _dt.timezone(_dt.timedelta(hours=1)),
                  _dt.timezone(_dt.timedelta(hours=-5)), _dt.timezone(_dt.timedelta(hours=5, minutes=30))]
 
     def generate(rng: random.Random) -> str:
@@ -624,7 +636,7 @@ def iso_datetime_within(first: Any, last: Any) -> WithinLanguage:
         whole = (hi_i - lo_i) // _dt.timedelta(seconds=1)
         instant = lo_i + rng.choice([rng.randint(0, span) * _MICROSECOND,
                                      _dt.timedelta(seconds=rng.randint(0, whole))])
-        value = _at(instant, rng.choice(zones)) or _at(instant, lo.tzinfo)
+        value = _at(instant, rng.choice(zones)) or _at(instant, zones[0])
         assert value is not None
         text = value.isoformat()
         return rng.choice([text, text, text.replace("T", " ")])
@@ -637,8 +649,9 @@ def iso_datetime_within(first: Any, last: Any) -> WithinLanguage:
             value = _at(bound, zone)
             if value is not None:
                 members.append((value.isoformat(), f"the {which} instant at another offset"))
-    for bound, zone, note in ((lo_i - _MICROSECOND, lo.tzinfo, "a microsecond before the interval"),
-                              (hi_i + _MICROSECOND, hi.tzinfo, "a microsecond after the interval")):
+    for bound, zone, note in ((lo_i - _MICROSECOND, zones[0], "a microsecond before the interval"),
+                              (hi_i + _MICROSECOND, zones[-1] if not aware else zones[1],
+                               "a microsecond after the interval")):
         value = _at(bound, zone) if bound >= _dt.timedelta(0) else None
         if value is not None:
             near.append((value.isoformat(), note))

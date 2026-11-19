@@ -234,3 +234,81 @@ def test_every_suggested_within_names_a_language_that_builds():
             assert text == claim_text(name, "within", arguments) or text == within_examples()[name]
             regions = arguments if text == claim_text(name, "within", arguments) else WITHIN[name].example
             assert languages.language_problems(WITHIN[name].build(*regions)) == []
+
+
+# --- bounds that hold at every offset and through a change of offset
+
+
+def test_at_least_holds_a_member_written_two_days_from_the_bounds_written_dates():
+    language = iso_datetime_within("2026-01-02T00:30:00+14:00", "2026-01-05T00:00:00+14:00")
+    doc = language.definition()
+    for text in ["2025-12-31T22:30:00-12:00", "2026-01-01T10:30:00+00:00", "2026-01-05T00:00:00+14:00",
+                 "2026-01-03T21:59:59-12:00", "2026-01-04T10:00:00+00:00", "2025-12-31T10:31:00-23:59"]:
+        assert language.contains(text), text
+        assert _regular.member(doc, text, "at_least"), text
+    early = iso_datetime_within("2026-01-05T00:00:00-12:00", "2026-01-05T06:00:00-12:00")
+    for text in ["2026-01-06T02:00:00+14:00", "2026-01-06T12:00:00+23:59", "2026-01-05T12:00:00+00:00"]:
+        assert early.contains(text), text
+        assert _regular.member(early.definition(), text, "at_least"), text
+
+
+def test_at_least_holds_members_at_every_whole_hour_offset_around_generated_intervals():
+    import datetime as dt
+    rng = random.Random(15)
+    for _ in range(25):
+        zone = dt.timezone(dt.timedelta(minutes=rng.randint(-14 * 60, 14 * 60)))
+        lo = dt.datetime(2026, rng.randint(1, 12), rng.randint(1, 28), rng.randint(0, 23),
+                         rng.randint(0, 59), tzinfo=zone)
+        hi = lo + dt.timedelta(minutes=rng.randint(0, 3 * 24 * 60))
+        language = iso_datetime_within(lo, hi)
+        doc = language.definition()
+        for bound in (lo, hi):
+            for minutes in (-1439, -720, -1, 0, 1, 330, 840, 1439):
+                text = bound.astimezone(dt.timezone(dt.timedelta(minutes=minutes))).isoformat()
+                assert language.contains(text), text
+                assert _regular.member(doc, text, "at_least"), (lo, hi, text)
+
+
+def test_at_most_holds_only_members_when_a_bound_carries_a_zone_whose_offset_changes_that_day():
+    import datetime as dt
+    zoneinfo = pytest.importorskip("zoneinfo")
+    try:
+        london = zoneinfo.ZoneInfo("Europe/London")
+    except zoneinfo.ZoneInfoNotFoundError:
+        pytest.skip("no time zone database")
+    for lo, hi in [(dt.datetime(2026, 10, 25, 0, 30, tzinfo=london), dt.datetime(2026, 11, 30, tzinfo=london)),
+                   (dt.datetime(2026, 3, 29, 0, 30, tzinfo=london), dt.datetime(2026, 4, 30, tzinfo=london)),
+                   (dt.datetime(2026, 10, 25, 0, 30, tzinfo=london),
+                    dt.datetime(2026, 10, 25, 1, 30, fold=1, tzinfo=london))]:
+        language = iso_datetime_within(lo, hi)
+        doc = language.definition()
+        offset = lo.isoformat()[19:]
+        day = lo.date().isoformat()
+        assert not _regular.member(doc, f"{day}T24:15:00{offset}", "at_most")
+        admitted = 0
+        for hour in range(0, 26):
+            for minute in (0, 15, 30, 59):
+                text = f"{day}T{hour:02d}:{minute:02d}:00{offset}"
+                if _regular.member(doc, text, "at_most"):
+                    admitted += 1
+                    assert language.contains(text), text
+        assert admitted > 0
+        rng = random.Random(16)
+        drawn = [language.sample(rng) for _ in range(100)] + [h.value for h in language.hazards()]
+        assert all(language.contains(text) for text in drawn)
+        for text in drawn:
+            assert _regular.member(doc, text, "at_least"), text
+        assert any(h.value == lo.isoformat() for h in language.hazards())
+
+
+def test_the_url_language_and_its_term_agree_on_a_user_part_with_a_delete_character():
+    from mathema_language.text.url_language import URL_PATTERN
+    import re
+    doc = URL.to_json()["definition"]
+    for text in ["x://a\x7f@h", "http://u\x7fser@example.com/", "http://user@example.com/a\x7fb",
+                 "http://u~ser@example.com/", "http://u!ser@example.com/", "http://u\x80ser@example.com/"]:
+        assert URL.contains(text) == (re.fullmatch(URL_PATTERN, text) is not None) == _regular.member(doc, text), text
+    assert not URL.contains("x://a\x7f@h") and URL.contains("http://user@example.com/a\x7fb")
+    for code in range(0x21, 0x100):
+        text = f"http://u{chr(code)}@example.com/"
+        assert URL.contains(text) == (re.fullmatch(URL_PATTERN, text) is not None), code

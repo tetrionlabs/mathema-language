@@ -117,7 +117,8 @@ def url_parts(text: object) -> SplitResult | None:
     except ValueError:
         return None
     netloc = parts.netloc
-    if parts.scheme != scheme.lower() or not netloc.isascii() or set(netloc) & set("[]\\"):
+    printable = all(0x21 <= ord(c) <= 0x7E for c in netloc)
+    if parts.scheme != scheme.lower() or not printable or set(netloc) & set("[]\\"):
         return None
     host, colon, port = netloc.rpartition("@")[2].partition(":")
     if _HOST_RE.fullmatch(host) is None or parts.hostname != host.lower():
