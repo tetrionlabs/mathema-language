@@ -803,3 +803,73 @@ def member(doc: dict, text: str, bound: str = "language") -> bool:
         (an exact term's language is both).
     """
     return holds(from_node(doc["language"] if "language" in doc else doc[bound]), text)
+
+
+def shortest(r: tuple, limit: int = 12) -> str | None:
+    """Intent:
+        Returns a shortest string in the expression `r` of at most `limit` characters, found
+        breadth first over derivatives, or None when there is none that short.
+
+    Notes:
+        The characters tried are the first of each interval of every set `r` names, so the
+        search can miss a member that needs some other character: it finds examples, and its
+        None is not a proof of emptiness.
+    """
+    chars = sorted({lo for s in _re_sets(r, set()) for lo, _ in s})
+    frontier = [("", r)]
+    seen = {r}
+    for _ in range(limit + 1):
+        nxt = []
+        for text, state in frontier:
+            if _nullable(state):
+                return text
+            for code in chars:
+                d = _derivative(state, code)
+                if d != _EMPTY_RE and d not in seen:
+                    seen.add(d)
+                    nxt.append((text + chr(code), d))
+        frontier = nxt
+        if not frontier:
+            return None
+    return None
+
+
+def pattern_language(compiled: re.Pattern) -> Any:
+    """Intent:
+        Returns the text language of the strings `compiled` matches in full: membership by
+        `re` itself, the pattern's `matches` term as its stated definition, draws from the
+        pattern's parse tree or, failing that, a shortest member of the term.
+
+    Raises:
+        NotRegular: the pattern is a bytes pattern.
+    """
+    import random as _random
+
+    from ._kit import TextLanguage
+    from .regex import Unsupported, _emit
+
+    doc = term(compiled, 0, "matches")
+    words = doc["source"]["flags"]
+    name = f"re({compiled.pattern!r}{''.join(', ' + w for w in words)})"
+    parser, _, _ = _sre()
+    tree = parser.parse(compiled.pattern, compiled.flags)
+    bound = doc.get("language") or doc["at_least"]
+    fallback = shortest(from_node(bound)) if doc["exact"] else None
+
+    def accepts(text: str) -> bool:
+        return compiled.fullmatch(text) is not None
+
+    def draw(rng: _random.Random) -> str:
+        for _ in range(40):
+            try:
+                text = _emit(rng, tree, {})
+            except Unsupported:
+                break
+            if accepts(text):
+                return text
+        if fallback is not None and accepts(fallback):
+            return fallback
+        raise ValueError(f"no member of {name} was drawn")
+
+    return TextLanguage(name, level="predicate", accepts=accepts, generate=draw,
+                        schema={"definition": doc})
