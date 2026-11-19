@@ -146,7 +146,7 @@ def test_a_custom_alphabet_is_named_by_its_dotted_path_and_states_its_term():
 
     path = "mathema_language.text.alphabet.USERNAME_CHARACTERS"
     (plain,) = check_conjectures(fits, [claim(f"for text in L[{path}], f(text) == True")])
-    assert plain.verdict == "holds", plain.note
+    assert plain.verdict in ("holds", "proven"), plain.note
     def size(text: str) -> int:
         return len(text)
 

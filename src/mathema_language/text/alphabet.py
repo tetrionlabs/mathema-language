@@ -9,7 +9,7 @@ and the underscore. A part is the name of an alphabet or a quoted
 character; a quoted string of several characters is read as each of its
 characters. The canonical text names the alphabets first, in the fixed
 order of `NAMES`, then the characters in code point order, each in its
-own double quotes, every part once: `"_" + digit + "ab" + lower` is
+own double quotes as JSON writes it, every part once: `"_" + digit + "ab" + lower` is
 written `lower + digit + "_" + "a" + "b"`.
 
 The named alphabets are the alphabet languages this package registers
@@ -30,9 +30,11 @@ by the hash of its term.
 """
 from __future__ import annotations
 
+import ast
 import bisect
 import difflib
 import functools
+import json
 import random
 import re
 import sys
@@ -97,13 +99,6 @@ def named_ranges(name: str) -> Ranges:
     return tuple((lo, hi) for lo, hi in runs)
 
 
-def _quoted(text: str) -> str:
-    """Intent:
-        `text` between double quotes, a backslash before each backslash and double quote.
-    """
-    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
-
-
 @dataclass(frozen=True)
 class Alphabet:
     """A set of characters: the union of the named alphabets `names`
@@ -127,7 +122,7 @@ class Alphabet:
     @property
     def text(self) -> str:
         """The canonical text of the expression."""
-        return " + ".join([*self.names, *(_quoted(c) for c in self.characters)])
+        return " + ".join([*self.names, *(json.dumps(c, ensure_ascii=False) for c in self.characters)])
 
     @property
     def ranges(self) -> Ranges:
@@ -169,8 +164,9 @@ _PART = re.compile(r"""\s*(?:(?P<name>[A-Za-z][A-Za-z0-9_-]*)|"(?P<double>(?:[^"
 def parse_alphabet(expression: str) -> Alphabet:
     """Intent:
         The alphabet an expression states: named alphabets and quoted characters joined by
-        `+`. Quotes are double or single; inside them a backslash makes the next character
-        itself; a quoted string of several characters is each of its characters.
+        `+`. Quotes are double or single and what stands between them is read as a Python
+        string, so `"\\n"` is a newline and `"\\""` a double quote; a quoted string of several
+        characters is each of its characters.
 
     Raises:
         AlphabetError: the expression does not read, names an alphabet that is not one of
@@ -196,7 +192,13 @@ def parse_alphabet(expression: str) -> Alphabet:
             names.append(name)
         else:
             group = "double" if found.group("double") is not None else "single"
-            inside = re.sub(r"\\(.)", r"\1", found.group(group), flags=re.DOTALL)
+            try:
+                inside = ast.literal_eval(expression[found.start(group) - 1:found.end(group) + 1])
+            except (ValueError, SyntaxError):
+                inside = None
+            if not isinstance(inside, str):
+                raise AlphabetError(expression, found.start(group) - 1, "a quoted character",
+                                    '"' + expression[found.start(group) - 1:found.end(group) + 1] + '"')
             if inside == "":
                 raise AlphabetError(expression, found.start(group), "a character between the quotes",
                                     "nothing")
