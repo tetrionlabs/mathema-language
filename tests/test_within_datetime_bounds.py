@@ -33,7 +33,6 @@ def test_the_spellings_every_python_reads_are_read(bound, read):
 @pytest.mark.parametrize("bound", [
     "2026-11-19T09:00:00.5000000",   # seven fraction digits
     "2026-11-19T09:00:00,5",         # a comma before the fraction
-    "2026-11-19T09:00:00Z",          # a Z offset
     "2026-11-19T09:00:00+0100",      # an offset with no colon
     "2026-11-19T09:00:00+01",        # an offset of hours alone
     "20261119T090000",               # the basic format
@@ -46,6 +45,11 @@ def test_the_spellings_every_python_reads_are_read(bound, read):
 def test_a_spelling_only_some_pythons_read_is_refused_on_all(bound):
     with pytest.raises(ValueError, match="a datetime bound is"):
         _as_datetime(bound)
+
+
+def test_a_z_is_no_offset_from_utc():
+    assert _as_datetime("2026-11-19T09:00:00Z") == _as_datetime("2026-11-19T09:00:00+00:00")
+    assert _as_datetime("2026-11-19T09:00:00.5Z").microsecond == 500000
 
 
 def test_an_interval_from_a_half_second_is_built_on_this_python():

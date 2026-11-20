@@ -536,13 +536,13 @@ def _at(instant: _dt.timedelta, zone: _dt.tzinfo | None) -> _dt.datetime | None:
 
 #: a datetime bound as text: a date, then optionally any one character and a time of hours
 #: (00 to 23), hours and minutes, or hours, minutes and seconds with up to six fraction digits, then
-#: optionally an offset of hours and minutes (and seconds, and six fraction digits)
+#: optionally `Z` or an offset of hours and minutes (and seconds, and six fraction digits)
 _DATETIME_BOUND = re.compile(
     r"(?P<date>[0-9]{4}-[0-9]{2}-[0-9]{2})"
     r"(?:(?P<between>.)(?P<time>(?:[01][0-9]|2[0-3])(?::[0-9]{2}(?::[0-9]{2}(?:\.(?P<fraction>[0-9]{1,6}))?)?)?)"
-    r"(?P<offset>[+-][0-9]{2}:[0-9]{2}(?::[0-9]{2}(?:\.[0-9]{6})?)?)?)?", re.DOTALL)
+    r"(?P<offset>Z|[+-][0-9]{2}:[0-9]{2}(?::[0-9]{2}(?:\.[0-9]{6})?)?)?)?", re.DOTALL)
 _DATETIME_FORM = ('a datetime bound is a date and time such as "2026-01-01T00:00:00", with up to '
-                  'six fraction digits and an offset such as "+01:00" if any')
+                  'six fraction digits and an offset such as "+01:00" or "Z" if any')
 
 
 def _as_datetime(bound: Any) -> _dt.datetime:
@@ -550,16 +550,17 @@ def _as_datetime(bound: Any) -> _dt.datetime:
         The datetime a bound names: a `datetime` itself, or a text in the one spelling read
         the same on every supported Python: `YYYY-MM-DD`, then optionally a separating
         character and `HH`, `HH:MM` or `HH:MM:SS` with a fraction of one to six digits, then
-        optionally an offset `+HH:MM`.
+        optionally an offset `+HH:MM`, or `Z` for no offset from UTC.
 
     Raises:
         ValueError: the bound is neither: a spelling only some interpreters'
-            `datetime.fromisoformat` read (a `Z`, a comma, the basic or week format, more than
-            six fraction digits) is refused on all of them.
+            `datetime.fromisoformat` read (a comma, the basic or week format, hour 24, more
+            than six fraction digits) is refused on all of them.
 
     Notes:
-        The fraction is filled out to six digits before `datetime.fromisoformat` reads the
-        text, since Python 3.10 reads a fraction of three or six digits only.
+        The fraction is filled out to six digits and a `Z` written as `+00:00` before
+        `datetime.fromisoformat` reads the text, since Python 3.10 reads a fraction of three
+        or six digits only and no `Z`.
     """
     if isinstance(bound, _dt.datetime):
         return bound
@@ -570,6 +571,8 @@ def _as_datetime(bound: Any) -> _dt.datetime:
     if found["fraction"] is not None:
         end = found.end("fraction")
         text = bound[:end] + "0" * (6 - len(found["fraction"])) + bound[end:]
+    if text.endswith("Z") and found["offset"] == "Z":
+        text = text[:-1] + "+00:00"
     try:
         return _dt.datetime.fromisoformat(text)
     except ValueError as e:
