@@ -123,6 +123,7 @@ packages = ["src/mathema_language"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["experimental_dialect: exercises a dialect that is refused unless the environment names it"]
 
 [tool.coverage.run]
 # the low-overhead backend on Python 3.12 and later, so a proof traced

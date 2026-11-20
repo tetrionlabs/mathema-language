@@ -1,0 +1,171 @@
+{
+ "engines": {
+  "python": "re, CPython 3.13",
+  "rust": "the regex crate through pydantic-core 2.50.5 (pydantic 2.14.4)"
+ },
+ "referee": "tests/test_pydantic_pattern_engine.py validates strings through a pydantic model",
+ "identical": [
+  {
+   "construct": "literal characters and escaped punctuation",
+   "examples": [
+    "a",
+    "\\.\\*",
+    "\\-\\/"
+   ]
+  },
+  {
+   "construct": "the escapes \\n \\t \\r \\f \\v and \\xHH, and a literal character outside ASCII",
+   "examples": [
+    "a\\tb",
+    "\\x41\u00e9"
+   ]
+  },
+  {
+   "construct": ". (any character but newline)",
+   "examples": [
+    "a.c"
+   ]
+  },
+  {
+   "construct": "classes of literals and ranges, negated or not",
+   "examples": [
+    "[a-c0-2]+",
+    "[^a]b",
+    "[^\\n]x"
+   ]
+  },
+  {
+   "construct": "groups, named groups (?P<n>...), alternation",
+   "examples": [
+    "(?:ab)+c",
+    "(?P<n>a)b",
+    "^ab|cd",
+    "x(a|b)?y"
+   ]
+  },
+  {
+   "construct": "greedy and lazy repeats, counted repeats",
+   "examples": [
+    "a{2,3}",
+    "a*?b"
+   ]
+  },
+  {
+   "construct": "^ and \\A at the start of the text",
+   "examples": [
+    "^a$",
+    "\\Aab"
+   ]
+  },
+  {
+   "construct": "the escapes \\uHHHH and \\UHHHHHHHH",
+   "examples": [
+    "\\u00e9x",
+    "a\\U0001F600"
+   ]
+  }
+ ],
+ "bracketed": [
+  {
+   "construct": "$",
+   "python": "the end, or before one final newline",
+   "rust": "the end only",
+   "parts_at": [
+    "^a$",
+    "a\n"
+   ],
+   "reading": "sound as bounds: a search allowing the newline is at least both, a full match at most both"
+  }
+ ],
+ "different": [
+  {
+   "construct": "\\s",
+   "pattern": "\\s",
+   "parts_at": "\u001c"
+  },
+  {
+   "construct": "\\S",
+   "pattern": "\\S",
+   "parts_at": "\u001c"
+  },
+  {
+   "construct": "\\w",
+   "pattern": "\\w",
+   "parts_at": "\u00b2"
+  },
+  {
+   "construct": "\\W",
+   "pattern": "\\W",
+   "parts_at": "\u0301"
+  },
+  {
+   "construct": "\\b",
+   "pattern": "a\\b",
+   "parts_at": "a\u00b2"
+  },
+  {
+   "construct": "\\B",
+   "pattern": "\\B",
+   "parts_at": "\u00b2"
+  },
+  {
+   "construct": "&& inside a class",
+   "pattern": "[a&&b]",
+   "parts_at": "&"
+  },
+  {
+   "construct": "~~ inside a class",
+   "pattern": "[a~~b]",
+   "parts_at": "~"
+  },
+  {
+   "construct": "a [ inside a class",
+   "pattern": "[[a]]",
+   "parts_at": "a"
+  },
+  {
+   "construct": "-- inside a class",
+   "pattern": "[+--]",
+   "parts_at": ","
+  },
+  {
+   "construct": "\\< and \\>",
+   "pattern": "\\<",
+   "parts_at": "<"
+  },
+  {
+   "construct": "a possessive repeat (rust reads a repeat of a repeat)",
+   "pattern": "a*+a",
+   "parts_at": "aa"
+  }
+ ],
+ "not_shown_identical": [
+  {
+   "construct": "\\d and \\D",
+   "pattern": "\\d"
+  },
+  {
+   "construct": "a class holding \\d",
+   "pattern": "[\\d]"
+  },
+  {
+   "construct": "inline flags i, s, m, x",
+   "pattern": "(?i)k"
+  },
+  {
+   "construct": "a scoped flag",
+   "pattern": "(?i:a)"
+  },
+  {
+   "construct": "a class starting with ]",
+   "pattern": "[]a]"
+  }
+ ],
+ "other": [
+  {
+   "construct": "a string holding a lone surrogate",
+   "python": "admitted by re",
+   "rust": "refused by pydantic for any str field, whatever the pattern"
+  }
+ ]
+}

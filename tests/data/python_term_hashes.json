@@ -1,0 +1,1922 @@
+[
+{
+"pattern": "a$",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "a$",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "a$",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "a9b6e84d69a29357ea07ee2f1d7ad93c9b45842e5a72a41a8ec844a480949935"
+},
+{
+"pattern": "a$",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "a9b6e84d69a29357ea07ee2f1d7ad93c9b45842e5a72a41a8ec844a480949935"
+},
+{
+"pattern": "a$",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "9d17eef376d9bc000f191d4b3b792a13ad3b15565528ecdc130f1bcbbbd7d529"
+},
+{
+"pattern": "a$",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "9d17eef376d9bc000f191d4b3b792a13ad3b15565528ecdc130f1bcbbbd7d529"
+},
+{
+"pattern": "a$",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "06747954f9b1846c8dff3ff69ff47abf22cc0022205c805088d1f38328aa1484"
+},
+{
+"pattern": "a$",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "06747954f9b1846c8dff3ff69ff47abf22cc0022205c805088d1f38328aa1484"
+},
+{
+"pattern": "\\Aa\\Z",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "\\Aa\\Z",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "\\Aa\\Z",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "\\Aa\\Z",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "\\Aa\\Z",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "\\Aa\\Z",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "\\Aa\\Z",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "\\Aa\\Z",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "36cb977645954e983dd2cc86064c09657b46b232e162d88d1e9fe2417fafc232"
+},
+{
+"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
+},
+{
+"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
+},
+{
+"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "63af9f44a55674d8426accf99902d032104358d6fdfbdc36787fa6e283fccf2c"
+},
+{
+"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "63af9f44a55674d8426accf99902d032104358d6fdfbdc36787fa6e283fccf2c"
+},
+{
+"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "63af9f44a55674d8426accf99902d032104358d6fdfbdc36787fa6e283fccf2c"
+},
+{
+"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "63af9f44a55674d8426accf99902d032104358d6fdfbdc36787fa6e283fccf2c"
+},
+{
+"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
+},
+{
+"pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
+},
+{
+"pattern": "\\w+",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "fe1cb7d8f70cf6fdecd9db1ada51a944b81997cf80fb2ced26065956fff5f42f"
+},
+{
+"pattern": "\\w+",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "666d53fbcc555741f2f67378d7799a91133b520647c67a8867239b597c756ed8"
+},
+{
+"pattern": "\\w+",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "65a213f1ec53b4e668eba9d9a7327b3cc8317f0f9204f9c4ce3ebea825e5e68b"
+},
+{
+"pattern": "\\w+",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "f72a8c823a8f12a15fe0fe06a10a0894bf0f4f0b6c9dc5ecd030ebe4651abfa3"
+},
+{
+"pattern": "\\w+",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "53474eff03408d7f7422e587f53890c1eeadd1d7efe4752693178b8ac5238b09"
+},
+{
+"pattern": "\\w+",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "0118699cfd6db2f93666de28f57c82bd0303747772bf1252f42f94bda5ce1faa"
+},
+{
+"pattern": "\\w+",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "6ee33d829ec8c3c80f8eaf4ccaee56a3ea5f9aa0e6e12c4e67f75e820ee373e9"
+},
+{
+"pattern": "\\w+",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "0621fee5640554b3e96be5a7318adc706ccc00e0d215edbd7b07e139a7f1be06"
+},
+{
+"pattern": "\\w+",
+"flags": 256,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "eea641a64f4d69cbe035a73b57052be0b23830b6ce095d162806ba9391ded050"
+},
+{
+"pattern": "\\w+",
+"flags": 256,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "eea641a64f4d69cbe035a73b57052be0b23830b6ce095d162806ba9391ded050"
+},
+{
+"pattern": "\\w+",
+"flags": 256,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "b40483ac4519bf8ee5a199380c5677ff671a0fed5c87c07dca29412ca598468e"
+},
+{
+"pattern": "\\w+",
+"flags": 256,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "b40483ac4519bf8ee5a199380c5677ff671a0fed5c87c07dca29412ca598468e"
+},
+{
+"pattern": "\\w+",
+"flags": 256,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "72ce54205a288bcbcd6f5e4ed900a77e8787c6bd6d57eedf21a2517b0247a12a"
+},
+{
+"pattern": "\\w+",
+"flags": 256,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "72ce54205a288bcbcd6f5e4ed900a77e8787c6bd6d57eedf21a2517b0247a12a"
+},
+{
+"pattern": "\\w+",
+"flags": 256,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "b51cdad8aa497bca683b47b66811759fc904e5b276850777778205ade6362c14"
+},
+{
+"pattern": "\\w+",
+"flags": 256,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "b51cdad8aa497bca683b47b66811759fc904e5b276850777778205ade6362c14"
+},
+{
+"pattern": "\\d{2,4}",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "fbd94d639f093c9a452da1a5cee49793e17f5a3f517e6ea252a44f6ac463b753"
+},
+{
+"pattern": "\\d{2,4}",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "2a641e8893dc8fb8184c94efd519d7324b5c3a0cdcf78c84d400e1ecf86005e1"
+},
+{
+"pattern": "\\d{2,4}",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "d74feb6c5b471b90c429d86c8c8034718af223ee522ab5e3f4f509a14cfa3a92"
+},
+{
+"pattern": "\\d{2,4}",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "49583e5c1fb80fa6244491ff70dd2f40460b516c15fbe8523d1eae4bd87f2f2a"
+},
+{
+"pattern": "\\d{2,4}",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "b299f5756b0a9fd90b8151ecfa4f0df5cac0da997694610d280ff2503410dd46"
+},
+{
+"pattern": "\\d{2,4}",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "ec788b81840d9bfb4731f1c0f47237526b490cf4e2de81e61758ef9f8100d0b6"
+},
+{
+"pattern": "\\d{2,4}",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "9e2978bfcb369a86403fb869d0b71df725d726b699009c8a10953a73b56ee823"
+},
+{
+"pattern": "\\d{2,4}",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "c39ad206b2914795e3f5a943247285f7b95af4e893cb15e68de739287ee75945"
+},
+{
+"pattern": "\\s",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "64bf402973fd9e31f3b462fb63c3e97ef0a32bf00b179f6b99af888867c807f7"
+},
+{
+"pattern": "\\s",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "8d3095c65c7c3571bb1c545aabf877fc800aeb01d34aaf420eade42dad953e2c"
+},
+{
+"pattern": "\\s",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "bac560cd643c231421786166a5292fae1547f3f82e933fec98a7dc9689ea44f5"
+},
+{
+"pattern": "\\s",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "cbc1869aef39ded0bb3297790867f1dfd393219197f8aab30b9de46d7fd05bc0"
+},
+{
+"pattern": "\\s",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "7844c520fe3b2157e97e3561d8b6b4f09843baa8b71dddf89783724deefa5a06"
+},
+{
+"pattern": "\\s",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "1eee065aa6dc68227ab479cf5709a445bd54cf1d76705dc3683fe20991c4ddf9"
+},
+{
+"pattern": "\\s",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "fc8e71c4c620e5598b058f032383ae9a7514014fe65142a4a067af73ef8fe652"
+},
+{
+"pattern": "\\s",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "dd6ca6706ca2380c1d705597377f1b5644a90673299aca4b0f7701731ce6bb77"
+},
+{
+"pattern": "[^\\W\\d]x",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "e1b2cd5141a7146f21b436f684b67e3f22ed9dc597d13832e488bd1b320a8036"
+},
+{
+"pattern": "[^\\W\\d]x",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "e881e185405113a48a13e6ea1b9922f6349eeb682b0e2d4e998e2458b64a22fe"
+},
+{
+"pattern": "[^\\W\\d]x",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "04de348e348e8bb1a370096fa84490d342eb28d6b0c00a237e88d6d40dffb861"
+},
+{
+"pattern": "[^\\W\\d]x",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "834df5ba4d39dbbf2bea1495e77445c4ab338d749ecf759a1ea3460b9a98823f"
+},
+{
+"pattern": "[^\\W\\d]x",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "e9a5ba9fd9dc60b56b6e1cc39c66883ae413ca5e249ce743aff9a8f95f346a87"
+},
+{
+"pattern": "[^\\W\\d]x",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "278ef9ff2d7425c63b210d733fd970ddf44084789401e564db5c95af613bd3dc"
+},
+{
+"pattern": "[^\\W\\d]x",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "71461b4f355b9ac4a05fd9e71dafe11e52928589eda22c7e99add228086e2286"
+},
+{
+"pattern": "[^\\W\\d]x",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "d03367333440f92ff64e9e6ba2d8e1bca36e2f79e2a0d2c6750b87d4d5b6f1d5"
+},
+{
+"pattern": "\\bfoo\\b",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "a699b78384ba711d9303dd63c134dbdee6f0c3cccf8e3a7005f84a28f700ec13"
+},
+{
+"pattern": "\\bfoo\\b",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "a699b78384ba711d9303dd63c134dbdee6f0c3cccf8e3a7005f84a28f700ec13"
+},
+{
+"pattern": "\\bfoo\\b",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "01c98e00eae9de99207ada4319e84ad0a104491678125b2449af8db663f04098"
+},
+{
+"pattern": "\\bfoo\\b",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "605650f49844c7ab6445b038791a485cbc5d278771779bc08fcedafceca7a668"
+},
+{
+"pattern": "\\bfoo\\b",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "bedf054110a06e661c098485ef44c45de41ef891bfb69cc3dec5e6916063f765"
+},
+{
+"pattern": "\\bfoo\\b",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "24030ed4b95c35c823d7d9041e309d3ba6ef891921a6bca16db4f68527962f75"
+},
+{
+"pattern": "\\bfoo\\b",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "18f56d54550074b767a0aec73912307816f47270c52d3585385d00ca0c0982fc"
+},
+{
+"pattern": "\\bfoo\\b",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "c45e190147e7723cf3a518629a545cce149995ad8cd6d12a8004aeb5e7d31fbf"
+},
+{
+"pattern": "\\B",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "96a3b5ea2eec0a69a99daeb7baa94a21b16a75602397b15e02ef6737f6ea17ec"
+},
+{
+"pattern": "\\B",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "37bde904e8c4ff7a25068fac8f29612d61d15357849e4a6f71790a7cb7fbf6ac"
+},
+{
+"pattern": "\\B",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "8bb74ec7cdbe463341e61ee33e191b689ae1c0c775c5f428cf62e6612016793f"
+},
+{
+"pattern": "\\B",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "737a36fc2eb76f0a5d5dfb7c4e02cec6e2c7af99392434bd672e889ece6646a3"
+},
+{
+"pattern": "\\B",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "ff757cb757aac4ff5eabcdf393eca409e598bec9daf18b704d140ca953435f86"
+},
+{
+"pattern": "\\B",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "8e059f756a1ea89dccc2e2afb9e355a51ddb0d86f0d921e91db8140d0b93915a"
+},
+{
+"pattern": "\\B",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "b27e42fb68a922fea18bd562ea8782de8ef67026803df6d6583fa91b60ce5e37"
+},
+{
+"pattern": "\\B",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "7d0650fe26ed0c87d54eebad776a8ef09f7b696d15c1790ab597c4502b304a2e"
+},
+{
+"pattern": "\\Ba",
+"flags": 256,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "37bde904e8c4ff7a25068fac8f29612d61d15357849e4a6f71790a7cb7fbf6ac"
+},
+{
+"pattern": "\\Ba",
+"flags": 256,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "37bde904e8c4ff7a25068fac8f29612d61d15357849e4a6f71790a7cb7fbf6ac"
+},
+{
+"pattern": "\\Ba",
+"flags": 256,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "8d138629260f5feb937a7dd9df7226bad46ad3c9d4873d0e70dd0711f1993c6b"
+},
+{
+"pattern": "\\Ba",
+"flags": 256,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "8d138629260f5feb937a7dd9df7226bad46ad3c9d4873d0e70dd0711f1993c6b"
+},
+{
+"pattern": "\\Ba",
+"flags": 256,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "37bde904e8c4ff7a25068fac8f29612d61d15357849e4a6f71790a7cb7fbf6ac"
+},
+{
+"pattern": "\\Ba",
+"flags": 256,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "37bde904e8c4ff7a25068fac8f29612d61d15357849e4a6f71790a7cb7fbf6ac"
+},
+{
+"pattern": "\\Ba",
+"flags": 256,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "7eb090c2ec0fd4ce6268f14852b14fd22570d8b6f89ae3cf559ab5d00e93cf75"
+},
+{
+"pattern": "\\Ba",
+"flags": 256,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "7eb090c2ec0fd4ce6268f14852b14fd22570d8b6f89ae3cf559ab5d00e93cf75"
+},
+{
+"pattern": "(?i)[a-z]+k",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "b92f7917cd826974a0a3ce41ff09d43afabec1f028f30b22fa06411a3571c5de"
+},
+{
+"pattern": "(?i)[a-z]+k",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "b92f7917cd826974a0a3ce41ff09d43afabec1f028f30b22fa06411a3571c5de"
+},
+{
+"pattern": "(?i)[a-z]+k",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "68c55a7ec5839b5c6ab328a922ee316a6d0ccccd7d95a15460f42c0aa7ff28bb"
+},
+{
+"pattern": "(?i)[a-z]+k",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "68c55a7ec5839b5c6ab328a922ee316a6d0ccccd7d95a15460f42c0aa7ff28bb"
+},
+{
+"pattern": "(?i)[a-z]+k",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "6f62554b313ebc728290c0f66e010b938409afa943864d2eb57a05c00bbee954"
+},
+{
+"pattern": "(?i)[a-z]+k",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "6f62554b313ebc728290c0f66e010b938409afa943864d2eb57a05c00bbee954"
+},
+{
+"pattern": "(?i)[a-z]+k",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "05a85c73bd502b1283fd97b14b2198c16278fffe27f5e50e002e5af32a80014a"
+},
+{
+"pattern": "(?i)[a-z]+k",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "05a85c73bd502b1283fd97b14b2198c16278fffe27f5e50e002e5af32a80014a"
+},
+{
+"pattern": "(?i)\\w",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "bf050099caf905cbe986c70300fe30d8978a9641d7fc45f05f2011f2d01cca20"
+},
+{
+"pattern": "(?i)\\w",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": false,
+"hash": "bf050099caf905cbe986c70300fe30d8978a9641d7fc45f05f2011f2d01cca20"
+},
+{
+"pattern": "(?i)\\w",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "f5957bf7d331bd873dff2e1821cbf9b0f311f3f872ed240beef4c7f5d12a8017"
+},
+{
+"pattern": "(?i)\\w",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": false,
+"hash": "f5957bf7d331bd873dff2e1821cbf9b0f311f3f872ed240beef4c7f5d12a8017"
+},
+{
+"pattern": "(?i)\\w",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "6460ca7dac1baca5351d891933e0ed871e730c3fa5f40a73627073d9f3a44276"
+},
+{
+"pattern": "(?i)\\w",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": false,
+"hash": "6460ca7dac1baca5351d891933e0ed871e730c3fa5f40a73627073d9f3a44276"
+},
+{
+"pattern": "(?i)\\w",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "6b18af2f8c7208b3fb17a81cca39de340d3f98fc497db989d239b3aa90f8ccf5"
+},
+{
+"pattern": "(?i)\\w",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": false,
+"hash": "6b18af2f8c7208b3fb17a81cca39de340d3f98fc497db989d239b3aa90f8ccf5"
+},
+{
+"pattern": "(?i)s",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "aba84feeb893e8a0adb279355c8d1b80a4765f873a9038488dd057f7e9ae8dad"
+},
+{
+"pattern": "(?i)s",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "aba84feeb893e8a0adb279355c8d1b80a4765f873a9038488dd057f7e9ae8dad"
+},
+{
+"pattern": "(?i)s",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "3908ce954111b7214e27d37fa75b1c2f4841c34fdbedbdb6e1258a4d0398dc30"
+},
+{
+"pattern": "(?i)s",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "3908ce954111b7214e27d37fa75b1c2f4841c34fdbedbdb6e1258a4d0398dc30"
+},
+{
+"pattern": "(?i)s",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "9210124982853b6a8513b4011950691a8ced823717e78633979233014d6bcfee"
+},
+{
+"pattern": "(?i)s",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "9210124982853b6a8513b4011950691a8ced823717e78633979233014d6bcfee"
+},
+{
+"pattern": "(?i)s",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "aa0995fb39e1f5487ea0bfa1499cab93330cb922919e72f95728cb80d7cc2d61"
+},
+{
+"pattern": "(?i)s",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "aa0995fb39e1f5487ea0bfa1499cab93330cb922919e72f95728cb80d7cc2d61"
+},
+{
+"pattern": "(?i)\\u00df",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "305964571f92da6027f302f14ab5e0acdcad894caa87cf4a240f9de96569d572"
+},
+{
+"pattern": "(?i)\\u00df",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "305964571f92da6027f302f14ab5e0acdcad894caa87cf4a240f9de96569d572"
+},
+{
+"pattern": "(?i)\\u00df",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "ff3d2ef698d8f99771fc278c5ee2bfb032700bfbc154f3cf91dc60a6851eafab"
+},
+{
+"pattern": "(?i)\\u00df",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "ff3d2ef698d8f99771fc278c5ee2bfb032700bfbc154f3cf91dc60a6851eafab"
+},
+{
+"pattern": "(?i)\\u00df",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "4cd469b89942addc758651f33830fc91931600561f806527b645d0aa630e5e3d"
+},
+{
+"pattern": "(?i)\\u00df",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "4cd469b89942addc758651f33830fc91931600561f806527b645d0aa630e5e3d"
+},
+{
+"pattern": "(?i)\\u00df",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "594512e4c607a25d8ccc36e74751ccfd5b930a21c155a18915b1e6a41d383305"
+},
+{
+"pattern": "(?i)\\u00df",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "594512e4c607a25d8ccc36e74751ccfd5b930a21c155a18915b1e6a41d383305"
+},
+{
+"pattern": "(?i)[\\u0100-\\u2fff]",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "d1bf0e2d7fa8fabd037fa74e7a7390dd92a3a564092d7ab0d44c970b09e68a96"
+},
+{
+"pattern": "(?i)[\\u0100-\\u2fff]",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": false,
+"hash": "d1bf0e2d7fa8fabd037fa74e7a7390dd92a3a564092d7ab0d44c970b09e68a96"
+},
+{
+"pattern": "(?i)[\\u0100-\\u2fff]",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "e9081f155ab0296b7c72989f80ac458bcc7224aa81eec4a1c0b8e770df07090b"
+},
+{
+"pattern": "(?i)[\\u0100-\\u2fff]",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": false,
+"hash": "e9081f155ab0296b7c72989f80ac458bcc7224aa81eec4a1c0b8e770df07090b"
+},
+{
+"pattern": "(?i)[\\u0100-\\u2fff]",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "bb29dfdb43d5035d8d66b4f24554a156df86340b19673cef36c9707a4bc0e0e3"
+},
+{
+"pattern": "(?i)[\\u0100-\\u2fff]",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": false,
+"hash": "bb29dfdb43d5035d8d66b4f24554a156df86340b19673cef36c9707a4bc0e0e3"
+},
+{
+"pattern": "(?i)[\\u0100-\\u2fff]",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "fb96095dd0a7dcdd1cedd012419e482004cbe0c71dcc9d9263fa3f5ffa43ce94"
+},
+{
+"pattern": "(?i)[\\u0100-\\u2fff]",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": false,
+"hash": "fb96095dd0a7dcdd1cedd012419e482004cbe0c71dcc9d9263fa3f5ffa43ce94"
+},
+{
+"pattern": "(?m)^b$",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "856a70e9227e324d1808ee1688774d4927dcc2db8dade2d95747142e76a6c243"
+},
+{
+"pattern": "(?m)^b$",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "856a70e9227e324d1808ee1688774d4927dcc2db8dade2d95747142e76a6c243"
+},
+{
+"pattern": "(?m)^b$",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "102dfd7eede80441f54d853d75b7163b8411c39a9a5bd9d0e3827533dcbfc88e"
+},
+{
+"pattern": "(?m)^b$",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "102dfd7eede80441f54d853d75b7163b8411c39a9a5bd9d0e3827533dcbfc88e"
+},
+{
+"pattern": "(?m)^b$",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "6fb3bfef134f46ce4fd189e82825ab8dd4c26eda85c81936e1583234b43b7beb"
+},
+{
+"pattern": "(?m)^b$",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "6fb3bfef134f46ce4fd189e82825ab8dd4c26eda85c81936e1583234b43b7beb"
+},
+{
+"pattern": "(?m)^b$",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "a2e9208527699ec8c1396aa45a5a37f3f1265c9dbdb6e18cd31d36ecfd7a1408"
+},
+{
+"pattern": "(?m)^b$",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "a2e9208527699ec8c1396aa45a5a37f3f1265c9dbdb6e18cd31d36ecfd7a1408"
+},
+{
+"pattern": "(?s).",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "223327805beb43d11f98bb7b0f9c0e742b9cdb1232d76d0810df416fa2c5a5f2"
+},
+{
+"pattern": "(?s).",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "223327805beb43d11f98bb7b0f9c0e742b9cdb1232d76d0810df416fa2c5a5f2"
+},
+{
+"pattern": "(?s).",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "741b783fc6f2049c11457bb7adc52b986a9fc0d13431ac99694042aee6b883ae"
+},
+{
+"pattern": "(?s).",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "741b783fc6f2049c11457bb7adc52b986a9fc0d13431ac99694042aee6b883ae"
+},
+{
+"pattern": "(?s).",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "446ed892c3912c6b65e83f625504e22d54c88802478e208731f504ffeebf7001"
+},
+{
+"pattern": "(?s).",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "446ed892c3912c6b65e83f625504e22d54c88802478e208731f504ffeebf7001"
+},
+{
+"pattern": "(?s).",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "d11a2cbd661ef5e41859af96bb3f211bc6f8c7243b71ebb8012a1bb8f81a9d04"
+},
+{
+"pattern": "(?s).",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "d11a2cbd661ef5e41859af96bb3f211bc6f8c7243b71ebb8012a1bb8f81a9d04"
+},
+{
+"pattern": ".",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "925a8d661adaf2c50d7046c90fde79255274acf1628c7a50df7152424312059f"
+},
+{
+"pattern": ".",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "925a8d661adaf2c50d7046c90fde79255274acf1628c7a50df7152424312059f"
+},
+{
+"pattern": ".",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "3d16e1bb2fe3b31a2777d6129bf5e7f87212d11a687e4ab3f99236311b7f8804"
+},
+{
+"pattern": ".",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "3d16e1bb2fe3b31a2777d6129bf5e7f87212d11a687e4ab3f99236311b7f8804"
+},
+{
+"pattern": ".",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "0c1b1f7cd43b87fe6feba46f2f97c23fce72b7abaae4ff780883cdd951092c8a"
+},
+{
+"pattern": ".",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "0c1b1f7cd43b87fe6feba46f2f97c23fce72b7abaae4ff780883cdd951092c8a"
+},
+{
+"pattern": ".",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "324a2ff62811888c30a1bc9cad9f59b8935f4bbc9770fd693e218c3ce2d0e235"
+},
+{
+"pattern": ".",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "324a2ff62811888c30a1bc9cad9f59b8935f4bbc9770fd693e218c3ce2d0e235"
+},
+{
+"pattern": "(a)\\1",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "86632acf27ea83a6778a24280e6b0fc37a90fc8917a1fb87e93a347d65749958"
+},
+{
+"pattern": "(a)\\1",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": false,
+"hash": "86632acf27ea83a6778a24280e6b0fc37a90fc8917a1fb87e93a347d65749958"
+},
+{
+"pattern": "(a)\\1",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "4261bc7d0bdc5fdc8995d4ab26bef5cd318f34f67b66a466deae1daebe6885a4"
+},
+{
+"pattern": "(a)\\1",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": false,
+"hash": "4261bc7d0bdc5fdc8995d4ab26bef5cd318f34f67b66a466deae1daebe6885a4"
+},
+{
+"pattern": "(a)\\1",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "6e7890d2a85c045e226b5eb17cc4859cdba188c26f3bf1065340833f8f6090aa"
+},
+{
+"pattern": "(a)\\1",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": false,
+"hash": "6e7890d2a85c045e226b5eb17cc4859cdba188c26f3bf1065340833f8f6090aa"
+},
+{
+"pattern": "(a)\\1",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "9f27b8d5e2da8958c5fb3872758cd6a5c8c145ad9eb64572bea0d16be667b23d"
+},
+{
+"pattern": "(a)\\1",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": false,
+"hash": "9f27b8d5e2da8958c5fb3872758cd6a5c8c145ad9eb64572bea0d16be667b23d"
+},
+{
+"pattern": "(?=a)a",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "2ed5c91ce44aa0927beec10c5836e78d2995e8b1a7d58207b552a939db9e67c7"
+},
+{
+"pattern": "(?=a)a",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": false,
+"hash": "2ed5c91ce44aa0927beec10c5836e78d2995e8b1a7d58207b552a939db9e67c7"
+},
+{
+"pattern": "(?=a)a",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "85e7d9b99a856da2c25c2a7fb1b69003939469cb7348be506305fa76d2ea5393"
+},
+{
+"pattern": "(?=a)a",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": false,
+"hash": "85e7d9b99a856da2c25c2a7fb1b69003939469cb7348be506305fa76d2ea5393"
+},
+{
+"pattern": "(?=a)a",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "a27b5223bcfde75bb74f2e450dfc3c9fbbd2ada2fc85eaf0edbd28d1a23380e4"
+},
+{
+"pattern": "(?=a)a",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": false,
+"hash": "a27b5223bcfde75bb74f2e450dfc3c9fbbd2ada2fc85eaf0edbd28d1a23380e4"
+},
+{
+"pattern": "(?=a)a",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "3ed31594cf89f9ce779c376aa60025a63591a8d130489dea96745a9764e21df6"
+},
+{
+"pattern": "(?=a)a",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": false,
+"hash": "3ed31594cf89f9ce779c376aa60025a63591a8d130489dea96745a9764e21df6"
+},
+{
+"pattern": "(?a:\\w)\\w",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "2f2aeace34d2f084e2bc65f17a8a3a91a775b93e0b623ee95e2b80541f969350"
+},
+{
+"pattern": "(?a:\\w)\\w",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "b3d91811311d946d8f5d506e5636f7a5453e8451a3fd07f9eafbe583aa9eeeb7"
+},
+{
+"pattern": "(?a:\\w)\\w",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "bd81d76ff359d87740c0f28cae0d062c0fe645394b58949fd9fc629be58565dd"
+},
+{
+"pattern": "(?a:\\w)\\w",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "36009483bba896fd3ea7eae5c76a6d00d276c756ec8bdb29d542e61cf0978855"
+},
+{
+"pattern": "(?a:\\w)\\w",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "4bebdcc33950c67a636f5575f778cf0dfc2cbe2831c25b6c01c8134846c6695b"
+},
+{
+"pattern": "(?a:\\w)\\w",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "3a47b30c9f301722df822263edb32b637fcc31eb6040d3bd41ca7549a644c01f"
+},
+{
+"pattern": "(?a:\\w)\\w",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "3419646bbbe3f17c5ff5746017df5e544877fa1cc883b7d2854201db7210b00e"
+},
+{
+"pattern": "(?a:\\w)\\w",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "1406ba888dcc6209e821179c11e9a51d13d8508f4b96c39b226f368c4a7ff7ab"
+},
+{
+"pattern": "[^\\n]+?\\s*(?:\\n|$)",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "b667a325bc16d9b038eb3a50228dab78ca7092b76eb277a3e3abf9a44326f2d1"
+},
+{
+"pattern": "[^\\n]+?\\s*(?:\\n|$)",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "ed67c1a31acee3e5489d3722f95c957d070eafe8b48f76434c629aeeade8c777"
+},
+{
+"pattern": "[^\\n]+?\\s*(?:\\n|$)",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "ce0908360065f25491b84d3556ce03e870e18c56f6c098b87a6894ae26363ee6"
+},
+{
+"pattern": "[^\\n]+?\\s*(?:\\n|$)",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "bb5f369bbd322210aae91f3f85cc1af4396fa2164b80a2a5cd26354c9a16c7dd"
+},
+{
+"pattern": "[^\\n]+?\\s*(?:\\n|$)",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "0fb5346b25f1c7dd130dbcf63364f88b90d53ca07089d266800bc7cf81ec8a6a"
+},
+{
+"pattern": "[^\\n]+?\\s*(?:\\n|$)",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "2f64da2e7100c8de595c63c40bd42f1dfaeff74928cd5462af2eeb7c47b17ad2"
+},
+{
+"pattern": "[^\\n]+?\\s*(?:\\n|$)",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "59e494cfffa1aa47a21596671ffca3a27b9384b73619927951cada09c8de80c4"
+},
+{
+"pattern": "[^\\n]+?\\s*(?:\\n|$)",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "c203ea75846642e99752f4b44b0784e7571f1c6b0d4eb052e7f549df2d259e4c"
+},
+{
+"pattern": "(\\w+)\\s*(>=|<=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "a0fe9db1074cfed324f3eeb1ffca44e6412a92856f83cb2c81533c747f9e2613"
+},
+{
+"pattern": "(\\w+)\\s*(>=|<=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "f085f7d51414ebf0b64f243b593bbf1e2f816ce1b3b4643725f85846187fb918"
+},
+{
+"pattern": "(\\w+)\\s*(>=|<=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "a170a538b82a9a231e9207f5922c25f66b1527612848c195bad1f7349853ac36"
+},
+{
+"pattern": "(\\w+)\\s*(>=|<=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "e280e3544d67317f4bfa72208a4061f744f597d45d4845b71dcbb355c4a5baa5"
+},
+{
+"pattern": "(\\w+)\\s*(>=|<=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "de2caef769d09ba1b43bb9803820f76514e5cf23bf22b80964b37a1cc1238f4a"
+},
+{
+"pattern": "(\\w+)\\s*(>=|<=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "b67bd82196dd8b72c5454e4d9ba7ecd169de04b14549cdbab3ceafa9710c9806"
+},
+{
+"pattern": "(\\w+)\\s*(>=|<=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "3b4796c1f5f428ac461588e89e59968bf83f136d3306cafe5df616762aeea683"
+},
+{
+"pattern": "(\\w+)\\s*(>=|<=|>|<)\\s*(-?\\d+(?:\\.\\d+)?)",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "78b7a5eae433294e356124f5b05e56d21834efdcd3b3532595b0999305ea61cc"
+},
+{
+"pattern": "\\U00010570",
+"flags": 2,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "fc40ea91aa5624c1c3ce0920c5cb19f7591067cdb1b68df4e8fd3f190541474c"
+},
+{
+"pattern": "\\U00010570",
+"flags": 2,
+"predicate": "matches",
+"python": "3.12",
+"exact": false,
+"hash": "fc40ea91aa5624c1c3ce0920c5cb19f7591067cdb1b68df4e8fd3f190541474c"
+},
+{
+"pattern": "\\U00010570",
+"flags": 2,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "bf3fe541c10e104fa928e0fee7d9132a314430c9b4571e6aa6e0150c0e460048"
+},
+{
+"pattern": "\\U00010570",
+"flags": 2,
+"predicate": "contains",
+"python": "3.12",
+"exact": false,
+"hash": "bf3fe541c10e104fa928e0fee7d9132a314430c9b4571e6aa6e0150c0e460048"
+},
+{
+"pattern": "\\U00010570",
+"flags": 2,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "be4f62f7f38ffb326354435556db230ec6f38c98f0f4658efb0552d99c3bf07b"
+},
+{
+"pattern": "\\U00010570",
+"flags": 2,
+"predicate": "starts with",
+"python": "3.12",
+"exact": false,
+"hash": "be4f62f7f38ffb326354435556db230ec6f38c98f0f4658efb0552d99c3bf07b"
+},
+{
+"pattern": "\\U00010570",
+"flags": 2,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "146e2537a0f90bf61214d6d5a9fead25453b2e3bc31ebb6103f7cf9e3d75bd51"
+},
+{
+"pattern": "\\U00010570",
+"flags": 2,
+"predicate": "ends with",
+"python": "3.12",
+"exact": false,
+"hash": "146e2537a0f90bf61214d6d5a9fead25453b2e3bc31ebb6103f7cf9e3d75bd51"
+},
+{
+"pattern": "(?:\\b\\w){2}",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "255bef5c8a389fa2053e54348fe3e6c5cd7992ca6829a3ec443edfdd0e881570"
+},
+{
+"pattern": "(?:\\b\\w){2}",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "37bde904e8c4ff7a25068fac8f29612d61d15357849e4a6f71790a7cb7fbf6ac"
+},
+{
+"pattern": "(?:\\b\\w){2}",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "3f2323706c1d1b2f5bc884542028347ef213425ec70baffc5ddf734b4bcbbb8f"
+},
+{
+"pattern": "(?:\\b\\w){2}",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "37bde904e8c4ff7a25068fac8f29612d61d15357849e4a6f71790a7cb7fbf6ac"
+},
+{
+"pattern": "(?:\\b\\w){2}",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "83a0db194dc2503fd5bd4b8121c6d2864ca19251cbbf81b188c18249cc01f6cb"
+},
+{
+"pattern": "(?:\\b\\w){2}",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "37bde904e8c4ff7a25068fac8f29612d61d15357849e4a6f71790a7cb7fbf6ac"
+},
+{
+"pattern": "(?:\\b\\w){2}",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "fd8ab6355332697a4182bb048f1b28a89880e80c0899a29ced204bad6955a191"
+},
+{
+"pattern": "(?:\\b\\w){2}",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "37bde904e8c4ff7a25068fac8f29612d61d15357849e4a6f71790a7cb7fbf6ac"
+},
+{
+"pattern": "(?x) a b # c",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "86163d63ca7680d36f6755788d6f8aff26f77f45bf447e2784b7ffe9c86a521f"
+},
+{
+"pattern": "(?x) a b # c",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "86163d63ca7680d36f6755788d6f8aff26f77f45bf447e2784b7ffe9c86a521f"
+},
+{
+"pattern": "(?x) a b # c",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "b1993c059127a5182054e7d06cd4c8aca42da39a4b00f203f1635ff8534688f4"
+},
+{
+"pattern": "(?x) a b # c",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "b1993c059127a5182054e7d06cd4c8aca42da39a4b00f203f1635ff8534688f4"
+},
+{
+"pattern": "(?x) a b # c",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "767bb2babd158c83f5d493dc3c65d5ceb92ccd53f236ffd6a2ae688b375a98a1"
+},
+{
+"pattern": "(?x) a b # c",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "767bb2babd158c83f5d493dc3c65d5ceb92ccd53f236ffd6a2ae688b375a98a1"
+},
+{
+"pattern": "(?x) a b # c",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "0c7b78c6e29947e4f83e84c5b06b9997dc4121dca8e97d6e9f174018795781f5"
+},
+{
+"pattern": "(?x) a b # c",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "0c7b78c6e29947e4f83e84c5b06b9997dc4121dca8e97d6e9f174018795781f5"
+},
+{
+"pattern": "[\\d\\s]",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "37dfc643a4ce93f4124420ffb4b8eda61bc72f0659c5b025d5594af7aad4f0fb"
+},
+{
+"pattern": "[\\d\\s]",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "7188c94d3c1c50eee1a16168454bb19af6fbec321e27562a580e643d89e83e91"
+},
+{
+"pattern": "[\\d\\s]",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "da1207a8b6003d67965ac48974aecd551d2714a98bd936fd6948bee2d51daf49"
+},
+{
+"pattern": "[\\d\\s]",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "21006cff5824ed80d847b5b45ca570ae27852c10959896d5f900e9c137a9e546"
+},
+{
+"pattern": "[\\d\\s]",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "4321ce3d5b275dd9f9ba10f7789a528695b342fa1ad91b3b35939fb82c25b4ac"
+},
+{
+"pattern": "[\\d\\s]",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "29d355f90581fbf83a4c7815f7c54ba09a7ba1fd7b2f7818c8cbf0e461725ef0"
+},
+{
+"pattern": "[\\d\\s]",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "812cff1991c0f1068b85163b96b8d47d187ea7f8532c304de52e9408233a53a3"
+},
+{
+"pattern": "[\\d\\s]",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "05fe49ead980380e7ffcf4c292279515f171da45d42e6366965f757fb5af5d58"
+},
+{
+"pattern": "\\D",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": false,
+"hash": "f46215b9a9ca768a4d268259d3d2d26e7c51c9cf468e139bc99d64cc122a6d81"
+},
+{
+"pattern": "\\D",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "d3e252b1869923f8ba9d5afd898cd310f36aa15d191dc21847f495c033b42300"
+},
+{
+"pattern": "\\D",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": false,
+"hash": "823fd338f757b295fcc14f6383b34e9ddfb2e30aff2880287abb8cec5a2f36e0"
+},
+{
+"pattern": "\\D",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "9e6c80ea5a86098eaf5ad4b219ea4ff096e1fbd8d6fa8297ba294a026fae0a04"
+},
+{
+"pattern": "\\D",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": false,
+"hash": "2a1c7ee8fc6b56a67c3bb207bcc55d072ba880feee5f4bdc4e0c76240d40f950"
+},
+{
+"pattern": "\\D",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "2ca7f2fe0c8f2bdfbb0be36fe0eadb4aac43744b9c07d4faf5c7f8c03b5692a9"
+},
+{
+"pattern": "\\D",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": false,
+"hash": "e44a44ce85eadc2c6898ec058f84248b2cf12b26ef8a9eae2d187051766506fd"
+},
+{
+"pattern": "\\D",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "003484d677145951c0095b44354f933e9e3c1d51d54b4557bcaba0d0cd7e0084"
+},
+{
+"pattern": "a{1000}",
+"flags": 0,
+"predicate": "matches",
+"python": null,
+"exact": true,
+"hash": "5e705080183a6cf01aad416142fb32d749384a1d3dfc24fa0462109f96b2efab"
+},
+{
+"pattern": "a{1000}",
+"flags": 0,
+"predicate": "matches",
+"python": "3.12",
+"exact": true,
+"hash": "5e705080183a6cf01aad416142fb32d749384a1d3dfc24fa0462109f96b2efab"
+},
+{
+"pattern": "a{1000}",
+"flags": 0,
+"predicate": "contains",
+"python": null,
+"exact": true,
+"hash": "769c509b26729291903db46ae5c1df986c6dac20deaef60ab13aaacbebe1668c"
+},
+{
+"pattern": "a{1000}",
+"flags": 0,
+"predicate": "contains",
+"python": "3.12",
+"exact": true,
+"hash": "769c509b26729291903db46ae5c1df986c6dac20deaef60ab13aaacbebe1668c"
+},
+{
+"pattern": "a{1000}",
+"flags": 0,
+"predicate": "starts with",
+"python": null,
+"exact": true,
+"hash": "a8e94d1138be4e0dc586b4e0d8f956506308ed9c7620ff84ebed9d28c3050e70"
+},
+{
+"pattern": "a{1000}",
+"flags": 0,
+"predicate": "starts with",
+"python": "3.12",
+"exact": true,
+"hash": "a8e94d1138be4e0dc586b4e0d8f956506308ed9c7620ff84ebed9d28c3050e70"
+},
+{
+"pattern": "a{1000}",
+"flags": 0,
+"predicate": "ends with",
+"python": null,
+"exact": true,
+"hash": "987ef2f86304d70d0ad8532bb654b23636924bb066276cbc5fdb45995d1a2527"
+},
+{
+"pattern": "a{1000}",
+"flags": 0,
+"predicate": "ends with",
+"python": "3.12",
+"exact": true,
+"hash": "987ef2f86304d70d0ad8532bb654b23636924bb066276cbc5fdb45995d1a2527"
+}
+]

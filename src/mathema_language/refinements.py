@@ -86,6 +86,16 @@ class _LengthLanguage(RefinedLanguage):
     hazard that changes length under case mapping or normalisation,
     repeated up to the upper bound: the input that grows the most."""
 
+    def to_json(self) -> dict:
+        """The base's persisted form with the length bound; a base that
+        states a `definition` states the refined one, its strings of a
+        length in the bound."""
+        out = dict(super().to_json())
+        if isinstance(out.get("definition"), dict):
+            from .text._regular import of_length
+            out["definition"] = of_length(out["definition"], int(self.lo), self.hi)
+        return out
+
     def hazards(self) -> tuple[Any, ...]:
         out = list(super().hazards())
         if self.hi is None:
@@ -273,6 +283,16 @@ class _JsonStructureLanguage(RefinedLanguage):
     object at the upper bound, beside the array the plain member is, so
     code that walks keys meets the bound as well as code that walks
     items."""
+
+    def to_json(self) -> dict:
+        """The base's persisted form with the length bound; a base that
+        states a `definition` states the refined one, its strings of a
+        length in the bound."""
+        out = dict(super().to_json())
+        if isinstance(out.get("definition"), dict):
+            from .text._regular import of_length
+            out["definition"] = of_length(out["definition"], int(self.lo), self.hi)
+        return out
 
     def hazards(self) -> tuple[Any, ...]:
         out = list(super().hazards())
