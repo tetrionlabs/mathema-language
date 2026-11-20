@@ -157,6 +157,8 @@ class MembershipEncoding:
         self.vars: dict[str, Any] = {}
         self.extra: list[Any] = []
         self.no_surrogates = ""
+        # how the library validating the record in hand reads a pattern, when that is known
+        self.pattern_mode = ""
 
     def var(self, name: str) -> Any:
         if name not in self.vars:
@@ -268,8 +270,12 @@ class MembershipEncoding:
 
         Notes:
             Every string `re.fullmatch` matches, `re.search` finds a match in, so the newer side
-            admits no more than the older, whichever of the two a library runs.
+            admits no more than the older, whichever of the two a library runs. Inside a record
+            whose library is known to read a pattern one way (`pattern_mode`), both sides are
+            that reading, so a pattern is the same language on the two sides.
         """
+        if self.pattern_mode:
+            return _pattern_regex(self.z3, pattern, 0, self.pattern_mode, side)
         if side == "newer":
             return _pattern_regex(self.z3, pattern, 0, "fullmatch", "newer")
         return _pattern_regex(self.z3, pattern, 0, "search", "older")
@@ -433,10 +439,13 @@ class MembershipEncoding:
                 config = getattr(b.ecosystem.model, "model_config", None) or {}
                 self.no_surrogates = "every" if any(k.startswith("str_") for k in config) \
                     else "constrained"
+            # the jsonschema validator reads `pattern` by `re.search`
+            self.pattern_mode = "search" if b.ecosystem.name == "jsonschema" else ""
             try:
                 shape = self.row(b.schema, names, side, _SUPPORTED[b.ecosystem.name])
             finally:
                 self.no_surrogates = ""
+                self.pattern_mode = ""
             # the text of a path a converter builds is never empty
             # (`Path("")` is `.`), so neither is the text the encoding holds
             for dest, convert in (getattr(b.ecosystem, "converters", None) or {}).items():
