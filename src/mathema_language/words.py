@@ -797,6 +797,21 @@ ALPHABET = None if AlphabetConstructor is None else AlphabetConstructor(  # type
 WORDS = {record.word: record for record in (MATCHES, CONTAINS, STARTS_WITH, ENDS_WITH, WITHIN_WORD,
                                             SHAPE_WORD) if record is not None}
 
+#: DRAFT, names awaiting sign-off: one worked claim for each language, predicate word and
+#: constructor the package newly registers, by entry-point key, in canonical text. They are
+#: not in the package's lexicon: a predicate row parses only on a mathema with the word registry.
+DRAFT_ROWS: dict[str, str] = {
+    "lower": "for s in L[lower], f(s) = s",
+    "upper": "for s in L[upper], f(s) = s",
+    "matches": 'for s in L[unicode, matches (re(r"[a-z0-9]+(?:-[a-z0-9]+)*", python))], f(s) = s',
+    "contains": 'for s in L[unicode, contains ("://")], f(s) = s',
+    "starts_with": 'for s in L[unicode, starts with ("http://")], f(s) = s',
+    "ends_with": 'for s in L[unicode, ends with (".json")], f(s) = s',
+    "within": 'for p in L[path, within ("/workspace")], f(p) = p',
+    "shape": 'for s in L[ascii, shape ("AA99[ ]9AA")], f(s) = s',
+    "alphabet": 'for s in L[lower + digit + "_"], f(s) = s',
+}
+
 __all__ = ["ALPHABET", "CONTAINS", "DIALECTS", "ENDS_WITH", "FLAGS", "MATCHES", "PATTERN_WORDS",
            "RESERVED", "SHAPE_WORD", "STARTS_WITH", "UNAVAILABLE", "WITHIN_WORD", "WORDS",
            "build_alphabet", "canonical_pattern_argument", "narrowed", "order_alphabet", "re_text",
