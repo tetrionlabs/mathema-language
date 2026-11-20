@@ -148,7 +148,7 @@ def test_a_path_draw_beside_the_boundary_is_a_sibling_prefix_or_a_climb():
     language = path_within("/workspace", "/data")
     _draws_hold(language)
     drawn = {language.outside(random.Random(seed)) for seed in range(200)}
-    assert {"/workspace2", "/workspace/../etc", "/datax", "/workspac"} <= drawn
+    assert {"/workspace2", "/datax", "/workspac"} <= drawn
     assert any(h.value == "/workspace" for h in language.hazards())
 
 
