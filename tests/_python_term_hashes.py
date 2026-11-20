@@ -10,10 +10,11 @@ interpreter runs it bare:
     uv run --python 3.10 --no-project python tests/_python_term_hashes.py
 
 With `write` it records the hashes in `tests/data/python_term_hashes.json`."""
-import importlib.util
+import importlib
 import json
 import re
 import sys
+import types
 from pathlib import Path
 
 HASHES = Path(__file__).parent / "data" / "python_term_hashes.json"
@@ -30,11 +31,10 @@ PATTERNS = [
 
 
 def load():
-    spec = importlib.util.spec_from_file_location("_regular", MODULE)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules["_regular"] = module
-    spec.loader.exec_module(module)
-    return module
+    package = types.ModuleType("_terms")
+    package.__path__ = [str(MODULE.parent)]
+    sys.modules["_terms"] = package
+    return importlib.import_module("_terms._regular")
 
 
 def hashes():
