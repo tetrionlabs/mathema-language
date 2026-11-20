@@ -141,7 +141,8 @@ def test_the_reading_the_pattern_and_the_term_agree_on_every_short_text(base, al
     admitted = 0
     for written in shapes:
         shape = Shape(written, base)
-        compiled, expression = re.compile(shape.pattern), _regular.from_node(shape.term()["language"])
+        pinned = shape.term(version=_regular.RUNNING)
+        compiled, expression = re.compile(shape.pattern), _regular.from_node(pinned["language"])
         assert Shape(shape.shape, base).shape == shape.shape
         for text in texts:
             own = shape.matches(text)
@@ -162,8 +163,9 @@ def test_the_term_is_exact_plain_data_and_is_the_term_of_the_pattern():
     for written in ["AA99[ ]9AA", "9{0+}", "[a[9]]{2}"] + [_random_shape(rng) for _ in range(40)]:
         for base in ("ascii", "unicode"):
             shape = Shape(written, base)
-            assert (_regular.term_hash(shape.term())
-                    == _regular.term_hash(_regular.term(shape.pattern, 0, "matches"))), written
+            here = _regular.RUNNING
+            assert (_regular.term_hash(shape.term(version=here))
+                    == _regular.term_hash(_regular.term(shape.pattern, 0, "matches", version=here))), written
 
 
 SHAPES = ["AA99[ ]9AA", "9{0+}", "a{1+}", "X{2}", "[a[9]]{2}", "'ID-'9{4,6}", "A[-A]{0,2}", "9{3}-9{4}",
@@ -175,7 +177,7 @@ SHAPES = ["AA99[ ]9AA", "9{0+}", "a{1+}", "X{2}", "[a[9]]{2}", "'ID-'9{4,6}", "A
 @pytest.mark.parametrize("written", SHAPES)
 def test_every_member_written_from_a_shape_is_a_member_and_every_near_miss_is_not(written, base):
     shape = Shape(written, base)
-    compiled, doc = re.compile(shape.pattern), shape.term()
+    compiled, doc = re.compile(shape.pattern), shape.term(version=_regular.RUNNING)
     rng = random.Random(23)
     members = list(shape.members()) + [shape.draw(rng) for _ in range(200)]
     assert len(set(members)) >= 2 or written == "\\A\\9"

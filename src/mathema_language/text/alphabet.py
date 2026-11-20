@@ -38,7 +38,6 @@ import json
 import random
 import re
 import sys
-import unicodedata
 from dataclasses import dataclass
 from typing import Any
 
@@ -99,6 +98,27 @@ def named_ranges(name: str) -> Ranges:
     return tuple((lo, hi) for lo, hi in runs)
 
 
+#: what a named alphabet that depends on the Unicode version holds, in words
+_VERSIONED = {"printable": "printable characters", "unicode_alnum": "letters and digits",
+              "unicode_alpha": "letters"}
+
+
+def _named_bounds(name: str, version: str | None = None) -> tuple[Ranges, Ranges]:
+    """Intent:
+        The code points of a named alphabet as a pair: on every supported Python, those every
+        version holds and those any version holds or a later one may (the unassigned); for
+        one `version`, that version's set twice. One set for an alphabet that does not depend
+        on the Unicode version.
+
+    Raises:
+        ValueError: `name` is not one of `NAMES`, or `version` not a supported Python.
+    """
+    if name in _VERSIONED:
+        low, high = _regular.class_bounds(name, version)
+        return tuple(low), tuple(high)
+    return named_ranges(name), named_ranges(name)
+
+
 @dataclass(frozen=True)
 class Alphabet:
     """A set of characters: the union of the named alphabets `names`
@@ -129,6 +149,26 @@ class Alphabet:
         """The code points of the alphabet, as sorted, disjoint,
         inclusive ranges."""
         return _ranges(self.names, self.characters)
+
+    @property
+    def bounds(self) -> tuple[Ranges, Ranges]:
+        """The alphabet on every supported Python: the code points every
+        version holds, and those any version holds or may come to."""
+        return self.bounds_on(None)
+
+    def bounds_on(self, version: str | None) -> tuple[Ranges, Ranges]:
+        """The alphabet on one Python `version` (its set twice), or,
+        with None, on every supported Python as `bounds` gives it."""
+        own = tuple(((ord(c), ord(c)),) for c in self.characters)
+        pairs = [_named_bounds(n, version) for n in self.names]
+        return (tuple(_regular._cs_union(*[low for low, _ in pairs], *own)),
+                tuple(_regular._cs_union(*[high for _, high in pairs], *own)))
+
+    @property
+    def varying(self) -> tuple[str, ...]:
+        """What the alphabet holds that differs between Python versions,
+        in words."""
+        return tuple(_VERSIONED[n] for n in self.names if n in _VERSIONED)
 
     def has(self, ch: str) -> bool:
         """Whether the one character `ch` is in the alphabet."""
@@ -290,15 +330,33 @@ class AlphabetLanguage(TextLanguage):
         at = rng.randint(0, len(inside))
         return inside[:at] + rng.choice(self.outside_pool) + inside[at:]
 
-    def definition(self) -> dict[str, Any]:
-        """The regular-language term of the language: any number of
-        characters of the alphabet, exact."""
+    def definition(self, version: str | None = None) -> dict[str, Any]:
+        """The regular-language term of the language, any number of
+        characters of the alphabet, the same on every supported Python:
+        exact, or, for an alphabet whose characters depend on the Unicode
+        version, the pair of bounds that holds on all of them. With a
+        `version` (`"3.13"`), that Python's reading, exact."""
         assert self.alphabet is not None
-        every = _regular._loop(_regular._chars_re(self.alphabet.ranges), 0, None)
-        return {"kind": "regular_language", "version": _regular.TERM_VERSION,
-                "alphabet": [[0, sys.maxunicode]], "exact": True, "language": _regular.to_node(every),
-                "source": {"dialect": "alphabet", "alphabet": self.alphabet.text,
-                           "unicode": unicodedata.unidata_version}}
+        low, high = self.alphabet.bounds_on(version)
+        data = _regular.versions_data()
+        covered = list(data["versions"]) if version is None else [version]
+
+        def every(ranges: Ranges) -> dict[str, Any]:
+            return _regular.to_node(_regular._loop(_regular._chars_re(ranges), 0, None))
+
+        doc: dict[str, Any] = {
+            "kind": "regular_language", "version": _regular.TERM_VERSION,
+            "alphabet": [[0, sys.maxunicode]], "exact": low == high,
+            "source": {"dialect": "alphabet", "alphabet": self.alphabet.text,
+                       "versions": covered,
+                       "unicode": list(dict.fromkeys(data["unicode"][v] for v in covered))}}
+        if low == high:
+            doc["language"] = every(low)
+        else:
+            doc["at_least"], doc["at_most"] = every(high), every(low)
+            doc["source"]["not_exact"] = [f"{what}, which differ slightly between Python versions"
+                                          for what in self.alphabet.varying]
+        return doc
 
     def to_json(self) -> dict[str, Any]:
         assert self.alphabet is not None

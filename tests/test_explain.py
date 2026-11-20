@@ -121,7 +121,7 @@ SHAPES = [
 @pytest.mark.running_unicode
 @pytest.mark.parametrize("name, pattern, flags, predicate, reading", PATTERNS, ids=[p[0] for p in PATTERNS])
 def test_a_pattern_reads_in_plain_words(name, pattern, flags, predicate, reading):
-    said = explain(_regular.term(pattern, flags, predicate))
+    said = explain(_regular.term(pattern, flags, predicate, version=_regular.RUNNING))
     if name == "a class and more":
         assert said.startswith(reading.format(**SIZES) + ', "\u00b2" (U+00B2), "\u00b3" (U+00B3), ')
         assert re.search(r", [0-9]+ more characters$", said) and said.count(",") <= 12
@@ -132,7 +132,7 @@ def test_a_pattern_reads_in_plain_words(name, pattern, flags, predicate, reading
 @pytest.mark.running_unicode
 @pytest.mark.parametrize("shape, base, reading", SHAPES, ids=[s[0] for s in SHAPES])
 def test_a_shape_reads_in_plain_words(shape, base, reading):
-    assert explain(Shape(shape, base).term()) == reading.format(**SIZES)
+    assert explain(Shape(shape, base).term(version=_regular.RUNNING)) == reading.format(**SIZES)
 
 
 def test_there_are_at_least_twenty_five_pinned_readings_and_the_package_own_validators_among_them():
@@ -220,7 +220,7 @@ def test_a_named_class_reads_by_name_with_its_size_and_never_as_a_dump():
         assert describe_characters(ranges) == f"{name} (Unicode, {size} characters)"
         assert describe_characters(_regular._cs_complement(ranges)) == (
             f"any character except: {name} (Unicode, {size} characters)")
-    letters = [[lo, hi] for lo, hi in Shape("A").term()["language"]["ranges"]]
+    letters = [[lo, hi] for lo, hi in Shape("A").term(version=_regular.RUNNING)["language"]["ranges"]]
     assert describe_characters(letters) == f"letters (Unicode, {SIZES['letters']} characters)"
     assert describe_characters(letters + [[0x30, 0x39]]) == (
         f"letters (Unicode, {SIZES['letters']} characters), 0-9")

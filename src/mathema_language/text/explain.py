@@ -51,7 +51,6 @@ from __future__ import annotations
 import contextvars
 import functools
 import json
-import sys
 from typing import Any
 
 from . import _regular
@@ -78,23 +77,33 @@ def _size(ranges: Ranges) -> int:
     return sum(hi - lo + 1 for lo, hi in ranges)
 
 
+#: the version table's classes a reading names, with their names
+_CLASS_NAMES = (("word", "word characters"), ("unicode_alpha", "letters"),
+                ("lowercase_letter", "lower-case letters"), ("space", "whitespace"),
+                ("decimal", "digits"))
+
+
 @functools.lru_cache(maxsize=1)
 def _classes() -> tuple[tuple[str, Ranges], ...]:
     """Intent:
-        The named Unicode classes, largest first, each with its code points: word characters
-        (`\\w`), letters (`str.isalpha` of one character), whitespace (`\\s`) and digits
-        (`\\d`), as the running Python reads them.
+        The named Unicode classes as a term may hold them, largest first, each with the words
+        that say it: word characters (`\\w`), letters (`str.isalpha` of one character),
+        lower-case letters, whitespace (`\\s`) and digits (`\\d`), as one supported Python
+        reads the class, as every supported Python does, and as any may.
     """
-    runs: list[list[int]] = []
-    for code in range(sys.maxunicode + 1):
-        if chr(code).isalpha():
-            if runs and runs[-1][1] == code - 1:
-                runs[-1][1] = code
-            else:
-                runs.append([code, code])
-    letters = tuple((lo, hi) for lo, hi in runs)
-    return (("word characters", _regular._class_chars(r"\w")), ("letters", letters),
-            ("whitespace", _regular._class_chars(r"\s")), ("digits", _regular._class_chars(r"\d")))
+    data = _regular.versions_data()
+    found: dict[Ranges, str] = {}
+    for key, name in _CLASS_NAMES:
+        entry = data["classes"][key]
+        low, high = (tuple(r) for r in _regular.class_bounds(key))
+        for members in entry["by_version"].values():
+            found.setdefault(tuple(members), f"{name} (Unicode, {_size(tuple(members))} characters)")
+        if low != high:
+            found.setdefault(
+                low, f"{name} (Unicode, the {_size(low)} characters every supported Python holds)")
+            found[high] = f"{name} (Unicode, every character a supported Python holds or may come to)"
+    return tuple(sorted(((said, members) for members, said in found.items()),
+                        key=lambda pair: -_size(pair[1])))
 
 
 def _one(code: int) -> str:
@@ -154,9 +163,9 @@ def _contained(ranges: Ranges) -> str:
         return "ASCII letters"
     names = []
     rest = ranges
-    for name, members in _classes():
+    for said, members in _classes():
         if tuple(_regular._cs_inter(rest, members)) == members:
-            names.append(f"{name} (Unicode, {_size(members)} characters)")
+            names.append(said)
             rest = _minus(rest, members)
     return ", ".join(names + ([_listed(rest)] if rest else []))
 
@@ -176,6 +185,9 @@ def describe_characters(ranges: Any) -> str:
         return _NAMES.get()[given]
     if given == _regular._FULL:
         return "any character"
+    for said, members in _classes():
+        if given == members:
+            return said
     left_out = tuple(_regular._cs_complement(given))
     if _size(given) > _size(left_out):
         return "any character except: " + _contained(left_out)

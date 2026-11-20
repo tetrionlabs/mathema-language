@@ -384,6 +384,27 @@ def class_ranges(symbol: str, base: str) -> tuple[tuple[int, int], ...]:
     return tuple((lo, hi) for lo, hi in runs)
 
 
+#: the version table's class for each symbol over `unicode`, and what it holds in words
+_VERSIONED = {"A": ("unicode_alpha", "letters"), "a": ("lowercase_letter", "lower-case letters"),
+              "9": ("decimal", "digits")}
+
+
+def _class_bounds(symbol: str, base: str, version: str | None = None) -> tuple[Any, Any]:
+    """Intent:
+        The code points a built-in symbol stands for, as a pair: on every supported Python,
+        those every version holds and those any version holds or a later one may; for one
+        `version`, that version's set twice. One set over `ascii` and for `X`.
+
+    Raises:
+        ValueError: `symbol` is not one of `SYMBOLS`, `base` not one of `BASES`, or `version`
+            not a supported Python.
+    """
+    if base == "ascii" or symbol == "X" or symbol not in _VERSIONED:
+        return class_ranges(symbol, base), class_ranges(symbol, base)
+    low, high = _regular.class_bounds(_VERSIONED[symbol][0], version)
+    return tuple(low), tuple(high)
+
+
 #: per built-in symbol and base: the members at the edges of the class and, over `unicode`,
 #: members outside ASCII
 _PLAIN = {"A": "A", "a": "a", "9": "0", "X": "x"}
@@ -410,6 +431,24 @@ class _Classes:
         """The code points the symbol stands for."""
         found = self.of(symbol)
         return found.ranges if found is not None else class_ranges(symbol, self.base)
+
+    def bounds(self, symbol: str, version: str | None = None) -> tuple[Any, Any]:
+        """The code points the symbol stands for on every supported
+        Python (those every version holds, and those any may), or on
+        the one `version`."""
+        found = self.of(symbol)
+        if found is not None:
+            return found.bounds_on(version)
+        return _class_bounds(symbol, self.base, version)
+
+    def varying(self, symbol: str) -> tuple[str, ...]:
+        """What the symbol stands for that differs between Python
+        versions, in words."""
+        found = self.of(symbol)
+        if found is not None:
+            return found.varying
+        low, high = _class_bounds(symbol, self.base)
+        return (_VERSIONED[symbol][1],) if low != high else ()
 
     def has(self, symbol: str, ch: str) -> bool:
         """Whether the character is one the symbol stands for."""
@@ -505,17 +544,34 @@ def _pattern(items: tuple[_Item, ...], classes: _Classes) -> str:
     return "".join(out)
 
 
-def _expression(items: tuple[_Item, ...], classes: _Classes) -> tuple:
+def _symbols(items: tuple[_Item, ...]) -> set[str]:
     """Intent:
-        The regular expression of the items in the term module's own form.
+        The class symbols the items use, groups included.
+    """
+    out: set[str] = set()
+    for item in items:
+        if isinstance(item.atom, _Group):
+            out |= _symbols(item.atom.items)
+        elif isinstance(item.atom, _Class):
+            out.add(item.atom.symbol)
+    return out
+
+
+def _expression(items: tuple[_Item, ...], classes: _Classes, bound: int | None = None,
+                version: str | None = None) -> tuple:
+    """Intent:
+        The regular expression of the items in the term module's own form: each class as the
+        running Python reads it, or, with `bound`, as every supported Python does (0) or as
+        any may (1), or as the one `version` does.
     """
     parts = []
     for item in items:
         atom = item.atom
         if isinstance(atom, _Group):
-            inner = _expression(atom.items, classes)
+            inner = _expression(atom.items, classes, bound, version)
         elif isinstance(atom, _Class):
-            inner = _regular._chars_re(classes.ranges(atom.symbol))
+            inner = _regular._chars_re(classes.ranges(atom.symbol) if bound is None
+                                       else classes.bounds(atom.symbol, version)[bound])
         else:
             text = atom.text if isinstance(atom, _Run) else atom.char
             inner = _regular._cat(*[_regular._chars_re(((ord(c), ord(c)),)) for c in text])
@@ -749,21 +805,40 @@ class Shape:
         it one character at a time."""
         return isinstance(text, str) and len(text) in _ends(self._items, self._classes, text, {0})
 
-    def term(self) -> dict[str, Any]:
-        """The regular-language term of the shape's members, exact."""
-        return {
+    def term(self, version: str | None = None) -> dict[str, Any]:
+        """The regular-language term of the shape's members, the same on
+        every supported Python: exact, or, where a symbol stands for a
+        Unicode class that differs between versions, the pair of bounds
+        that holds on all of them. With a `version` (`"3.13"`), that
+        Python's reading, exact."""
+        data = _regular.versions_data()
+        low = _regular.to_node(_expression(self._items, self._classes, 0, version))
+        high = _regular.to_node(_expression(self._items, self._classes, 1, version))
+        covered = list(data["versions"]) if version is None else [version]
+        doc: dict[str, Any] = {
             "kind": "regular_language", "version": _regular.TERM_VERSION,
-            "alphabet": [[0, sys.maxunicode]], "exact": True,
-            "language": _regular.to_node(_expression(self._items, self._classes)),
+            "alphabet": [[0, sys.maxunicode]], "exact": low == high,
             "source": {"dialect": "shape", "shape": self.shape, "base": self.base,
                        "bindings": {symbol: found.text for symbol, found in self.bindings},
-                       "unicode": unicodedata.unidata_version}}
+                       "unicode": list(dict.fromkeys(data["unicode"][v] for v in covered))}}
+        if low == high:
+            doc["language"] = low
+        else:
+            doc["at_least"], doc["at_most"] = high, low
+            doc["source"]["versions"] = covered
+            doc["source"]["not_exact"] = [
+                f"{what}, which differ slightly between Python versions"
+                for what in dict.fromkeys(w for symbol in sorted(_symbols(self._items))
+                                          for w in self._classes.varying(symbol))]
+        return doc
 
     def explain(self) -> str:
         """The shape's members in plain words, a bound symbol's
         characters named by its alphabet."""
         from .explain import explain
-        return explain(self.term(), names={found.ranges: found.text for _, found in self.bindings})
+        names = {ranges: found.text for _, found in self.bindings
+                 for ranges in (found.ranges, *found.bounds)}
+        return explain(self.term(), names=names)
 
     def draw(self, rng: random.Random) -> str:
         """One member, written directly: each symbol a character of its
@@ -945,7 +1020,8 @@ def _term_reads(shape: str, base: str, text: str) -> bool:
         ShapeError: the shape does not read.
         ValueError: the base is not one of `BASES`.
     """
-    return _regular.member(_shape(shape, base).term(), text)
+    found = _shape(shape, base)
+    return _regular.holds(_expression(found._items, found._classes), text)
 
 
 def _canonical(shape: str) -> str:

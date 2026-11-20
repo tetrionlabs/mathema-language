@@ -156,20 +156,30 @@ def _raw(pattern: str) -> str:
     return 'r"' + pattern + '"'
 
 
-def version_pin(word: str) -> None:
+def version_pin(word: str) -> str:
     """Intent:
-        Where a version pin after the dialect (`python 3.13`) will be read. None is read yet.
+        The Python version a pin after the dialect names: `python 3.13` (or `py 3.13`) is
+        `3.13`.
 
     Raises:
-        ValueError: always, saying a version pin is not available yet.
+        ValueError: the pin is not `python` and a major and minor number, or the version is
+            not one the package covers.
     """
-    raise ValueError(f"a version pin ({word}) is not available yet; write the dialect alone, python")
+    found = re.fullmatch(r"(?:python|py) ?([0-9]+\.[0-9]+)", word)
+    if found is None:
+        raise ValueError(f"a version is written python 3.13, not {word!r}")
+    versions = _regular.versions_data()["versions"]
+    if found.group(1) not in versions:
+        raise ValueError(f"python {found.group(1)} is not a supported version; the versions are "
+                         f"{', '.join(versions)}")
+    return found.group(1)
 
 
-def re_text(pattern: str, flags: int = 0) -> str:
+def re_text(pattern: str, flags: int = 0, version: str | None = None) -> str:
     """Intent:
-        The canonical text of a Python pattern as an argument: `re(r"...", python)`, then the
-        words of `flags`, sorted.
+        The canonical text of a Python pattern as an argument: `re(r"...", python)`, with the
+        version after the dialect when one is pinned (`python 3.13`), then the words of
+        `flags`, sorted.
 
     Raises:
         ValueError: `flags` holds a flag with no word (LOCALE, DEBUG).
@@ -180,7 +190,8 @@ def re_text(pattern: str, flags: int = 0) -> str:
     if int(flags) & ~known & ~int(re.UNICODE):
         raise ValueError(f"a flag of {flags!r} has no word; the flags are {', '.join(sorted(FLAGS))}")
     words = sorted(word for word, flag in FLAGS.items() if int(flags) & int(flag))
-    return "re(" + ", ".join([_raw(pattern), "python", *words]) + ")"
+    dialect = "python" if version is None else f"python {version}"
+    return "re(" + ", ".join([_raw(pattern), dialect, *words]) + ")"
 
 
 def read_re(text: str) -> tuple[str, int] | None:
@@ -191,12 +202,34 @@ def read_re(text: str) -> tuple[str, int] | None:
 
     Raises:
         ValueError: the first argument is not a quoted pattern; a word is a dialect that is
-            not available or is reserved, a version pin, or neither a dialect nor a flag (the
-            nearest word is offered); two dialects are named; or the pattern does not compile.
+            not available or is reserved, a version that does not read, or neither a dialect
+            nor a flag (the nearest word is offered); two dialects are named; or the pattern
+            does not compile.
+    """
+    found = _read_re(text)
+    return None if found is None else found[:2]
+
+
+def _re_version(text: str) -> str | None:
+    """Intent:
+        The Python version an argument written `re(...)` pins after its dialect, or None when
+        it pins none or `text` is not a call of `re`.
+
+    Raises:
+        ValueError: as `read_re`.
+    """
+    found = _read_re(text)
+    return None if found is None else found[2]
+
+
+def _read_re(text: str) -> tuple[str, int, str | None] | None:
+    """Intent:
+        The pattern, flags and pinned version of an argument written `re(...)`, or None.
     """
     call = _CALL.match(text.strip())
     if call is None or _key(call.group("name")) != "re":
         return None
+    version: str | None = None
     parts = _split(call.group("inside"))
     pattern = _string(parts[0]) if parts and parts[0] else None
     if pattern is None:
@@ -221,7 +254,8 @@ def read_re(text: str) -> tuple[str, int] | None:
         elif word in RESERVED:
             refused = refused or f"the {RESERVED[word]} dialect is reserved, not available yet"
         elif re.match(r"(?:python|py)?\s*[0-9]", word):
-            version_pin(word)
+            version = version_pin(word)
+            dialects.append("python")
         else:
             near = difflib.get_close_matches(word, [*FLAGS, *DIALECTS], n=1)
             raise ValueError(f"{part!r} is neither a dialect nor a flag of re; the flags are "
@@ -235,7 +269,7 @@ def read_re(text: str) -> tuple[str, int] | None:
         re.compile(pattern, flags)
     except (re.error, RecursionError, OverflowError) as e:
         raise ValueError(f"the pattern {_raw(pattern)} does not compile: {e}") from e
-    return pattern, flags
+    return pattern, flags, version
 
 
 def _bindings(parts: list[str]) -> dict[str, str]:
@@ -312,7 +346,7 @@ def canonical_pattern_argument(text: str, sugar: str | None = None) -> str:
     if literal is not None:
         return _quoted(literal)
     if pattern is not None:
-        return re_text(*pattern)
+        return re_text(*pattern, _re_version(text))
     if parts is not None:
         return shape_text(read_shape(parts))
     if _DOTTED.match(text.strip()):
@@ -371,12 +405,54 @@ def _pattern_of(argument: str, base: str) -> tuple[str, int]:
     raise ValueError(f"{argument} names {type(found).__name__}, not a compiled pattern or a Shape")
 
 
+def _star_set(doc: dict[str, Any]) -> Any:
+    """Intent:
+        The character set of a term that is exactly every string over one set, as ranges, or
+        None for any other term.
+    """
+    node = doc.get("language")
+    if not doc.get("exact") or not isinstance(node, dict) or node.get("op") != "repeat" \
+            or node["min"] != 0 or node["max"] is not None:
+        return None
+    arg = node["arg"]
+    if arg["op"] == "chars":
+        return tuple((lo, hi) for lo, hi in arg["ranges"])
+    if arg["op"] == "literal" and len(arg["codes"]) == 1:
+        return ((arg["codes"][0], arg["codes"][0]),)
+    return None
+
+
+def _cut_to(node: dict[str, Any], over: Any) -> dict[str, Any] | None:
+    """Intent:
+        The node with every character set cut to the set `over`, which holds the same strings
+        over `over` as the node does; None for a node with a complement, whose strings over
+        `over` are not found this way.
+    """
+    op = node["op"]
+    if op in ("empty", "epsilon"):
+        return node
+    if op == "chars":
+        kept = _regular._cs_inter(tuple((lo, hi) for lo, hi in node["ranges"]), over)
+        return _regular.canonical({"op": "chars", "ranges": [[lo, hi] for lo, hi in kept]})
+    if op == "literal":
+        inside = all(_regular._cs_has(over, code) for code in node["codes"])
+        return node if inside else {"op": "empty"}
+    if op == "complement":
+        return None
+    if op == "repeat":
+        arg = _cut_to(node["arg"], over)
+        return None if arg is None else _regular.canonical({**node, "arg": arg})
+    args = [_cut_to(arg, over) for arg in node["args"]]
+    return None if None in args else _regular.canonical({"op": op, "args": args})
+
+
 def _inter(a: dict[str, Any], b: dict[str, Any], negate: bool) -> dict[str, Any]:
     """Intent:
         The term of the texts in the term `a` and in the term `b`, or, with `negate`, in `a`
         and not in `b`. Exact when both are; otherwise a pair, in which `at_least` meets the
         widest reading of each side and `at_most` the narrowest (the complement of a bound
-        being a bound the other way).
+        being a bound the other way). Where `a` is every string over one character set, `b` is
+        first cut to that set, so bounds that differ only outside it become one exact term.
     """
     def side(doc: dict[str, Any], bound: str) -> dict[str, Any]:
         return doc["language"] if "language" in doc else doc[bound]
@@ -386,6 +462,15 @@ def _inter(a: dict[str, Any], b: dict[str, Any], negate: bool) -> dict[str, Any]
         right = {"op": "complement", "arg": side(b, other)} if negate else side(b, bound)
         return _regular.canonical({"op": "inter", "args": [side(a, bound), right]})
 
+    over = _star_set(a)
+    if over is not None:
+        narrowed_bounds = {key: _cut_to(b[key], over) for key in ("language", "at_least", "at_most")
+                           if key in b}
+        if None not in narrowed_bounds.values():
+            b = {**b, **narrowed_bounds}
+            if "language" not in b and b["at_least"] == b["at_most"]:
+                b = {"exact": True, "language": b["at_least"],
+                     **{k: v for k, v in b.items() if k not in ("exact", "at_least", "at_most")}}
     exact = bool(a.get("exact")) and bool(b.get("exact"))
     doc: dict[str, Any] = {"kind": "regular_language", "version": _regular.TERM_VERSION,
                            "alphabet": a["alphabet"], "exact": exact}
@@ -473,6 +558,19 @@ def _is_text(language: Any) -> bool:
     return getattr(language, "kind", None) == "string"
 
 
+def _pattern_language_of(argument: str, word: str, base: str) -> Any:
+    """Intent:
+        The language of the strings a pattern word holds of, for one canonical argument read
+        over the base: the pattern's own, for every supported Python or, where the argument
+        pins a version (`re(r"...", python 3.13)`), for that Python alone.
+
+    Raises:
+        ValueError: the argument does not read.
+    """
+    pattern, flags = _pattern_of(argument, base)
+    return _regular.pattern_language(pattern, word, flags, version=_re_version(argument))
+
+
 def _said(word: str, arguments: tuple[str, ...], negated: bool) -> str:
     """Intent:
         A predicate as text: `word (arguments)`, with `not` in front when negated.
@@ -490,9 +588,8 @@ def _pattern_word(word: str, sugar: tuple[str, ...]) -> Any:
         return (canonical_pattern_argument(given[0], operator),)
 
     def refine(language: Any, given: tuple[str, ...], negated: bool = False) -> Any:
-        pattern, flags = _pattern_of(given[0], str(getattr(_root(language), "name", "")))
-        return narrowed(language, _regular.pattern_language(pattern, word, flags),
-                        _said(word, tuple(given), negated), negated)
+        found = _pattern_language_of(given[0], word, str(getattr(_root(language), "name", "")))
+        return narrowed(language, found, _said(word, tuple(given), negated), negated)
 
     def suggest(base: str | None, given: tuple[str, ...]) -> str | None:
         try:

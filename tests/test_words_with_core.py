@@ -182,7 +182,7 @@ REFUSED = [
     *[(f'L[unicode, matches (re(r"a+", {word}))]', f"the {named} dialect is reserved, not available yet.",
        're(r"a+", python)') for word, named in sorted(words.RESERVED.items())],
     ('L[unicode, matches (re(r"a", ignorcase))]', "Did you mean ignore case?", None),
-    ('L[unicode, matches (re(r"a", python 3.13))]', "a version pin (python 3.13) is not available yet", None),
+    ('L[unicode, matches (re(r"a", python 3.9))]', "python 3.9 is not a supported version", None),
     ('L[unicode, matches (re(r"("))]', 'the pattern r"(" does not compile', None),
     ('L[ascii, shape ("KEY-99")]', "K, E and Y are not symbols. For the literal text write 'KEY': "
                                    "shape (\"'KEY'-99\").", None),

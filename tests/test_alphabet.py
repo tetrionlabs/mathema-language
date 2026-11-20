@@ -99,7 +99,9 @@ def test_the_language_over_an_alphabet_draws_directly_and_states_an_exact_term(e
     assert language.name == found.text
     assert languages.language_problems(language) == []
     doc = language.to_json()["definition"]
-    assert doc["exact"] is True and json.loads(json.dumps(doc)) == doc
+    assert doc["exact"] is (not found.varying) and json.loads(json.dumps(doc)) == doc
+    here = language.definition(version=_regular.RUNNING)
+    assert here["exact"] is True
     assert doc["source"]["alphabet"] == found.text
     assert language.to_json()["alphabet"] == {"names": list(found.names), "characters": list(found.characters)}
     rng = random.Random(42)
@@ -107,14 +109,14 @@ def test_the_language_over_an_alphabet_draws_directly_and_states_an_exact_term(e
     assert "" in drawn and len(set(drawn)) > 30
     for text in drawn + [h.value for h in language.hazards() if len(h.value) < 100]:
         assert all(found.has(c) for c in text) and language.contains(text)
-        assert _regular.member(doc, text), text
+        assert _regular.member(here, text), text
     near = [language.outside(random.Random(seed)) for seed in range(100)]
     if expression == "unicode":
         assert near == [None] * 100
     else:
         assert len(set(near)) > 20
         for text in near:
-            assert not language.contains(text) and not _regular.member(doc, text), text
+            assert not language.contains(text) and not _regular.member(here, text), text
             assert sum(not found.has(c) for c in text) == 1
 
 

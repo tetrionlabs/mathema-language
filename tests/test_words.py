@@ -56,8 +56,8 @@ def test_every_other_dialect_word_is_reserved(word, named):
     ('re(r"a", ignorcase)', "is neither a dialect nor a flag of re; the flags are ascii only, dot all, "
                             "ignore case, multi line, verbose. Did you mean ignore case?"),
     ('re(r"a", pyhton)', "Did you mean python?"),
-    ('re(r"a", python 3.13)', "a version pin (python 3.13) is not available yet"),
-    ('re(r"a", 3.13)', "a version pin (3.13) is not available yet"),
+    ('re(r"a", python 3.9)', "python 3.9 is not a supported version"),
+    ('re(r"a", 3.13)', "a version is written python 3.13"),
     ('re(r"a", python, py)', "re names one dialect"),
     ('re(r"(")', 'the pattern r"(" does not compile'),
     ("re(a)", "re takes a quoted pattern first"), ("re()", "re takes a quoted pattern first"),
