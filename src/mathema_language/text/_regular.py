@@ -1190,16 +1190,48 @@ def term_hash(doc: Node) -> str:
     return hashlib.sha256(canonical_text(doc).encode("ascii")).hexdigest()
 
 
+def _meaning(doc: Node) -> tuple[int, list[list[int]], bool, list[str]]:
+    """Intent:
+        Returns what a term states, checked: its version, its alphabet as merged ranges,
+        whether it is exact, and the keys of the nodes it carries (`language`, or `at_least`
+        and `at_most`).
+
+    Raises:
+        ValueError: the term is not an object, its version is not a whole number, it has no
+            alphabet, its `exact` is not true or false, or an exact term lacks `language` or
+            one that is not exact lacks a bound.
+    """
+    if not isinstance(doc, dict):
+        raise ValueError(f"not a term: {doc!r}")
+    version = doc.get("version")
+    if isinstance(version, bool) or not isinstance(version, int):
+        raise ValueError(f"a term's version is a whole number, not {version!r}")
+    if "alphabet" not in doc:
+        raise ValueError("a term states its alphabet")
+    exact = doc.get("exact")
+    if exact is True and "language" in doc:
+        pass
+    elif exact is False and "at_least" in doc and "at_most" in doc:
+        pass
+    else:
+        raise ValueError("an exact term (`exact` true) states `language`; one that is not "
+                         "exact (`exact` false) states `at_least` and `at_most`")
+    return (version, _ranges(doc["alphabet"]), exact,
+            [key for key in ("language", "at_least", "at_most") if key in doc])
+
+
 def canonical_text(doc: Node) -> str:
     """Intent:
         Returns the text `term_hash` hashes: the JSON object of `version`, `alphabet`, `exact`
         and `language` (or `at_least` and `at_most`), keys sorted, no white space.
+
+    Raises:
+        ValueError: the term or one of its nodes is not well formed.
     """
-    meaning: dict[str, Any] = {"version": doc["version"], "alphabet": _ranges(doc["alphabet"]),
-                               "exact": bool(doc["exact"])}
-    for key in ("language", "at_least", "at_most"):
-        if key in doc:
-            meaning[key] = canonical(doc[key])
+    version, alphabet, exact, keys = _meaning(doc)
+    meaning: dict[str, Any] = {"version": version, "alphabet": alphabet, "exact": exact}
+    for key in keys:
+        meaning[key] = canonical(doc[key])
     return _text(meaning)
 
 
@@ -1257,15 +1289,21 @@ def member(doc: Node, text: str, bound: str = "language") -> bool:
     """Intent:
         Returns whether `text` is in a term's language, or in its `at_least` or `at_most` bound
         (an exact term's language is both), read by its UTF-16 code units when the term's
-        alphabet is the code units.
+        alphabet is the code units. The language is over the term's alphabet: a text with a
+        character outside it is no member, and a complement is the strings over the alphabet
+        outside its argument.
 
     Raises:
-        ValueError: the term is not exact and `bound` names neither bound.
+        ValueError: the term is not well formed, or is not exact and `bound` names neither
+            bound.
     """
+    _, alphabet, _, _ = _meaning(doc)
     if "language" not in doc and bound not in ("at_least", "at_most"):
         raise ValueError("the term is not exact: ask for its at_least or its at_most bound")
-    if doc.get("alphabet") == [[0, 0xFFFF]]:
+    if alphabet == [[0, 0xFFFF]]:
         text = code_units(text)
+    if alphabet != [[0, _MAX_CODE]] and not all(_cs_has(alphabet, ord(c)) for c in text):
+        return False
     node = doc["language"] if "language" in doc else doc[bound]
     kept = _READ.get(id(node))
     if kept is None or kept[0] is not node:
