@@ -1,7 +1,7 @@
 {
   "implementation": 87,
   "intent": 70,
-  "clarity": 17,
+  "clarity": 16,
   "overall": 29,
   "clarity_algo": "entropy-dimensions@1.4",
   "per_function": {
@@ -766,7 +766,7 @@
       "clarity": 20
     },
     "mathema_language.refinements._JsonStructureLanguage.to_json": {
-      "implementation": 60,
+      "implementation": 67,
       "intent": 32,
       "clarity": 3
     },
@@ -2111,7 +2111,7 @@
       "clarity": 23
     },
     "mathema_language.smt._scalar": {
-      "implementation": 83,
+      "implementation": 87,
       "intent": 93,
       "clarity": 28
     },
@@ -2315,10 +2315,155 @@
       "intent": 50,
       "clarity": 8
     },
+    "mathema_language.text._algebra._cs_union": {
+      "implementation": 100,
+      "intent": 91,
+      "clarity": 13
+    },
+    "mathema_language.text._algebra._cs_complement": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 18
+    },
+    "mathema_language.text._algebra._cs_inter": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 17
+    },
+    "mathema_language.text._algebra._cs_has": {
+      "implementation": 100,
+      "intent": 36,
+      "clarity": 34
+    },
+    "mathema_language.text._algebra._chars_re": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.text._algebra._cat": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 3
+    },
+    "mathema_language.text._algebra._alt": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 3
+    },
+    "mathema_language.text._algebra._inter": {
+      "implementation": 71,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.text._algebra._loop": {
+      "implementation": 86,
+      "intent": 36,
+      "clarity": 25
+    },
+    "mathema_language.text._algebra._nullable": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 15
+    },
+    "mathema_language.text._algebra._re_sets": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 19
+    },
+    "mathema_language.text._algebra.to_node": {
+      "implementation": 100,
+      "intent": 84,
+      "clarity": 12
+    },
+    "mathema_language.text._algebra._to_node": {
+      "implementation": 92,
+      "intent": 44,
+      "clarity": 15
+    },
+    "mathema_language.text._algebra.from_node": {
+      "implementation": 100,
+      "intent": 80,
+      "clarity": 5
+    },
+    "mathema_language.text._algebra._code": {
+      "implementation": 100,
+      "intent": 38,
+      "clarity": 10
+    },
+    "mathema_language.text._algebra._ranges": {
+      "implementation": 83,
+      "intent": 84,
+      "clarity": 6
+    },
+    "mathema_language.text._algebra._text": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 17
+    },
+    "mathema_language.text._algebra.canonical": {
+      "implementation": 95,
+      "intent": 77,
+      "clarity": 6
+    },
+    "mathema_language.text._algebra.term_hash": {
+      "implementation": 100,
+      "intent": 90,
+      "clarity": 12
+    },
+    "mathema_language.text._algebra._meaning": {
+      "implementation": 100,
+      "intent": 88,
+      "clarity": 5
+    },
+    "mathema_language.text._algebra.canonical_text": {
+      "implementation": 100,
+      "intent": 87,
+      "clarity": 9
+    },
+    "mathema_language.text._algebra._derivative": {
+      "implementation": 93,
+      "intent": 59,
+      "clarity": 9
+    },
+    "mathema_language.text._algebra.holds": {
+      "implementation": 100,
+      "intent": 87,
+      "clarity": 17
+    },
+    "mathema_language.text._algebra.member": {
+      "implementation": 93,
+      "intent": 83,
+      "clarity": 10
+    },
+    "mathema_language.text._algebra.code_units": {
+      "implementation": 0,
+      "intent": 92,
+      "clarity": 20
+    },
+    "mathema_language.text._algebra.code_points": {
+      "implementation": 0,
+      "intent": 92,
+      "clarity": 23
+    },
+    "mathema_language.text._algebra.shortest": {
+      "implementation": 88,
+      "intent": 68,
+      "clarity": 15
+    },
+    "mathema_language.text._algebra.every_string_over": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 23
+    },
+    "mathema_language.text._algebra.of_length": {
+      "implementation": 100,
+      "intent": 69,
+      "clarity": 19
+    },
     "mathema_language.text._kit.TextLanguage.to_json": {
       "implementation": 100,
       "intent": 32,
-      "clarity": 4
+      "clarity": 3
     },
     "mathema_language.text._kit.TextLanguage.hazards": {
       "implementation": 100,
@@ -2350,25 +2495,45 @@
       "intent": 22,
       "clarity": 3
     },
-    "mathema_language.text._regular._cs_union": {
+    "mathema_language.text._named_terms._ipv6_pattern": {
       "implementation": 100,
-      "intent": 91,
-      "clarity": 13
+      "intent": 80,
+      "clarity": 8
     },
-    "mathema_language.text._regular._cs_complement": {
-      "implementation": 100,
-      "intent": 93,
-      "clarity": 18
+    "mathema_language.text._named_terms._exact": {
+      "implementation": 80,
+      "intent": 95,
+      "clarity": 19
     },
-    "mathema_language.text._regular._cs_inter": {
-      "implementation": 100,
-      "intent": 85,
-      "clarity": 17
+    "mathema_language.text._named_terms._bounded": {
+      "implementation": 80,
+      "intent": 71,
+      "clarity": 22
     },
-    "mathema_language.text._regular._cs_has": {
+    "mathema_language.text._named_terms.identifier_characters": {
       "implementation": 100,
-      "intent": 36,
-      "clarity": 34
+      "intent": 89,
+      "clarity": 11
+    },
+    "mathema_language.text._named_terms._identifier": {
+      "implementation": 100,
+      "intent": 76,
+      "clarity": 2
+    },
+    "mathema_language.text._named_terms._slug": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 4
+    },
+    "mathema_language.text._named_terms._name_of": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.text._named_terms.stated": {
+      "implementation": 100,
+      "intent": 77,
+      "clarity": 12
     },
     "mathema_language.text._regular._sre": {
       "implementation": 50,
@@ -2390,36 +2555,6 @@
       "intent": 70,
       "clarity": 13
     },
-    "mathema_language.text._regular._chars_re": {
-      "implementation": 100,
-      "intent": 50,
-      "clarity": 19
-    },
-    "mathema_language.text._regular._cat": {
-      "implementation": 100,
-      "intent": 32,
-      "clarity": 3
-    },
-    "mathema_language.text._regular._alt": {
-      "implementation": 100,
-      "intent": 32,
-      "clarity": 3
-    },
-    "mathema_language.text._regular._inter": {
-      "implementation": 71,
-      "intent": 50,
-      "clarity": 24
-    },
-    "mathema_language.text._regular._loop": {
-      "implementation": 86,
-      "intent": 36,
-      "clarity": 25
-    },
-    "mathema_language.text._regular._nullable": {
-      "implementation": 100,
-      "intent": 93,
-      "clarity": 15
-    },
     "mathema_language.text._regular._nonempty": {
       "implementation": 69,
       "intent": 77,
@@ -2434,11 +2569,6 @@
       "implementation": 88,
       "intent": 85,
       "clarity": 7
-    },
-    "mathema_language.text._regular._re_sets": {
-      "implementation": 100,
-      "intent": 93,
-      "clarity": 19
     },
     "mathema_language.text._regular._ctx_and": {
       "implementation": 100,
@@ -2565,80 +2695,10 @@
       "intent": 81,
       "clarity": 3
     },
-    "mathema_language.text._regular.to_node": {
-      "implementation": 100,
-      "intent": 84,
-      "clarity": 12
-    },
-    "mathema_language.text._regular._to_node": {
-      "implementation": 92,
-      "intent": 44,
-      "clarity": 15
-    },
-    "mathema_language.text._regular.from_node": {
-      "implementation": 100,
-      "intent": 80,
-      "clarity": 5
-    },
     "mathema_language.text._regular.term": {
       "implementation": 96,
       "intent": 82,
       "clarity": 15
-    },
-    "mathema_language.text._regular._code": {
-      "implementation": 100,
-      "intent": 38,
-      "clarity": 10
-    },
-    "mathema_language.text._regular._ranges": {
-      "implementation": 83,
-      "intent": 84,
-      "clarity": 6
-    },
-    "mathema_language.text._regular._text": {
-      "implementation": 100,
-      "intent": 44,
-      "clarity": 17
-    },
-    "mathema_language.text._regular.canonical": {
-      "implementation": 95,
-      "intent": 77,
-      "clarity": 6
-    },
-    "mathema_language.text._regular.term_hash": {
-      "implementation": 100,
-      "intent": 90,
-      "clarity": 12
-    },
-    "mathema_language.text._regular.canonical_text": {
-      "implementation": 100,
-      "intent": 87,
-      "clarity": 8
-    },
-    "mathema_language.text._regular._derivative": {
-      "implementation": 93,
-      "intent": 59,
-      "clarity": 9
-    },
-    "mathema_language.text._regular.holds": {
-      "implementation": 100,
-      "intent": 87,
-      "clarity": 17
-    },
-    "mathema_language.text._regular.member": {
-      "implementation": 91,
-      "intent": 90,
-      "clarity": 13
-    },
-    "mathema_language.text._regular.code_units": {
-      "implementation": 0,
-      "intent": 92,
-      "clarity": 20
-    },
-    "mathema_language.text._regular.code_points": {
-      "implementation": 0,
-      "intent": 92,
-      "clarity": 23
     },
     "mathema_language.text._regular.runs": {
       "implementation": 90,
@@ -2652,7 +2712,7 @@
     },
     "mathema_language.text._regular.admits_after_json": {
       "implementation": 0,
-      "intent": 89,
+      "intent": 88,
       "clarity": 24
     },
     "mathema_language.text._regular.exact": {
@@ -2665,25 +2725,10 @@
       "intent": 94,
       "clarity": 21
     },
-    "mathema_language.text._regular.shortest": {
-      "implementation": 88,
-      "intent": 68,
-      "clarity": 15
-    },
-    "mathema_language.text._regular.every_string_over": {
-      "implementation": 100,
-      "intent": 92,
-      "clarity": 23
-    },
     "mathema_language.text._regular.every_string_over_class": {
       "implementation": 100,
       "intent": 86,
       "clarity": 11
-    },
-    "mathema_language.text._regular.of_length": {
-      "implementation": 100,
-      "intent": 69,
-      "clarity": 19
     },
     "mathema_language.text._regular.pattern_language": {
       "implementation": 89,
@@ -2789,6 +2834,11 @@
       "implementation": 100,
       "intent": 50,
       "clarity": 21
+    },
+    "mathema_language.text.path_language.PathLanguage.to_json": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
     },
     "mathema_language.text.path_language.PathLanguage.hazards": {
       "implementation": 100,
