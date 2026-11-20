@@ -109,9 +109,9 @@ def test_a_finite_complement_admits_every_other_word_over_the_alphabet():
 
 
 def _path_reference(text: str, roots: tuple[str, ...]) -> bool:
-    """The 2026-10-15 ruling, by `posixpath`: non-empty text with no NUL
-    and no `..` segment, relative, or absolute and one of the roots or
-    below one."""
+    """Whether `text` is a path within the roots, by `posixpath`:
+    non-empty text with no NUL and no `..` segment, relative, or
+    absolute and one of the roots or below one."""
     if text == "" or "\x00" in text or ".." in text.split("/"):
         return False
     if not posixpath.isabs(text):
