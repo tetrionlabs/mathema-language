@@ -29,7 +29,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from . import _regular
+from . import _algebra, _regular
 
 _HEX_DIGIT = "[0-9A-Fa-f]"
 #: the white space `bytes.fromhex` skips between bytes
@@ -128,7 +128,7 @@ def _bounded(at_most: str, at_least: str, decided_by: str, reason: str) -> dict[
     if not (low["exact"] and high["exact"]):
         raise ValueError("a bound's pattern has no exact term")
     data = _regular.versions_data()
-    return {"kind": "regular_language", "version": _regular.TERM_VERSION,
+    return {"kind": "regular_language", "version": _algebra.TERM_VERSION,
             "alphabet": low["alphabet"], "exact": False,
             "at_least": high["language"], "at_most": low["language"],
             "source": {"dialect": "python", "versions": data["versions"],
@@ -155,10 +155,10 @@ def identifier_characters() -> dict[str, Any]:
             (Path(__file__).parent / "data" / "python_identifier_characters.json").read_text())
         for name, entry in raw["sets"].items():
             common = tuple((lo, hi) for lo, hi in entry["common"])
-            by_version = {v: _regular._cs_union(common, tuple((lo, hi) for lo, hi in extra))
+            by_version = {v: _algebra._cs_union(common, tuple((lo, hi) for lo, hi in extra))
                           for v, extra in entry["extra"].items()}
             _IDENTIFIER[name] = {"common": common, "by_version": by_version,
-                                 "any": _regular._cs_union(*by_version.values())}
+                                 "any": _algebra._cs_union(*by_version.values())}
         _IDENTIFIER["versions"] = raw["versions"]
     return _IDENTIFIER
 
@@ -173,16 +173,16 @@ def _identifier() -> dict[str, Any]:
     data = _regular.versions_data()
     sets = identifier_characters()
     start, rest = sets["start"], sets["continue"]
-    start_low, start_high = start["common"], _regular._cs_union(start["any"], data["unassigned"])
-    rest_low, rest_high = rest["common"], _regular._cs_union(rest["any"], data["unassigned"])
+    start_low, start_high = start["common"], _algebra._cs_union(start["any"], data["unassigned"])
+    rest_low, rest_high = rest["common"], _algebra._cs_union(rest["any"], data["unassigned"])
 
     def node(first: Any, later: Any) -> dict[str, Any]:
-        return _regular.canonical({"op": "concat", "args": [
+        return _algebra.canonical({"op": "concat", "args": [
             {"op": "chars", "ranges": [[lo, hi] for lo, hi in first]},
             {"op": "repeat", "min": 0, "max": None,
              "arg": {"op": "chars", "ranges": [[lo, hi] for lo, hi in later]}}]})
 
-    return {"kind": "regular_language", "version": _regular.TERM_VERSION,
+    return {"kind": "regular_language", "version": _algebra.TERM_VERSION,
             "alphabet": [[0, 0x10FFFF]], "exact": False,
             "at_least": node(start_high, rest_high), "at_most": node(start_low, rest_low),
             "source": {"dialect": "python", "versions": sets["versions"],
