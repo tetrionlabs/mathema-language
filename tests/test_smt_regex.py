@@ -14,6 +14,7 @@ Strings here use characters z3 holds (up to U+2FFFF); a string with a
 higher character reads, to the translation, as the same string with
 each such character replaced by U+2FFFF, and the bracketing tests check
 that reading."""
+import gc
 import os
 import random
 import re
@@ -30,6 +31,17 @@ H = smt._Z3_MAX_CHAR
 
 
 _SOLVERS = {}
+
+
+@pytest.fixture(autouse=True)
+def _a_z3_context_of_its_own():
+    """Each test leaves z3 as it found it: z3 keeps what its solvers learned
+    for the life of their context, hundreds of megabytes over this file, so
+    the solvers are dropped and the default context replaced when a test ends."""
+    yield
+    _SOLVERS.clear()
+    z3.z3._main_ctx = None
+    gc.collect()
 
 
 def admitted(pattern, flags, mode, side, text):
