@@ -36,11 +36,19 @@ class TextLanguage(StringLanguage):
     def to_json(self) -> dict:
         """The language's persisted form; an alphabet language (every
         string over the characters `char_ok` accepts) also states its
-        `definition`, the regular-language term of those strings."""
+        `definition`, the regular-language term of those strings: exact,
+        or, for an alphabet whose characters depend on the Unicode
+        version, the bounds that hold on every supported Python."""
         out = dict(super().to_json())
         if "definition" not in out and self.level == "alphabet" and self.char_ok is not None:
+            from ._regular import (
+                every_string_over,
+                every_string_over_class,
+                versions_data,
+            )
+            if self.name not in _DEFINITIONS and self.name in versions_data()["classes"]:
+                _DEFINITIONS[self.name] = every_string_over_class(self.name)
             if self.name not in _DEFINITIONS:
-                from ._regular import every_string_over
                 chars, start = [], None
                 for code in range(0x110001):
                     inside = code < 0x110000 and bool(self.char_ok(chr(code)))
@@ -95,4 +103,26 @@ class TextLanguage(StringLanguage):
                 seen.add(s)
                 yield s
 
-__all__ = ["TextLanguage"]
+
+@dataclass(frozen=True)
+class PinnedLanguage(TextLanguage):
+    """A text language about one version of an engine, on an interpreter
+    that is another: it states its definition and refuses to check or
+    draw a member, raising `OtherVersion` with `elsewhere`, since
+    running the engine here would answer for the wrong version."""
+    elsewhere: str = ""
+
+    def contains(self, value: object) -> bool:
+        from ._regular import OtherVersion
+        raise OtherVersion(self.elsewhere)
+
+    def sample(self, rng: random.Random) -> str:
+        from ._regular import OtherVersion
+        raise OtherVersion(self.elsewhere)
+
+    def hazards(self) -> tuple[HazardValue, ...]:
+        from ._regular import OtherVersion
+        raise OtherVersion(self.elsewhere)
+
+
+__all__ = ["PinnedLanguage", "TextLanguage"]

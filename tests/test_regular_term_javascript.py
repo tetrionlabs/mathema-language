@@ -18,6 +18,13 @@ import pytest
 from mathema_language.text import _regular as rx
 from tests import _javascript_corpus as corpus
 
+pytestmark = pytest.mark.experimental_dialect
+
+
+@pytest.fixture(autouse=True)
+def _experimental(monkeypatch):
+    monkeypatch.setenv("MATHEMA_LANGUAGE_EXPERIMENTAL_DIALECTS", "javascript")
+
 
 def js(pattern, flags="", predicate="matches"):
     return rx.term(pattern, flags, predicate, "javascript")
@@ -134,7 +141,8 @@ def _apart(a, b, limit=6):
 
 def test_python_and_javascript_digits_part_at_a_final_newline_and_a_unicode_digit():
     import re
-    python, javascript = rx.term(r"^\d+$", 0, "contains"), js(r"^\d+$", "u", "contains")
+    python = rx.term(r"^\d+$", 0, "contains", version=rx.RUNNING)
+    javascript = js(r"^\d+$", "u", "contains")
     for text in ("1\n", "٣"):
         assert re.search(r"^\d+$", text)
         assert rx.member(python, text) and not rx.member(javascript, text)
