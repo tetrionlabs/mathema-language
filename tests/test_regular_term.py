@@ -12,6 +12,7 @@ import json
 import os
 import random
 import re
+import sys
 
 import pytest
 
@@ -144,6 +145,11 @@ def test_a_large_bound_is_kept_as_a_count():
 ])
 def test_what_is_not_regular_is_a_named_bound(pattern, named):
     texts = ["", "a", "aa", "aaa", "b", "ab", "ba", "c", "bc", "abc", " a", "a a"]
+    if sys.version_info < (3, 11) and named in ("an atomic group", "a possessive repeat"):
+        # Python 3.10 reads neither: the pattern does not compile there
+        with pytest.raises(rx.NotRegular, match="does not compile on this Python"):
+            rx.term(pattern, 0, "matches", version=rx.RUNNING)
+        return
     for predicate in PREDICATES:
         doc = rx.term(pattern, 0, predicate, version=rx.RUNNING)
         assert not doc["exact"] and "language" not in doc

@@ -17,6 +17,7 @@ that reading."""
 import os
 import random
 import re
+import sys
 
 import pytest
 
@@ -157,6 +158,7 @@ def test_a_unicode_class_in_a_repeat_is_decided_over_its_atoms():
             assert smt._decides(pattern, re.I, mode, "older", text) == runs(pattern, re.I, mode, text)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="possessive repeats need Python 3.11")
 def test_a_possessive_repeat_is_not_the_greedy_language():
     # a possessive repeat gives nothing back, so a*+a never matches
     assert re.fullmatch("a*a", "aa") and not re.fullmatch("a*+a", "aa")
@@ -173,6 +175,8 @@ def test_a_possessive_repeat_is_not_the_greedy_language():
     (r"[", "does not compile"),
 ])
 def test_what_is_not_translated_is_named(pattern, named):
+    if sys.version_info < (3, 11) and named == "atomic group":
+        named = "does not compile"      # Python 3.10 does not read an atomic group
     with pytest.raises(smt.Untranslated, match=named):
         smt._pattern(z3, pattern, 0, "search", z3.String("x"), "older")
     with pytest.raises(smt.Untranslated, match=named):

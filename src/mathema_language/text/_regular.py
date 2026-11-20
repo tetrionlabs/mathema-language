@@ -72,6 +72,22 @@ class OtherVersion(RuntimeError):
     """A language about one Python version, asked to check or draw on another."""
 
 
+#: code points as sorted, disjoint, inclusive ranges
+Ranges = tuple[tuple[int, int], ...]
+
+#: a regular expression before it is written as a term: a tuple of a kind and its parts
+Expr = tuple[Any, ...]
+
+#: a context: whether the text there may be empty, its adjacent characters, and whether that
+#: character is the whole of it
+Context = tuple[bool, Ranges, bool]
+
+#: a piece: the left context, the body, the right context
+Piece = tuple[Context, Expr, Context]
+
+#: a term node or document, as plain JSON data
+Node = dict[str, Any]
+
 #: the last code point
 _MAX_CODE = 0x10FFFF
 
@@ -197,18 +213,18 @@ def _class_chars(pattern: str, flags: int = 0) -> tuple[tuple[int, int], ...]:
 # a regular expression, before z3: ("chars", set), ("eps",), ("empty",),
 # ("cat", a, b, ...), ("alt", a, b, ...), ("loop", r, lo, hi or None),
 # ("inter", a, b)
-_EPS = ("eps",)
-_EMPTY_RE = ("empty",)
-_ANY_STAR = ("loop", ("chars", _FULL), 0, None)
-_ANY_PLUS = ("loop", ("chars", _FULL), 1, None)
+_EPS: Expr = ("eps",)
+_EMPTY_RE: Expr = ("empty",)
+_ANY_STAR: Expr = ("loop", ("chars", _FULL), 0, None)
+_ANY_PLUS: Expr = ("loop", ("chars", _FULL), 1, None)
 
 
-def _chars_re(s: Any) -> tuple:
+def _chars_re(s: Any) -> Expr:
     return ("chars", tuple(s)) if s else _EMPTY_RE
 
 
-def _cat(*parts: tuple) -> tuple:
-    flat: list[tuple] = []
+def _cat(*parts: Expr) -> Expr:
+    flat: list[Expr] = []
     for p in parts:
         if p == _EMPTY_RE:
             return _EMPTY_RE
@@ -220,8 +236,8 @@ def _cat(*parts: tuple) -> tuple:
     return flat[0] if len(flat) == 1 else ("cat", *flat)
 
 
-def _alt(*parts: tuple) -> tuple:
-    flat: list[tuple] = []
+def _alt(*parts: Expr) -> Expr:
+    flat: list[Expr] = []
     for p in parts:
         for q in (p[1:] if p[0] == "alt" else [p]):
             if q != _EMPTY_RE and q not in flat:
@@ -231,7 +247,7 @@ def _alt(*parts: tuple) -> tuple:
     return flat[0] if len(flat) == 1 else ("alt", *flat)
 
 
-def _inter(a: tuple, b: tuple) -> tuple:
+def _inter(a: Expr, b: Expr) -> Expr:
     if _EMPTY_RE in (a, b):
         return _EMPTY_RE
     if b == _ANY_STAR:
@@ -241,7 +257,7 @@ def _inter(a: tuple, b: tuple) -> tuple:
     return ("inter", a, b)
 
 
-def _loop(r: tuple, lo: int, hi: int | None) -> tuple:
+def _loop(r: Expr, lo: int, hi: int | None) -> Expr:
     if hi == 0 or r == _EPS:
         return _EPS
     if r == _EMPTY_RE:
@@ -251,7 +267,7 @@ def _loop(r: tuple, lo: int, hi: int | None) -> tuple:
     return ("loop", r, lo, hi)
 
 
-def _nullable(r: tuple) -> bool:
+def _nullable(r: Expr) -> bool:
     """Intent:
         Returns whether the empty string is in `r`.
     """
@@ -269,7 +285,7 @@ def _nullable(r: tuple) -> bool:
     return r[2] == 0 or _nullable(r[1])
 
 
-def _nonempty(r: tuple) -> tuple:
+def _nonempty(r: Expr) -> Expr:
     """Intent:
         Returns the non-empty strings of `r`, written without intersecting.
 
@@ -296,7 +312,7 @@ def _nonempty(r: tuple) -> tuple:
     return _cat(_loop(sub, 0, None if hi is None else hi - 1), _nonempty(sub))
 
 
-def _edge(r: tuple, chars: Any, at_end: bool) -> tuple:
+def _edge(r: Expr, chars: Any, at_end: bool) -> Expr:
     """Intent:
         Returns the non-empty strings of `r` whose last character (first, when not `at_end`) is
         in `chars`, written without intersecting where `r` has no intersection of its own.
@@ -328,13 +344,14 @@ def _edge(r: tuple, chars: Any, at_end: bool) -> tuple:
     return _cat(rest, edge) if at_end else _cat(edge, rest)
 
 
-def _singles(r: tuple) -> tuple[tuple[int, int], ...]:
+def _singles(r: Expr) -> tuple[tuple[int, int], ...]:
     """Intent:
         Returns the code points `c` for which the one-character string `c` is in `r`.
     """
     kind = r[0]
     if kind == "chars":
-        return r[1]
+        held: Ranges = r[1]
+        return held
     if kind in ("eps", "empty"):
         return _NONE
     if kind == "alt":
@@ -351,7 +368,7 @@ def _singles(r: tuple) -> tuple[tuple[int, int], ...]:
     return _NONE
 
 
-def _re_sets(r: tuple, out: set) -> set:
+def _re_sets(r: Expr, out: set[Ranges]) -> set[Ranges]:
     """Intent:
         Returns the character sets `r` names, added to `out`.
     """
@@ -366,22 +383,22 @@ def _re_sets(r: tuple, out: set) -> set:
 
 
 # a context: (empty, chars, only); see the section comment
-_TRIVIAL = (True, _FULL, False)
-_AT_EDGE = (True, _NONE, False)
+_TRIVIAL: Context = (True, _FULL, False)
+_AT_EDGE: Context = (True, _NONE, False)
 
 
-def _ctx_and(a: tuple, b: tuple) -> tuple:
+def _ctx_and(a: Context, b: Context) -> Context:
     """Intent:
         Returns the context that holds exactly where both `a` and `b` hold.
     """
     return (a[0] and b[0], _cs_inter(a[1], b[1]), a[2] or b[2])
 
 
-def _ctx_possible(c: tuple) -> bool:
+def _ctx_possible(c: Context) -> bool:
     return c[0] or bool(c[1])
 
 
-def _ctx_text(c: tuple, after: bool) -> tuple:
+def _ctx_text(c: Context, after: bool) -> Expr:
     """Intent:
         Returns the texts `c` admits on one side of a match: after it when `after`, else before.
     """
@@ -393,7 +410,7 @@ def _ctx_text(c: tuple, after: bool) -> tuple:
     return _alt(_EPS, edge) if empty else edge
 
 
-def _ends_in(body: tuple, c: tuple, at_end: bool) -> tuple[tuple, bool]:
+def _ends_in(body: Expr, c: Context, at_end: bool) -> tuple[Expr, bool]:
     """Intent:
         Returns the non-empty strings of `body` whose last character (first, when not `at_end`)
         meets context `c`, and whether `c` also requires the text beyond them to be empty.
@@ -406,7 +423,7 @@ def _ends_in(body: tuple, c: tuple, at_end: bool) -> tuple[tuple, bool]:
     return _edge(body, chars, at_end), False
 
 
-def _join(a: list, b: list) -> list:
+def _join(a: list[Piece], b: list[Piece]) -> list[Piece]:
     """Intent:
         Returns the pieces of a sub-pattern followed by another, from the pieces of each.
     """
@@ -433,12 +450,12 @@ def _join(a: list, b: list) -> list:
     return _merge(out)
 
 
-def _merge(pieces: list) -> list:
+def _merge(pieces: list[Piece]) -> list[Piece]:
     """Intent:
         Returns `pieces` with those of equal contexts joined into one and the impossible ones
         dropped.
     """
-    by: dict[tuple, tuple] = {}
+    by: dict[tuple[Context, Context], Expr] = {}
     for left, body, right in pieces:
         if body == _EMPTY_RE or not _ctx_possible(left) or not _ctx_possible(right):
             continue
@@ -451,14 +468,14 @@ def _merge(pieces: list) -> list:
 _WRITTEN = 20_000
 
 
-def _written(pieces: list) -> int:
+def _written(pieces: list[Piece]) -> int:
     """Intent:
         Returns the number of nodes and ranges the bodies of `pieces` take when written out as
         a tree.
     """
     sizes: dict[int, int] = {}
 
-    def size(r: tuple) -> int:
+    def size(r: Expr) -> int:
         if id(r) not in sizes and r[0] == "chars":
             sizes[id(r)] = len(r[1])
         if id(r) not in sizes:
@@ -469,7 +486,7 @@ def _written(pieces: list) -> int:
     return sum(size(r) for _, r, _ in pieces)
 
 
-def _power(pieces: list, n: int) -> list | None:
+def _power(pieces: list[Piece], n: int) -> list[Piece] | None:
     """Intent:
         Returns the pieces of `pieces` followed by itself `n` times in all, or None once they
         would take more than `_WRITTEN` nodes to write out.
@@ -482,7 +499,7 @@ def _power(pieces: list, n: int) -> list | None:
     return out
 
 
-def _boundary(word: Any, other: Any, negated: bool, in_empty: bool) -> list:
+def _boundary(word: Any, other: Any, negated: bool, in_empty: bool) -> list[Piece]:
     """Intent:
         Returns the pieces of a word boundary between the sets `word` and `other` (an edge of
         the string counting as `other`), or, when `negated`, of its absence, which holds in the
@@ -628,19 +645,20 @@ class _Regex:
         self.native = native
         self.not_exact: list[str] = []
         self.varies: list[str] = []
-        self.groups: dict[int, list] = {}
+        self.groups: dict[int, list[Piece]] = {}
         parser, _, _ = _sre()
         try:
             re.compile(pattern, flags)
             parsed = parser.parse(pattern, flags)
         except (re.error, ValueError, TypeError) as e:
-            raise NotRegular(f"the pattern {pattern!r}, which does not compile ({e})") from e
+            raise NotRegular(f"the pattern {pattern!r}, which does not compile on this Python, "
+                             f"{RUNNING} ({e})") from e
         self.flags = parsed.state.flags | flags
         if self.flags & re.LOCALE:
             raise NotRegular(f"the pattern {pattern!r}, under the LOCALE flag")
         self.pieces = self._seq(list(parsed), self.flags)
 
-    def _wider(self, what: str, pieces: list) -> list:
+    def _wider(self, what: str, pieces: list[Piece]) -> list[Piece]:
         """Intent:
             Returns `pieces`, a wider reading of a construct that is not regular, noting it.
 
@@ -735,13 +753,13 @@ class _Regex:
         return self._pick(_cs_inter(here, _cs_complement(varying)), _cs_union(here, varying),
                           "ignore case over characters whose case differs between Python versions")
 
-    def _seq(self, items: Any, flags: int) -> list:
+    def _seq(self, items: Any, flags: int) -> list[Piece]:
         out = [(_TRIVIAL, _EPS, _TRIVIAL)]
         for op, arg in items:
             out = _join(out, self._item(op, arg, flags))
         return out
 
-    def _item(self, op: Any, arg: Any, flags: int) -> list:
+    def _item(self, op: Any, arg: Any, flags: int) -> list[Piece]:
         """Intent:
             Returns one parsed item as pieces.
 
@@ -765,9 +783,10 @@ class _Regex:
         if name in ("MAX_REPEAT", "MIN_REPEAT", "POSSESSIVE_REPEAT"):
             lo, hi, sub = arg
             body = self._seq(sub, flags)
-            if name == "POSSESSIVE_REPEAT" and not self._wider(
-                    "a possessive repeat, which gives nothing back", [None]):
-                return []
+            if name == "POSSESSIVE_REPEAT":
+                self._wider("a possessive repeat, which gives nothing back", body)
+                if self.reading != "at_least":
+                    return []
             return self._repeat(body, lo, None if hi == constants.MAXREPEAT else hi)
         if name == "SUBPATTERN":
             group, add, remove = arg[0], arg[1], arg[2]
@@ -793,9 +812,10 @@ class _Regex:
             group = self.groups.get(arg)
             # under IGNORECASE a backreference matches any text equal to the capture up to
             # case, which the group's own language need not hold
-            exact_case = group and not flags & re.IGNORECASE
-            body = _alt(*[r for _, r, _ in group]) if exact_case else _ANY_STAR
-            return self._wider("a backreference", [(_TRIVIAL, body, _TRIVIAL)])
+            referred = _ANY_STAR
+            if group and not flags & re.IGNORECASE:
+                referred = _alt(*[r for _, r, _ in group])
+            return self._wider("a backreference", [(_TRIVIAL, referred, _TRIVIAL)])
         if name == "GROUPREF_EXISTS":
             _, yes, no = arg
             both = self._seq(yes, flags) + (self._seq(no, flags) if no else [(_TRIVIAL, _EPS, _TRIVIAL)])
@@ -805,7 +825,7 @@ class _Regex:
             return self._wider(what, [(_TRIVIAL, _EPS, _TRIVIAL)])
         raise NotRegular(f"the pattern {self.pattern!r} ({name.lower()})")
 
-    def _repeat(self, body: list, lo: int, hi: int | None) -> list:
+    def _repeat(self, body: list[Piece], lo: int, hi: int | None) -> list[Piece]:
         """Intent:
             Returns pieces for `body` repeated `lo` to `hi` times (`None`: unbounded).
 
@@ -837,7 +857,7 @@ class _Regex:
                                 [(_TRIVIAL, free, _TRIVIAL)])
         return _join(head, [(_TRIVIAL, _loop(steps[0][1], 0, None) if steps else _EPS, _TRIVIAL)])
 
-    def _at(self, name: str, flags: int) -> list:
+    def _at(self, name: str, flags: int) -> list[Piece]:
         """Intent:
             Returns the pieces of a zero-width assertion, read as `re` reads it under `flags`.
         """
@@ -853,8 +873,8 @@ class _Regex:
             return [(_TRIVIAL, _EPS, _AT_EDGE)]
         if name in ("AT_BOUNDARY", "AT_NON_BOUNDARY"):
             parser, _, _ = _sre()
-            word_item = list(parser.parse(r"\w", flags & re.ASCII))[0]
-            lo = hi = _item_chars(*word_item, flags & ~re.IGNORECASE)
+            word_op, word_arg = list(parser.parse(r"\w", flags & re.ASCII))[0]
+            lo = hi = _item_chars(word_op, word_arg, flags & ~re.IGNORECASE)
             holds_in_empty = [_B_IN_EMPTY]
             if not self.native:
                 engine = versions_data()["engine"]["not_boundary_in_empty"]
@@ -871,7 +891,7 @@ class _Regex:
             return _boundary(word, other, negated, in_empty)
         raise NotRegular(f"the pattern {self.pattern!r} ({name.lower()})")
 
-    def language(self, mode: str) -> tuple:
+    def language(self, mode: str) -> Expr:
         """Intent:
             Returns the whole strings in which the pattern finds a match under `mode`:
             `fullmatch`, `match`, `search`, or `ends` (a match running to the end).
@@ -889,11 +909,11 @@ class _Regex:
             parts.append(_cat(before, body, after))
         return _alt(*parts)
 
-    def sets(self) -> set:
+    def sets(self) -> set[Ranges]:
         """Intent:
             Returns every character set the pieces name, in bodies and contexts.
         """
-        out: set = set()
+        out: set[Ranges] = set()
         for left, body, right in self.pieces:
             _re_sets(body, out)
             out.update({left[1], right[1]})
@@ -902,14 +922,14 @@ class _Regex:
 
 # -- the term as plain data ----------------------------------------------------
 
-def to_node(r: tuple) -> dict:
+def to_node(r: Expr) -> Node:
     """Intent:
         Returns the expression `r` as a term node in canonical form.
     """
     return canonical(_to_node(r))
 
 
-def _to_node(r: tuple) -> dict:
+def _to_node(r: Expr) -> Node:
     kind = r[0]
     if kind == "eps":
         return {"op": "epsilon"}
@@ -925,7 +945,7 @@ def _to_node(r: tuple) -> dict:
     return {"op": "repeat", "arg": _to_node(r[1]), "min": r[2], "max": r[3]}
 
 
-def from_node(node: dict) -> tuple:
+def from_node(node: Node) -> Expr:
     """Intent:
         Returns the expression a term node states.
 
@@ -961,7 +981,7 @@ DIALECTS = ("python",)
 
 
 def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str = "python",
-         version: str | None = None) -> dict:
+         version: str | None = None) -> Node:
     """Intent:
         Returns the term of the strings for which `predicate` holds of a pattern under `flags`,
         on every supported Python, or on the one `version` names (`"3.13"`): exact where one
@@ -970,6 +990,13 @@ def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str 
         admits, `at_least` every string any version admits; a class's characters that differ
         between versions, and code points still unassigned, fall between the two. The term is
         the same whichever supported interpreter builds it.
+
+    Notes:
+        A pattern is parsed by the running interpreter, so a pattern its `re` does not compile
+        is refused here whatever version is asked for: a possessive repeat or an atomic group
+        on Python 3.10, which reads neither. On a later interpreter the same pattern is
+        refused for version 3.10, and without a version, since 3.10 is one of the Pythons the
+        term would have to hold on; with a version of 3.11 or later it is a bound.
 
     Raises:
         NotRegular: the pattern does not compile, is a bytes pattern, uses LOCALE, or, without
@@ -1018,7 +1045,7 @@ def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str 
     return doc
 
 
-_TERMS: dict[tuple[Any, int, str, Any], dict] = {}
+_TERMS: dict[tuple[Any, int, str, Any], Node] = {}
 
 #: the dialects refused unless the environment variable below lists them, comma separated
 EXPERIMENTAL_DIALECTS = ("javascript",)
@@ -1083,13 +1110,13 @@ def _ranges(spans: Any) -> list[list[int]]:
     return [[lo, hi] for lo, hi in _cs_union(tuple((lo, hi) for lo, hi in spans))]
 
 
-def _text(node: dict) -> str:
+def _text(node: Node) -> str:
     """The serialisation the hash reads and arguments are ordered by."""
     import json
     return json.dumps(node, sort_keys=True, ensure_ascii=True, separators=(",", ":"))
 
 
-def canonical(node: dict) -> dict:
+def canonical(node: Node) -> Node:
     """Intent:
         Returns a term node in canonical form, by these rules, each applied to a node whose
         arguments are already canonical:
@@ -1162,13 +1189,13 @@ def canonical(node: dict) -> dict:
         return {"op": "repeat", "arg": arg, "min": lo, "max": hi}
     if not isinstance(node["args"], list):
         raise ValueError(f"not a list of nodes: {node['args']!r}")
-    args: list[dict] = []
+    args: list[Node] = []
     for arg in map(canonical, node["args"]):
         args.extend(arg["args"] if arg["op"] == op else [arg])
     if op == "concat":
         if {"op": "empty"} in args:
             return {"op": "empty"}
-        joined: list[dict] = []
+        joined: list[Node] = []
         for arg in args:
             if arg["op"] == "epsilon":
                 continue
@@ -1176,7 +1203,7 @@ def canonical(node: dict) -> dict:
                 joined[-1] = {"op": "literal", "codes": joined[-1]["codes"] + arg["codes"]}
             else:
                 joined.append(arg)
-        none: dict = {"op": "epsilon"}
+        none: Node = {"op": "epsilon"}
     else:
         if op == "inter" and {"op": "empty"} in args:
             return {"op": "empty"}
@@ -1189,7 +1216,7 @@ def canonical(node: dict) -> dict:
     return joined[0] if len(joined) == 1 else {"op": op, "args": joined}
 
 
-def term_hash(doc: dict) -> str:
+def term_hash(doc: Node) -> str:
     """Intent:
         Returns the SHA-256 of a term's meaning: its version, alphabet, whether it is exact,
         and its language or its two bounds, each node in canonical form and the alphabet's
@@ -1203,7 +1230,7 @@ def term_hash(doc: dict) -> str:
     return hashlib.sha256(canonical_text(doc).encode("ascii")).hexdigest()
 
 
-def canonical_text(doc: dict) -> str:
+def canonical_text(doc: Node) -> str:
     """Intent:
         Returns the text `term_hash` hashes: the JSON object of `version`, `alphabet`, `exact`
         and `language` (or `at_least` and `at_most`), keys sorted, no white space.
@@ -1218,10 +1245,10 @@ def canonical_text(doc: dict) -> str:
 
 # -- membership by derivatives -------------------------------------------------
 
-_DERIVATIVES: dict[tuple[tuple, int], tuple] = {}
+_DERIVATIVES: dict[tuple[Expr, int], Expr] = {}
 
 
-def _derivative(r: tuple, code: int) -> tuple:
+def _derivative(r: Expr, code: int) -> Expr:
     """Intent:
         Returns the strings `w` with the character `code` followed by `w` in `r`.
     """
@@ -1229,6 +1256,7 @@ def _derivative(r: tuple, code: int) -> tuple:
     if key in _DERIVATIVES:
         return _DERIVATIVES[key]
     kind = r[0]
+    out: Expr
     if kind in ("eps", "empty"):
         out = _EMPTY_RE
     elif kind == "chars":
@@ -1254,7 +1282,7 @@ def _derivative(r: tuple, code: int) -> tuple:
     return out
 
 
-def holds(r: tuple, text: str) -> bool:
+def holds(r: Expr, text: str) -> bool:
     """Intent:
         Returns whether `text` is in the expression `r`.
     """
@@ -1265,7 +1293,7 @@ def holds(r: tuple, text: str) -> bool:
     return _nullable(r)
 
 
-def member(doc: dict, text: str, bound: str = "language") -> bool:
+def member(doc: Node, text: str, bound: str = "language") -> bool:
     """Intent:
         Returns whether `text` is in a term's language, or in its `at_least` or `at_most` bound
         (an exact term's language is both), read by its UTF-16 code units when the term's
@@ -1288,7 +1316,7 @@ def member(doc: dict, text: str, bound: str = "language") -> bool:
 
 
 #: the expression of each node `member` has read, kept with the node it was read from
-_READ: dict[int, tuple[dict, tuple]] = {}
+_READ: dict[int, tuple[Node, Expr]] = {}
 
 
 def code_units(text: str) -> str:
@@ -1425,10 +1453,10 @@ def canonical_is_stable(pattern: Any, flags: Any = 0, predicate: str = "matches"
     return term_hash(again) == term_hash(doc)
 
 
-_ADMITTED: dict[tuple[Any, Any, str, str, str, str], tuple[tuple, bool]] = {}
+_ADMITTED: dict[tuple[Any, Any, str, str, str, str], tuple[Expr, bool]] = {}
 
 
-def shortest(r: tuple, limit: int = 12) -> str | None:
+def shortest(r: Expr, limit: int = 12) -> str | None:
     """Intent:
         Returns a shortest string in the expression `r` of at most `limit` characters, found
         breadth first over derivatives, or None when there is none that short.
@@ -1457,7 +1485,7 @@ def shortest(r: tuple, limit: int = 12) -> str | None:
     return None
 
 
-def every_string_over(chars: Any, name: str) -> dict:
+def every_string_over(chars: Any, name: str) -> Node:
     """Intent:
         Returns the term of every string over the code points `chars` (sorted disjoint
         ranges), the empty string included, for the alphabet language `name`.
@@ -1468,7 +1496,7 @@ def every_string_over(chars: Any, name: str) -> dict:
             "exact": True, "language": canonical(node), "source": {"alphabet": name}}
 
 
-def every_string_over_class(name: str) -> dict:
+def every_string_over_class(name: str) -> Node:
     """Intent:
         Returns the term of every string over a class whose characters depend on the Python
         version, for every supported version: `at_most` over the characters all versions
@@ -1477,7 +1505,7 @@ def every_string_over_class(name: str) -> dict:
     data = versions_data()
     low, high = class_bounds(name)
 
-    def star(chars: Any) -> dict:
+    def star(chars: Any) -> Node:
         return canonical({"op": "repeat", "min": 0, "max": None,
                           "arg": {"op": "chars", "ranges": [[lo, hi] for lo, hi in chars]}})
 
@@ -1488,7 +1516,7 @@ def every_string_over_class(name: str) -> dict:
                        "not_exact": ["a class whose characters differ between Python versions"]}}
 
 
-def of_length(doc: dict, lo: int, hi: int | None) -> dict:
+def of_length(doc: Node, lo: int, hi: int | None) -> Node:
     """Intent:
         Returns the term of the strings of `doc` whose length in characters of its alphabet is
         `lo` to `hi` (`None`: unbounded): each language or bound of `doc` met with the strings
@@ -1497,7 +1525,7 @@ def of_length(doc: dict, lo: int, hi: int | None) -> dict:
     """
     every = {"op": "chars", "ranges": doc["alphabet"]}
 
-    def cut(node: dict) -> dict:
+    def cut(node: Node) -> Node:
         node = canonical(node)
         one_character = node.get("arg", {}).get("op") in ("chars", "literal") and (
             node["arg"]["op"] == "chars" or len(node["arg"]["codes"]) == 1)

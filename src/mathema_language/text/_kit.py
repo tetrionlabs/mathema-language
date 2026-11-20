@@ -9,13 +9,14 @@ from __future__ import annotations
 import random
 from collections.abc import Iterator
 from dataclasses import dataclass
+from typing import Any
 
 from .._surface import HazardValue, StringLanguage
 from . import generate as _generate
 from .hazards import TEXT_HAZARDS
 
 #: the definition of each alphabet language, by name, built when first asked
-_DEFINITIONS: dict[str, dict] = {}
+_DEFINITIONS: dict[str, dict[str, Any]] = {}
 
 
 @dataclass(frozen=True)
@@ -33,7 +34,7 @@ class TextLanguage(StringLanguage):
     simplest: str = "a"
     extra_hazards: tuple[HazardValue, ...] = ()
 
-    def to_json(self) -> dict:
+    def to_json(self) -> dict[str, Any]:
         """The language's persisted form; an alphabet language (every
         string over the characters `char_ok` accepts) also states its
         `definition`, the regular-language term of those strings: exact,
