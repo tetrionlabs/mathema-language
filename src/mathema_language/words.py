@@ -797,9 +797,8 @@ ALPHABET = None if AlphabetConstructor is None else AlphabetConstructor(  # type
 WORDS = {record.word: record for record in (MATCHES, CONTAINS, STARTS_WITH, ENDS_WITH, WITHIN_WORD,
                                             SHAPE_WORD) if record is not None}
 
-#: DRAFT, names awaiting sign-off: one worked claim for each language, predicate word and
-#: constructor the package newly registers, by entry-point key, in canonical text. They are
-#: not in the package's lexicon: a predicate row parses only on a mathema with the word registry.
+#: one worked claim for each language, predicate word and constructor the package registers
+#: beside its lexicon, by entry-point key, in canonical text
 DRAFT_ROWS: dict[str, str] = {
     "lower": "for s in L[lower], f(s) = s",
     "upper": "for s in L[upper], f(s) = s",
