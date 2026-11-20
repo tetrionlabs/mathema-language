@@ -94,6 +94,10 @@ class _LengthLanguage(RefinedLanguage):
         if isinstance(out.get("definition"), dict):
             from .text._regular import of_length
             out["definition"] = of_length(out["definition"], int(self.lo), self.hi)
+        if self.hi is not None:
+            # a language of bounded length is finite, so a base's reason
+            # for having no definition does not carry over
+            out.pop("no_definition", None)
         return out
 
     def hazards(self) -> tuple[Any, ...]:
@@ -292,6 +296,9 @@ class _JsonStructureLanguage(RefinedLanguage):
         if isinstance(out.get("definition"), dict):
             from .text._regular import of_length
             out["definition"] = of_length(out["definition"], int(self.lo), self.hi)
+        # the base's reason speaks of every document, not of the ones a
+        # structure bound keeps
+        out.pop("no_definition", None)
         return out
 
     def hazards(self) -> tuple[Any, ...]:
