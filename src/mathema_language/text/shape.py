@@ -558,7 +558,7 @@ def _symbols(items: tuple[_Item, ...]) -> set[str]:
 
 
 def _expression(items: tuple[_Item, ...], classes: _Classes, bound: int | None = None,
-                version: str | None = None) -> tuple:
+                version: str | None = None) -> _regular.Expr:
     """Intent:
         The regular expression of the items in the term module's own form: each class as the
         running Python reads it, or, with `bound`, as every supported Python does (0) or as

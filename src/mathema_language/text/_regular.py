@@ -1052,7 +1052,7 @@ EXPERIMENTAL_DIALECTS = ("javascript",)
 EXPERIMENTAL_SWITCH = "MATHEMA_LANGUAGE_EXPERIMENTAL_DIALECTS"
 
 
-def _experimental_term(pattern: Any, flags: Any, predicate: str, dialect: str) -> dict:
+def _experimental_term(pattern: Any, flags: Any, predicate: str, dialect: str) -> Node:
     """Intent:
         Returns the term of a pattern in a dialect that is not available yet, when the
         environment names the dialect as experimental at the time of the call.

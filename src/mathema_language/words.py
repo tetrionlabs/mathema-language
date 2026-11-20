@@ -455,7 +455,8 @@ def _inter(a: dict[str, Any], b: dict[str, Any], negate: bool) -> dict[str, Any]
         first cut to that set, so bounds that differ only outside it become one exact term.
     """
     def side(doc: dict[str, Any], bound: str) -> dict[str, Any]:
-        return doc["language"] if "language" in doc else doc[bound]
+        node: dict[str, Any] = doc["language"] if "language" in doc else doc[bound]
+        return node
 
     def meet(bound: str) -> dict[str, Any]:
         other = {"at_least": "at_most", "at_most": "at_least"}[bound]
@@ -464,10 +465,9 @@ def _inter(a: dict[str, Any], b: dict[str, Any], negate: bool) -> dict[str, Any]
 
     over = _star_set(a)
     if over is not None:
-        narrowed_bounds = {key: _cut_to(b[key], over) for key in ("language", "at_least", "at_most")
-                           if key in b}
-        if None not in narrowed_bounds.values():
-            b = {**b, **narrowed_bounds}
+        cut = {key: _cut_to(b[key], over) for key in ("language", "at_least", "at_most") if key in b}
+        if None not in cut.values():
+            b = {**b, **{key: node for key, node in cut.items() if node is not None}}
             if "language" not in b and b["at_least"] == b["at_most"]:
                 b = {"exact": True, "language": b["at_least"],
                      **{k: v for k, v in b.items() if k not in ("exact", "at_least", "at_most")}}

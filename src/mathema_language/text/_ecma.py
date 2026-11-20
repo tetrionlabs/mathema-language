@@ -34,6 +34,7 @@ from ._regular import (
     _FULL,
     _TRIVIAL,
     NotRegular,
+    Piece,
     _boundary,
     _chars_re,
     _cs_complement,
@@ -127,9 +128,9 @@ class Ecma(_Regex):
         self.version = None
         self.varies: list[str] = []
         self.not_exact: list[str] = []
-        self.groups: dict[int, list] = {}
+        self.groups: dict[int, list[Piece]] = {}
         self.unicode = "u" in flags or "v" in flags
-        self.sets = "v" in flags
+        self.unicode_sets = "v" in flags
         self.top = _FULL if self.unicode else ((0, 0xFFFF),)
         if self.unicode:
             pattern = re.sub("[\ud800-\udbff][\udc00-\udfff]", lambda m: chr(
@@ -191,19 +192,19 @@ class Ecma(_Regex):
 
     # -- the grammar ------------------------------------------------------------
 
-    def _disjunction(self, mods: frozenset) -> list:
+    def _disjunction(self, mods: frozenset[str]) -> list[Piece]:
         pieces = self._alternative(mods)
         while self._take("|"):
             pieces = pieces + self._alternative(mods)
         return _merge(pieces)
 
-    def _alternative(self, mods: frozenset) -> list:
+    def _alternative(self, mods: frozenset[str]) -> list[Piece]:
         out = [(_TRIVIAL, _EPS, _TRIVIAL)]
         while self.pos < len(self.src) and self._peek() not in "|)":
             out = _join(out, self._term(mods))
         return out
 
-    def _term(self, mods: frozenset) -> list:
+    def _term(self, mods: frozenset[str]) -> list[Piece]:
         """Intent:
             Returns the pieces of one assertion, or of one atom and its quantifier.
         """
@@ -258,13 +259,13 @@ class Ecma(_Regex):
             self._take("?")
         return bounds
 
-    def _atom(self, mods: frozenset) -> list:
+    def _atom(self, mods: frozenset[str]) -> list[Piece]:
         c = self._peek()
         if c == "(":
             return self._group(mods)
         if c == "[":
             self.pos += 1
-            return self._class(mods)
+            return self._char_class(mods)
         if c == ".":
             self.pos += 1
             return self._set(self.top if "s" in mods else _cs_inter(
@@ -283,7 +284,7 @@ class Ecma(_Regex):
         self.pos += 1
         return self._set(((ord(c), ord(c)),), mods)
 
-    def _set(self, s: Any, mods: frozenset) -> list:
+    def _set(self, s: Any, mods: frozenset[str]) -> list[Piece]:
         """Intent:
             Returns the pieces of one character in `s`, widened to its case forms under `i`.
         """
@@ -291,7 +292,7 @@ class Ecma(_Regex):
             s = _fold_closure(s, self.unicode)
         return [(_TRIVIAL, _chars_re(_cs_inter(s, self.top)), _TRIVIAL)]
 
-    def _word(self, mods: frozenset) -> tuple[tuple[int, int], ...]:
+    def _word(self, mods: frozenset[str]) -> tuple[tuple[int, int], ...]:
         """Intent:
             Returns the word characters: `[A-Za-z0-9_]`, and, under `i` with `u` or `v`, the
             characters whose canonical form is one of them.
@@ -300,7 +301,7 @@ class Ecma(_Regex):
             return _fold_closure(_WORD, True)
         return _WORD
 
-    def _group(self, mods: frozenset) -> list:
+    def _group(self, mods: frozenset[str]) -> list[Piece]:
         self.pos += 1
         if self._take("?:"):
             pass
@@ -322,7 +323,7 @@ class Ecma(_Regex):
             raise self._bad("an unterminated group")
         return pieces
 
-    def _escape(self, mods: frozenset) -> list:
+    def _escape(self, mods: frozenset[str]) -> list[Piece]:
         """Intent:
             Returns the pieces of the atom a backslash starts.
         """
@@ -348,13 +349,13 @@ class Ecma(_Regex):
         found = self._class_escape(mods)
         if found == "property":
             return self._wider("a property escape", [(
-                _TRIVIAL, _ANY_STAR if self.sets else _chars_re(self.top), _TRIVIAL)])
+                _TRIVIAL, _ANY_STAR if self.unicode_sets else _chars_re(self.top), _TRIVIAL)])
         if found is not None:
             return self._set(found, mods)
         code = self._char_escape(in_class=False)
         return self._set(((code, code),), mods)
 
-    def _class_escape(self, mods: frozenset) -> Any:
+    def _class_escape(self, mods: frozenset[str]) -> Any:
         """Intent:
             Reads `d D w W s S` after a backslash as its set, a `p{...}` or `P{...}` property
             as the word `property`, and anything else as None, reading nothing.
@@ -454,7 +455,7 @@ class Ecma(_Regex):
             return ord("k")
         return ord(c)
 
-    def _class(self, mods: frozenset) -> list:
+    def _char_class(self, mods: frozenset[str]) -> list[Piece]:
         """Intent:
             Returns the pieces of a character class, the opening bracket read.
 
@@ -463,7 +464,7 @@ class Ecma(_Regex):
             and a negated class every character outside that.
         """
         negate = self._take("^")
-        if self.sets:
+        if self.unicode_sets:
             opaque = self._class_set_extras()
             if opaque:
                 return self._wider("a class set operation", [(_TRIVIAL, _ANY_STAR, _TRIVIAL)])
@@ -501,7 +502,7 @@ class Ecma(_Regex):
             s = _cs_complement(s)
         return [(_TRIVIAL, _chars_re(_cs_inter(s, self.top)), _TRIVIAL)]
 
-    def _class_atom(self, mods: frozenset) -> Any:
+    def _class_atom(self, mods: frozenset[str]) -> Any:
         """Intent:
             Reads one member of a class: a code point, a set, or the word `property`.
         """
@@ -511,7 +512,7 @@ class Ecma(_Regex):
                 return found
             return self._char_escape(in_class=True)
         code = self.src[self.pos]
-        if self.sets and chr(code) in "()[]{}/-|":
+        if self.unicode_sets and chr(code) in "()[]{}/-|":
             raise self._bad(f"a lone {chr(code)} in a class")
         self.pos += 1
         return code
