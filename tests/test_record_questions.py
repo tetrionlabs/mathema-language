@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
 """An acceptance sheet: twenty-three inclusion questions between record
-languages written as JSON Schema, shaped like sets of permissions
-(tools, paths, hosts, commands, a lifetime), each with the verdict
+languages written as JSON Schema, over nested configuration records
+(lists of choices, path patterns, bounds), each with the verdict
 wanted. A question the record inclusion decides asserts its verdict, and
 a falsified one its witness against both validators; one it does not
 decide yet is a strict expected failure, so it reports the day it is
@@ -51,14 +51,14 @@ QUESTIONS = {
         obj({"tools": items(one_of("read", "grep"), uniqueItems=True)}),
         obj({"tools": items(one_of("read", "grep", "edit"), uniqueItems=True)}), "proven", False),
     "3 a flag held false inside a boolean": (
-        obj({"edit": BOOLEAN, "merge": {"const": False}}),
-        obj({"edit": BOOLEAN, "merge": BOOLEAN}), "proven", False),
+        obj({"edit": BOOLEAN, "publish": {"const": False}}),
+        obj({"edit": BOOLEAN, "publish": BOOLEAN}), "proven", False),
     "3b a boolean inside a flag held false": (
-        obj({"merge": BOOLEAN}), obj({"merge": {"const": False}}), "falsified", False),
+        obj({"publish": BOOLEAN}), obj({"publish": {"const": False}}), "falsified", False),
     "3c a flag from a list of one inside a boolean": (
-        obj({"merge": one_of(False)}), obj({"merge": BOOLEAN}), "proven", True),
+        obj({"publish": one_of(False)}), obj({"publish": BOOLEAN}), "proven", True),
     "3d a boolean inside a flag from a list of one": (
-        obj({"merge": BOOLEAN}), obj({"merge": one_of(False)}), "falsified", True),
+        obj({"publish": BOOLEAN}), obj({"publish": one_of(False)}), "falsified", True),
     "4 a deeper path pattern inside a shallower, ending in a dollar": (
         obj({"root": text(pattern=DEEP + "$")}), obj({"root": text(pattern=SHALLOW + "$")}),
         "proven", True),
@@ -79,8 +79,8 @@ QUESTIONS = {
         obj({"shell": obj({"git": items(one_of("status", "diff", "commit"))})}), "proven", False),
     "8 a list that must not hold a member": (
         obj({"tools": items(one_of("read", "grep"))}),
-        obj({"tools": {**items(one_of("read", "grep", "merge")),
-                       "not": {"contains": {"const": "merge"}}}}), "proven", False),
+        obj({"tools": {**items(one_of("read", "grep", "publish")),
+                       "not": {"contains": {"const": "publish"}}}}), "proven", False),
     "9 a lifetime in minutes": (
         obj({"minutes": {"type": "integer", "minimum": 1, "maximum": 60}}),
         obj({"minutes": {"type": "integer", "minimum": 1, "maximum": 480}}), "proven", True),
