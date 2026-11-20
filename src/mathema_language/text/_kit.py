@@ -39,14 +39,14 @@ class TextLanguage(StringLanguage):
         string over the characters `char_ok` accepts) also states its
         `definition`, the regular-language term of those strings: exact,
         or, for an alphabet whose characters depend on the Unicode
-        version, the bounds that hold on every supported Python."""
+        version, the bounds that hold on every supported Python. A
+        format language (a whole-string test) states the term of the
+        strings its test accepts, or under `no_definition` why it has
+        none."""
         out = dict(super().to_json())
         if "definition" not in out and self.level == "alphabet" and self.char_ok is not None:
-            from ._regular import (
-                every_string_over,
-                every_string_over_class,
-                versions_data,
-            )
+            from ._algebra import every_string_over
+            from ._regular import every_string_over_class, versions_data
             if self.name not in _DEFINITIONS and self.name in versions_data()["classes"]:
                 _DEFINITIONS[self.name] = every_string_over_class(self.name)
             if self.name not in _DEFINITIONS:
@@ -60,6 +60,9 @@ class TextLanguage(StringLanguage):
                         start = None
                 _DEFINITIONS[self.name] = every_string_over(chars, self.name)
             out["definition"] = _DEFINITIONS[self.name]
+        elif "definition" not in out and self.accepts is not None:
+            from ._named_terms import stated
+            out.update(stated(self))
         return out
 
     def hazards(self) -> tuple[HazardValue, ...]:

@@ -129,6 +129,12 @@ class PathLanguage(TextLanguage):
     def contains(self, value: Any) -> bool:
         return isinstance(value, str) and re.fullmatch(self.pattern, value) is not None
 
+    def to_json(self) -> dict[str, Any]:
+        """The persisted form with the language's `definition`, the
+        term of the strings `pattern` matches in full."""
+        from . import _regular
+        return {**super().to_json(), "definition": _regular.term(self.pattern, 0, "matches")}
+
     def hazards(self) -> tuple[HazardValue, ...]:
         """The paths code most often gets wrong, the ones this language
         admits."""

@@ -59,14 +59,8 @@ from typing import Any
 
 from .schema.model import NO_DEFAULT, Field, RowSchema
 from .text import _regular as _rx
-from .text._regular import (
-    _MAX_CODE,
-    _cs_has,
-    _cs_inter,
-    _cs_union,
-    _re_sets,
-    _Regex,
-)
+from .text._algebra import _MAX_CODE, _cs_has, _cs_inter, _cs_union, _re_sets
+from .text._regular import _Regex
 
 #: the ecosystems whose records the encoding reads, and whether a record
 #: is a mapping that may leave a key out
