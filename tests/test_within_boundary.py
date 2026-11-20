@@ -74,7 +74,7 @@ def _draws_hold(language, seeds: int = 60) -> None:
     {"a"}, {"", "a"}, {"ab", "ac", "b"}, {str(i) for i in range(0, 256)},
     {str(i) for i in range(17, 132)}, {f"{i:04d}" for i in range(1896, 2105, 4)},
     {"W01", "W01-1", "W53-7"}, {"a.b", "a-b", "a]b", "a^b", "a\\b"},
-], ids=repr)
+], ids=lambda words: repr(sorted(words))[:60])
 def test_a_finite_pattern_admits_exactly_its_words(words):
     compiled = re.compile(finite_pattern(words))
     rng = random.Random(1)
