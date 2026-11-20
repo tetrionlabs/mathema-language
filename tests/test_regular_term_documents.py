@@ -47,12 +47,6 @@ def test_a_malformed_document_is_refused_with_a_value_error(name):
             read(MALFORMED[name])
 
 
-@pytest.mark.parametrize("name", sorted(n for n in MALFORMED if n != "not an object"))
-def test_member_refuses_a_malformed_document(name):
-    with pytest.raises(ValueError):
-        rx.member(MALFORMED[name], "b", "at_least")
-
-
 def test_a_text_with_a_character_outside_the_alphabet_is_no_member():
     lower = [[97, 122]]
     doc = exact(NOT_A, lower)

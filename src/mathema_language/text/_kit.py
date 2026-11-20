@@ -42,11 +42,8 @@ class TextLanguage(StringLanguage):
         version, the bounds that hold on every supported Python."""
         out = dict(super().to_json())
         if "definition" not in out and self.level == "alphabet" and self.char_ok is not None:
-            from ._regular import (
-                every_string_over,
-                every_string_over_class,
-                versions_data,
-            )
+            from ._algebra import every_string_over
+            from ._regular import every_string_over_class, versions_data
             if self.name not in _DEFINITIONS and self.name in versions_data()["classes"]:
                 _DEFINITIONS[self.name] = every_string_over_class(self.name)
             if self.name not in _DEFINITIONS:

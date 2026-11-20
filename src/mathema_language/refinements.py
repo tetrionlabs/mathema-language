@@ -92,7 +92,7 @@ class _LengthLanguage(RefinedLanguage):
         length in the bound."""
         out = dict(super().to_json())
         if isinstance(out.get("definition"), dict):
-            from .text._regular import of_length
+            from .text._algebra import of_length
             out["definition"] = of_length(out["definition"], int(self.lo), self.hi)
         return out
 
@@ -290,7 +290,7 @@ class _JsonStructureLanguage(RefinedLanguage):
         length in the bound."""
         out = dict(super().to_json())
         if isinstance(out.get("definition"), dict):
-            from .text._regular import of_length
+            from .text._algebra import of_length
             out["definition"] = of_length(out["definition"], int(self.lo), self.hi)
         return out
 

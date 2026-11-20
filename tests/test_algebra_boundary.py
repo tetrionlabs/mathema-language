@@ -15,23 +15,10 @@ from mathema_language.text import _regular
 SRC = Path(__file__).parent.parent / "src" / "mathema_language"
 
 #: every module-level name of text/_regular.py before the split
-BEFORE = """Context DIALECTS Expr FLAG_WORDS Node NotRegular OtherVersion PREDICATES Piece RUNNING Ranges
-TERM_VERSION _ADMITTED _ANY_PLUS _ANY_STAR _AT_EDGE _B_IN_EMPTY _CATEGORY_CLASS _DERIVATIVES
-_EMPTY_RE _EPS _EVERY_CODE_POINT _EVERY_STRING _FULL _ITEM_CHARS _LOWERS_INTO _MAX_CODE _METHODS
-_NONE _READ _Regex _TERMS _TRIVIAL _UNROLL _VERSIONS _WRITTEN _alt _boundary _cat _chars_re
-_class_chars _code _cs_complement _cs_has _cs_inter _cs_union _ctx_and _ctx_possible _ctx_text
-_derivative _edge _ends_in _every_code_point _inter _item_chars _join _loop _lowers_into _meaning
-_merge _nonempty _nullable _power _ranges _re_sets _singles _sre _text _to_node _written admits
-admits_after_json canonical canonical_is_stable canonical_text class_bounds code_points code_units
-every_string_over every_string_over_class exact from_node holds member of_length pattern_language
-runs shortest term term_hash to_node version_dependent_characters versions_data""".split()
+BEFORE = ["Context", "DIALECTS", "Expr", "FLAG_WORDS", "Node", "NotRegular", "OtherVersion", "PREDICATES", "Piece", "RUNNING", "Ranges", "TERM_VERSION", "_ADMITTED", "_ANY_PLUS", "_ANY_STAR", "_AT_EDGE", "_B_IN_EMPTY", "_CATEGORY_CLASS", "_DERIVATIVES", "_EMPTY_RE", "_EPS", "_EVERY_CODE_POINT", "_EVERY_STRING", "_FULL", "_ITEM_CHARS", "_LOWERS_INTO", "_MAX_CODE", "_METHODS", "_NONE", "_READ", "_Regex", "_TERMS", "_TRIVIAL", "_UNROLL", "_VERSIONS", "_WRITTEN", "_alt", "_boundary", "_cat", "_chars_re", "_class_chars", "_code", "_cs_complement", "_cs_has", "_cs_inter", "_cs_union", "_ctx_and", "_ctx_possible", "_ctx_text", "_derivative", "_edge", "_ends_in", "_every_code_point", "_inter", "_item_chars", "_join", "_loop", "_lowers_into", "_meaning", "_merge", "_nonempty", "_nullable", "_power", "_ranges", "_re_sets", "_singles", "_sre", "_text", "_to_node", "_written", "admits", "admits_after_json", "canonical", "canonical_is_stable", "canonical_text", "class_bounds", "code_points", "code_units", "every_string_over", "every_string_over_class", "exact", "from_node", "holds", "member", "of_length", "pattern_language", "runs", "shortest", "term", "term_hash", "to_node", "version_dependent_characters", "versions_data"]
 
 #: the names that are the algebra's
-ALGEBRA = """TERM_VERSION Ranges Expr Node _MAX_CODE _FULL _NONE _cs_union _cs_complement _cs_inter
-_cs_has _EPS _EMPTY_RE _ANY_STAR _ANY_PLUS _chars_re _cat _alt _inter _loop _nullable _re_sets
-to_node _to_node from_node _EVERY_STRING _code _ranges _text canonical _meaning term_hash
-canonical_text _DERIVATIVES _derivative holds member _READ code_units code_points shortest
-every_string_over of_length""".split()
+ALGEBRA = ["TERM_VERSION", "Ranges", "Expr", "Node", "_MAX_CODE", "_FULL", "_NONE", "_cs_union", "_cs_complement", "_cs_inter", "_cs_has", "_EPS", "_EMPTY_RE", "_ANY_STAR", "_ANY_PLUS", "_chars_re", "_cat", "_alt", "_inter", "_loop", "_nullable", "_re_sets", "to_node", "_to_node", "from_node", "_EVERY_STRING", "_code", "_ranges", "_text", "canonical", "_meaning", "term_hash", "canonical_text", "_DERIVATIVES", "_derivative", "holds", "member", "_READ", "code_units", "code_points", "shortest", "every_string_over", "of_length"]
 
 
 def _algebra():

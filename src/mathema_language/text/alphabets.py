@@ -11,8 +11,8 @@ from __future__ import annotations
 import string
 import unicodedata
 
+from ._algebra import every_string_over
 from ._kit import TextLanguage
-from ._regular import every_string_over
 
 _ASCII_POOL = string.printable + "\x00\x7f"
 _LATIN1_POOL = _ASCII_POOL + "".join(chr(c) for c in range(0x80, 0x100, 5))
