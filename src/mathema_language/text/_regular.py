@@ -49,7 +49,6 @@ from __future__ import annotations
 
 import re
 import sys
-import unicodedata
 from typing import Any
 
 #: the version of the term's schema
@@ -1003,12 +1002,9 @@ def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str 
             a version, uses a possessive repeat or atomic group, which some versions do not read.
         ValueError: `predicate` is not one of `PREDICATES`, `dialect` not one of `DIALECTS`, or
             `version` not a supported Python.
-        NotRegular: also for a dialect that is not available yet.
     """
     if predicate not in PREDICATES:
         raise ValueError(f"a predicate is one of {sorted(PREDICATES)}, not {predicate!r}")
-    if dialect in EXPERIMENTAL_DIALECTS:
-        return _experimental_term(pattern, flags, predicate, dialect)
     if dialect not in DIALECTS:
         raise ValueError(f"a dialect is one of {list(DIALECTS)}, not {dialect!r}")
     data = versions_data()
@@ -1046,42 +1042,6 @@ def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str 
 
 
 _TERMS: dict[tuple[Any, int, str, Any], Node] = {}
-
-#: the dialects refused unless the environment variable below lists them, comma separated
-EXPERIMENTAL_DIALECTS = ("javascript",)
-EXPERIMENTAL_SWITCH = "MATHEMA_LANGUAGE_EXPERIMENTAL_DIALECTS"
-
-
-def _experimental_term(pattern: Any, flags: Any, predicate: str, dialect: str) -> Node:
-    """Intent:
-        Returns the term of a pattern in a dialect that is not available yet, when the
-        environment names the dialect as experimental at the time of the call.
-
-    Raises:
-        NotRegular: the environment does not name the dialect, or the pattern does not compile.
-
-    Notes:
-        A pattern read by UTF-16 code units states the alphabet `[[0, 65535]]`.
-    """
-    import os
-    named = [d.strip() for d in os.environ.get(EXPERIMENTAL_SWITCH, "").split(",")]
-    if dialect not in named:
-        raise NotRegular(f"the {dialect} dialect is not available yet")
-    from ._ecma import Ecma
-    regex = Ecma(pattern, flags or "")
-    language = to_node(regex.language(regex.mode(predicate)))
-    doc: dict[str, Any] = {
-        "kind": "regular_language", "version": TERM_VERSION,
-        "alphabet": [[0, _MAX_CODE if regex.unicode else 0xFFFF]], "exact": not regex.not_exact,
-        "source": {"dialect": dialect, "pattern": pattern, "flags": regex.flag_words(),
-                   "predicate": predicate, "unicode": unicodedata.unidata_version}}
-    if regex.not_exact:
-        doc["at_least"] = language
-        doc["at_most"] = {"op": "empty"}
-        doc["source"]["not_exact"] = list(regex.not_exact)
-    else:
-        doc["language"] = language
-    return doc
 
 
 #: the language of every string, which an intersection drops
