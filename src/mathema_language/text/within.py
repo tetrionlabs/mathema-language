@@ -534,23 +534,46 @@ def _at(instant: _dt.timedelta, zone: _dt.tzinfo | None) -> _dt.datetime | None:
         return None
 
 
+#: a datetime bound as text: a date, then optionally any one character and a time of hours
+#: (00 to 23), hours and minutes, or hours, minutes and seconds with up to six fraction digits, then
+#: optionally an offset of hours and minutes (and seconds, and six fraction digits)
+_DATETIME_BOUND = re.compile(
+    r"(?P<date>[0-9]{4}-[0-9]{2}-[0-9]{2})"
+    r"(?:(?P<between>.)(?P<time>(?:[01][0-9]|2[0-3])(?::[0-9]{2}(?::[0-9]{2}(?:\.(?P<fraction>[0-9]{1,6}))?)?)?)"
+    r"(?P<offset>[+-][0-9]{2}:[0-9]{2}(?::[0-9]{2}(?:\.[0-9]{6})?)?)?)?", re.DOTALL)
+_DATETIME_FORM = ('a datetime bound is a date and time such as "2026-01-01T00:00:00", with up to '
+                  'six fraction digits and an offset such as "+01:00" if any')
+
+
 def _as_datetime(bound: Any) -> _dt.datetime:
     """Intent:
-        The datetime a bound names: a `datetime` itself, or the text `datetime.fromisoformat`
-        reads.
+        The datetime a bound names: a `datetime` itself, or a text in the one spelling read
+        the same on every supported Python: `YYYY-MM-DD`, then optionally a separating
+        character and `HH`, `HH:MM` or `HH:MM:SS` with a fraction of one to six digits, then
+        optionally an offset `+HH:MM`.
 
     Raises:
-        ValueError: the bound is neither.
+        ValueError: the bound is neither: a spelling only some interpreters'
+            `datetime.fromisoformat` read (a `Z`, a comma, the basic or week format, more than
+            six fraction digits) is refused on all of them.
+
+    Notes:
+        The fraction is filled out to six digits before `datetime.fromisoformat` reads the
+        text, since Python 3.10 reads a fraction of three or six digits only.
     """
     if isinstance(bound, _dt.datetime):
         return bound
-    if isinstance(bound, str):
-        try:
-            return _dt.datetime.fromisoformat(bound)
-        except ValueError as e:
-            raise ValueError(
-                f'a datetime bound is an ISO datetime such as "2026-01-01T00:00:00", not {bound!r}') from e
-    raise ValueError(f'a datetime bound is an ISO datetime such as "2026-01-01T00:00:00", not {bound!r}')
+    found = _DATETIME_BOUND.fullmatch(bound) if isinstance(bound, str) else None
+    if found is None:
+        raise ValueError(f"{_DATETIME_FORM}, not {bound!r}")
+    text = bound
+    if found["fraction"] is not None:
+        end = found.end("fraction")
+        text = bound[:end] + "0" * (6 - len(found["fraction"])) + bound[end:]
+    try:
+        return _dt.datetime.fromisoformat(text)
+    except ValueError as e:
+        raise ValueError(f"{_DATETIME_FORM}, not {bound!r}") from e
 
 
 def _day_of(instant: _dt.timedelta, days: int) -> _dt.date:
