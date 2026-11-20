@@ -437,16 +437,23 @@ def _date_spellings(day: _dt.date) -> list[tuple[str, str]]:
     return out
 
 
+#: a date bound as text
+_DATE_BOUND = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
+
+
 def _as_date(bound: Any) -> _dt.date:
     """Intent:
-        The date a bound names: a `date` itself, or the text `date.fromisoformat` reads.
+        The date a bound names: a `date` itself, or a text written `YYYY-MM-DD`, the one
+        spelling read the same on every supported Python.
 
     Raises:
-        ValueError: the bound is neither.
+        ValueError: the bound is neither: a spelling only some interpreters'
+            `date.fromisoformat` read (the basic format, a week date) is refused on all of
+            them, as is a text that names no day there is.
     """
     if isinstance(bound, _dt.date) and not isinstance(bound, _dt.datetime):
         return bound
-    if isinstance(bound, str):
+    if isinstance(bound, str) and _DATE_BOUND.fullmatch(bound):
         try:
             return _dt.date.fromisoformat(bound)
         except ValueError as e:
