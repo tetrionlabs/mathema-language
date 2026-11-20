@@ -11,6 +11,7 @@ the term itself. An exact term must agree with `contains` everywhere; a
 bounds pair must hold every member in `at_least` and only members in
 `at_most`.
 """
+import importlib
 import itertools
 import random
 import sys
@@ -34,7 +35,10 @@ def _language(name):
         return PATH
     if name in LANGUAGES:
         return LANGUAGES[name]
-    module = pytest.importorskip(f"mathema_language.text.{name}_language")
+    try:
+        module = importlib.import_module(f"mathema_language.text.{name}_language")
+    except ImportError as e:
+        pytest.skip(str(e))
     return getattr(module, f"{name.upper()}_TEXT")
 
 
