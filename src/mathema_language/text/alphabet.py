@@ -42,7 +42,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .._surface import HazardValue
-from . import _regular
+from . import _algebra, _regular
 from . import alphabets as _alphabets
 from ._kit import TextLanguage
 
@@ -161,8 +161,8 @@ class Alphabet:
         with None, on every supported Python as `bounds` gives it."""
         own = tuple(((ord(c), ord(c)),) for c in self.characters)
         pairs = [_named_bounds(n, version) for n in self.names]
-        return (tuple(_regular._cs_union(*[low for low, _ in pairs], *own)),
-                tuple(_regular._cs_union(*[high for _, high in pairs], *own)))
+        return (tuple(_algebra._cs_union(*[low for low, _ in pairs], *own)),
+                tuple(_algebra._cs_union(*[high for _, high in pairs], *own)))
 
     @property
     def varying(self) -> tuple[str, ...]:
@@ -193,7 +193,7 @@ def _ranges(names: tuple[str, ...], characters: tuple[str, ...]) -> Ranges:
         The union of the named alphabets and the characters, as sorted, disjoint, inclusive,
         non-adjacent ranges.
     """
-    return tuple(_regular._cs_union(*[named_ranges(n) for n in names],
+    return tuple(_algebra._cs_union(*[named_ranges(n) for n in names],
                                     *[((ord(c), ord(c)),) for c in characters]))
 
 
@@ -342,10 +342,10 @@ class AlphabetLanguage(TextLanguage):
         covered = list(data["versions"]) if version is None else [version]
 
         def every(ranges: Ranges) -> dict[str, Any]:
-            return _regular.to_node(_regular._loop(_regular._chars_re(ranges), 0, None))
+            return _algebra.to_node(_algebra._loop(_algebra._chars_re(ranges), 0, None))
 
         doc: dict[str, Any] = {
-            "kind": "regular_language", "version": _regular.TERM_VERSION,
+            "kind": "regular_language", "version": _algebra.TERM_VERSION,
             "alphabet": [[0, sys.maxunicode]], "exact": low == high,
             "source": {"dialect": "alphabet", "alphabet": self.alphabet.text,
                        "versions": covered,

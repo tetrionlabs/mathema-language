@@ -58,7 +58,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .._surface import HazardValue
-from . import _regular
+from . import _algebra, _regular
 from ._finite import finite_complement, finite_pattern
 from ._kit import TextLanguage
 from .path_language import PATH, _normal_root, _quoted, path_within
@@ -1149,7 +1149,7 @@ def _in_term(base: str, text: str, *regions: str) -> bool:
     Raises:
         ValueError: `within` has no meaning for `base`, or a region has not the form it takes.
     """
-    return _regular.member(_built(base, regions).definition(), text, "at_least")
+    return _algebra.member(_built(base, regions).definition(), text, "at_least")
 
 
 def _certain(text: str, first: str, last: str) -> bool:
@@ -1167,7 +1167,7 @@ def _certain(text: str, first: str, last: str) -> bool:
     Raises:
         ValueError: a bound is not a datetime, or the bounds are not in order.
     """
-    return _regular.member(_built("iso_datetime", (first, last)).definition(), text, "at_most")
+    return _algebra.member(_built("iso_datetime", (first, last)).definition(), text, "at_most")
 
 
 def within(language: Any, *regions: Any) -> Any:

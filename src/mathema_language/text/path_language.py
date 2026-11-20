@@ -104,15 +104,15 @@ def within_pattern(root: str, *more: str) -> str:
 def _near(roots: tuple[str, ...]) -> tuple[str, ...]:
     """Intent:
         Absolute paths just beside each root: a sibling whose name starts with the root's
-        (`/workspace2` for `/workspace`), the root's name cut short, and a climb out of the
-        root through `..`.
+        (`/workspace2` for `/workspace`) and the root's name cut short. None climbs through
+        `..` or names a place outside the roots' own parent, since a function under test may
+        open or remove what it is given.
     """
     out: list[str] = []
     for root in roots:
         if root == "/":
-            out += ["/../etc", "//etc"]
             continue
-        out += [root + "2", root + "x", root + "/../etc", root + "/.."]
+        out += [root + "2", root + "x"]
         if len(posixpath.basename(root)) > 1:
             out.append(root[:-1])
     return tuple(dict.fromkeys(out))
@@ -129,12 +129,6 @@ class PathLanguage(TextLanguage):
     def contains(self, value: Any) -> bool:
         return isinstance(value, str) and re.fullmatch(self.pattern, value) is not None
 
-    def to_json(self) -> dict[str, Any]:
-        """The persisted form with the language's `definition`, the
-        term of the strings `pattern` matches in full."""
-        from . import _regular
-        return {**super().to_json(), "definition": _regular.term(self.pattern, 0, "matches")}
-
     def hazards(self) -> tuple[HazardValue, ...]:
         """The paths code most often gets wrong, the ones this language
         admits."""
@@ -149,6 +143,8 @@ class PathLanguage(TextLanguage):
         return _regular.term(self.pattern, 0, "matches")
 
     def to_json(self) -> dict[str, Any]:
+        """The persisted form with the language's `definition`, the
+        term of the strings `pattern` matches in full."""
         return {**super().to_json(), "definition": self.definition()}
 
     def outside(self, rng: random.Random) -> Any:

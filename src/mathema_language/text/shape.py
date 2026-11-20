@@ -79,7 +79,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .._surface import HazardValue
-from . import _regular
+from . import _algebra, _regular
 from ._kit import TextLanguage
 from .alphabet import Alphabet, alphabet, outside_characters, plain_character
 from .alphabets import ASCII, UNICODE
@@ -558,7 +558,7 @@ def _symbols(items: tuple[_Item, ...]) -> set[str]:
 
 
 def _expression(items: tuple[_Item, ...], classes: _Classes, bound: int | None = None,
-                version: str | None = None) -> _regular.Expr:
+                version: str | None = None) -> _algebra.Expr:
     """Intent:
         The regular expression of the items in the term module's own form: each class as the
         running Python reads it, or, with `bound`, as every supported Python does (0) or as
@@ -570,13 +570,13 @@ def _expression(items: tuple[_Item, ...], classes: _Classes, bound: int | None =
         if isinstance(atom, _Group):
             inner = _expression(atom.items, classes, bound, version)
         elif isinstance(atom, _Class):
-            inner = _regular._chars_re(classes.ranges(atom.symbol) if bound is None
+            inner = _algebra._chars_re(classes.ranges(atom.symbol) if bound is None
                                        else classes.bounds(atom.symbol, version)[bound])
         else:
             text = atom.text if isinstance(atom, _Run) else atom.char
-            inner = _regular._cat(*[_regular._chars_re(((ord(c), ord(c)),)) for c in text])
-        parts.append(_regular._loop(inner, item.lo, item.hi))
-    return _regular._cat(*parts)
+            inner = _algebra._cat(*[_algebra._chars_re(((ord(c), ord(c)),)) for c in text])
+        parts.append(_algebra._loop(inner, item.lo, item.hi))
+    return _algebra._cat(*parts)
 
 
 def _ends(items: tuple[_Item, ...], classes: _Classes, text: str, starts: set[int]) -> set[int]:
@@ -812,11 +812,11 @@ class Shape:
         that holds on all of them. With a `version` (`"3.13"`), that
         Python's reading, exact."""
         data = _regular.versions_data()
-        low = _regular.to_node(_expression(self._items, self._classes, 0, version))
-        high = _regular.to_node(_expression(self._items, self._classes, 1, version))
+        low = _algebra.to_node(_expression(self._items, self._classes, 0, version))
+        high = _algebra.to_node(_expression(self._items, self._classes, 1, version))
         covered = list(data["versions"]) if version is None else [version]
         doc: dict[str, Any] = {
-            "kind": "regular_language", "version": _regular.TERM_VERSION,
+            "kind": "regular_language", "version": _algebra.TERM_VERSION,
             "alphabet": [[0, sys.maxunicode]], "exact": low == high,
             "source": {"dialect": "shape", "shape": self.shape, "base": self.base,
                        "bindings": {symbol: found.text for symbol, found in self.bindings},
@@ -1021,7 +1021,7 @@ def _term_reads(shape: str, base: str, text: str) -> bool:
         ValueError: the base is not one of `BASES`.
     """
     found = _shape(shape, base)
-    return _regular.holds(_expression(found._items, found._classes), text)
+    return _algebra.holds(_expression(found._items, found._classes), text)
 
 
 def _canonical(shape: str) -> str:

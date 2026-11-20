@@ -59,7 +59,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ._surface import AlphabetConstructor, PredicateWord
-from .text import _regular
+from .text import _algebra, _regular
 from .text._kit import TextLanguage
 from .text.alphabet import NAMES, Alphabet, alphabet_language, parse_alphabet
 from .text.shape import SHAPE, Shape, shape_examples, shape_language, suggest_shape
@@ -432,18 +432,18 @@ def _cut_to(node: dict[str, Any], over: Any) -> dict[str, Any] | None:
     if op in ("empty", "epsilon"):
         return node
     if op == "chars":
-        kept = _regular._cs_inter(tuple((lo, hi) for lo, hi in node["ranges"]), over)
-        return _regular.canonical({"op": "chars", "ranges": [[lo, hi] for lo, hi in kept]})
+        kept = _algebra._cs_inter(tuple((lo, hi) for lo, hi in node["ranges"]), over)
+        return _algebra.canonical({"op": "chars", "ranges": [[lo, hi] for lo, hi in kept]})
     if op == "literal":
-        inside = all(_regular._cs_has(over, code) for code in node["codes"])
+        inside = all(_algebra._cs_has(over, code) for code in node["codes"])
         return node if inside else {"op": "empty"}
     if op == "complement":
         return None
     if op == "repeat":
         arg = _cut_to(node["arg"], over)
-        return None if arg is None else _regular.canonical({**node, "arg": arg})
+        return None if arg is None else _algebra.canonical({**node, "arg": arg})
     args = [_cut_to(arg, over) for arg in node["args"]]
-    return None if None in args else _regular.canonical({"op": op, "args": args})
+    return None if None in args else _algebra.canonical({"op": op, "args": args})
 
 
 def _inter(a: dict[str, Any], b: dict[str, Any], negate: bool) -> dict[str, Any]:
@@ -461,7 +461,7 @@ def _inter(a: dict[str, Any], b: dict[str, Any], negate: bool) -> dict[str, Any]
     def meet(bound: str) -> dict[str, Any]:
         other = {"at_least": "at_most", "at_most": "at_least"}[bound]
         right = {"op": "complement", "arg": side(b, other)} if negate else side(b, bound)
-        return _regular.canonical({"op": "inter", "args": [side(a, bound), right]})
+        return _algebra.canonical({"op": "inter", "args": [side(a, bound), right]})
 
     over = _star_set(a)
     if over is not None:
@@ -472,7 +472,7 @@ def _inter(a: dict[str, Any], b: dict[str, Any], negate: bool) -> dict[str, Any]
                 b = {"exact": True, "language": b["at_least"],
                      **{k: v for k, v in b.items() if k not in ("exact", "at_least", "at_most")}}
     exact = bool(a.get("exact")) and bool(b.get("exact"))
-    doc: dict[str, Any] = {"kind": "regular_language", "version": _regular.TERM_VERSION,
+    doc: dict[str, Any] = {"kind": "regular_language", "version": _algebra.TERM_VERSION,
                            "alphabet": a["alphabet"], "exact": exact}
     if exact:
         doc["language"] = meet("at_least")

@@ -53,7 +53,7 @@ import functools
 import json
 from typing import Any
 
-from . import _regular
+from . import _algebra, _regular
 
 Ranges = tuple[tuple[int, int], ...]
 
@@ -148,7 +148,7 @@ def _minus(a: Ranges, b: Ranges) -> Ranges:
     """Intent:
         The code points of `a` that are not in `b`.
     """
-    return tuple(_regular._cs_inter(a, _regular._cs_complement(b)))
+    return tuple(_algebra._cs_inter(a, _algebra._cs_complement(b)))
 
 
 def _contained(ranges: Ranges) -> str:
@@ -164,7 +164,7 @@ def _contained(ranges: Ranges) -> str:
     names = []
     rest = ranges
     for said, members in _classes():
-        if tuple(_regular._cs_inter(rest, members)) == members:
+        if tuple(_algebra._cs_inter(rest, members)) == members:
             names.append(said)
             rest = _minus(rest, members)
     return ", ".join(names + ([_listed(rest)] if rest else []))
@@ -180,15 +180,15 @@ def describe_characters(ranges: Any) -> str:
         `ranges` are inclusive code point pairs; they are sorted and merged before reading, so
         one set reads one way however it is written.
     """
-    given = tuple(_regular._cs_union(*[((int(lo), int(hi)),) for lo, hi in ranges]))
+    given = tuple(_algebra._cs_union(*[((int(lo), int(hi)),) for lo, hi in ranges]))
     if given in _NAMES.get():
         return _NAMES.get()[given]
-    if given == _regular._FULL:
+    if given == _algebra._FULL:
         return "any character"
     for said, members in _classes():
         if given == members:
             return said
-    left_out = tuple(_regular._cs_complement(given))
+    left_out = tuple(_algebra._cs_complement(given))
     if _size(given) > _size(left_out):
         return "any character except: " + _contained(left_out)
     return _contained(given)
@@ -353,7 +353,7 @@ def explain_node(node: dict[str, Any]) -> str:
     Raises:
         ValueError: the node is not one of the term's forms.
     """
-    return _read(_regular.canonical(node), 0)
+    return _read(_algebra.canonical(node), 0)
 
 
 def explain(term: dict[str, Any], names: Any = None) -> str:
@@ -398,7 +398,7 @@ def _explain(term: dict[str, Any]) -> str:
     reasons = ([f"the pattern uses {_and(uses)}"] if uses else []) + (
         [f"it holds {_and(versions)}"] if versions else [])
     why = (" because " + " and ".join(reasons)) if reasons else ""
-    most = _regular.canonical(term["at_most"])
+    most = _algebra.canonical(term["at_most"])
     certain = ("no text is known to be accepted for certain" if most == {"op": "empty"}
                else "certainly accepted: " + _read(most, 0))
     return (f"approximate{why}; every accepted text fits: {explain_node(term['at_least'])}; "
