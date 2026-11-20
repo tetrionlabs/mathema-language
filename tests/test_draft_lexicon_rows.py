@@ -2,7 +2,7 @@
 # Copyright 2026 Tetrion Ltd
 """The draft lexicon rows: one worked claim for each language, predicate
 word and constructor the package newly registers. A predicate word's row
-is in the ruled spelling, the word as words (an underscore in its key
+is in the canonical spelling, the word as words (an underscore in its key
 read as a space) followed by its bracketed argument; with mathema's word
 registry installed every row parses and renders back to itself.
 
@@ -39,7 +39,7 @@ def _predicate_words():
     return found
 
 
-def test_every_registered_predicate_word_has_a_row_in_the_ruled_spelling():
+def test_every_registered_predicate_word_has_a_row_in_the_canonical_spelling():
     found = _predicate_words()
     assert set(found) == {"matches", "contains", "starts_with", "ends_with", "within", "shape"}
     for key, word in found.items():

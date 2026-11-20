@@ -89,7 +89,7 @@ astral = "mathema_language.text:ASTRAL"
 yaml = "mathema_language.text.yaml_language:YAML_TEXT"
 toml = "mathema_language.text.toml_language:TOML_TEXT"
 path = "mathema_language.text.path_language:PATH"
-# provisional, awaiting sign-off of their names
+# provisional names
 lower = "mathema_language.text.alphabet:LOWER"
 upper = "mathema_language.text.alphabet:UPPER"
 
@@ -114,7 +114,7 @@ len = "mathema_language.refinements:length"
 depth = "mathema_language.refinements:depth"
 nodes = "mathema_language.refinements:nodes"
 width = "mathema_language.refinements:width"
-# the words below are provisional, awaiting sign-off of their names
+# the words below have provisional names
 matches = "mathema_language.words:MATCHES"
 contains = "mathema_language.words:CONTAINS"
 starts_with = "mathema_language.words:STARTS_WITH"
