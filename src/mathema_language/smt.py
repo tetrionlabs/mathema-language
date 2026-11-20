@@ -564,7 +564,7 @@ def _text_of(model: Any, x: Any) -> str:
                        .as_long()) for i in range(n))
 
 
-def _to_z3(z3: Any, r: tuple, side: str, alphabet: Any = None) -> Any:
+def _to_z3(z3: Any, r: tuple[Any, ...], side: str, alphabet: Any = None) -> Any:
     """Intent:
         Returns `r` as a z3 regular expression, each character set read on `side`, and, given
         an `_Alphabet`, written over its representatives.
@@ -575,7 +575,7 @@ def _to_z3(z3: Any, r: tuple, side: str, alphabet: Any = None) -> Any:
     def char(code: int) -> Any:
         return _z3_text(z3, chr(code))
 
-    def go(node: tuple) -> Any:
+    def go(node: tuple[Any, ...]) -> Any:
         if id(node) in memo:
             return memo[id(node)]
         kind = node[0]
@@ -635,7 +635,7 @@ class _Alphabet:
                 cuts.update(c for c in (lo, hi + 1) if c <= _Z3_MAX_CHAR + 1)
         self.starts = sorted(cuts)[:-1]
         starts_of = [[lo for lo, _ in s] for s in sets]
-        reps: dict[tuple, int] = {}
+        reps: dict[tuple[bool, ...], int] = {}
         self.rep_at: list[int] = []
         for start in self.starts:
             key = tuple(self._has(s, starts, start) for s, starts in zip(sets, starts_of, strict=True))
@@ -706,7 +706,7 @@ def _decides(pattern: Any, flags: int, mode: str, side: str, text: str) -> bool:
     answer = solver.check()
     if answer == z3.unknown:
         raise RuntimeError(f"z3 did not decide {text!r} in {pattern!r} ({solver.reason_unknown()})")
-    return answer == z3.sat
+    return bool(answer == z3.sat)
 
 
 def _pattern_regex(z3: Any, pattern: Any, flags: int, mode: str, side: str) -> Any:
@@ -891,9 +891,9 @@ def untranslated(language: Any) -> str | None:
         unread = _unread_pydantic(ecosystem.model, schema)
         if unread:
             return f"{language.name}: {unread}"
-        config = getattr(ecosystem.model, "model_config", None) or {}
+        python_engine = _reads_patterns_with_re(ecosystem.model)
         for path, pattern, nested in _patterns(schema.fields, ""):
-            if config.get("regex_engine") == "python-re" and not nested:
+            if python_engine and not nested:
                 continue
             differs = _rust_reads_differently(pattern)
             if differs:
@@ -911,6 +911,23 @@ def untranslated(language: Any) -> str | None:
         if keywords:
             return f"{language.name}: the JSON Schema keyword {sorted(keywords)[0]!r}"
     return None
+
+
+def _reads_patterns_with_re(model: Any) -> bool:
+    """Intent:
+        Returns whether a pydantic model validates its patterns with Python's `re`: its
+        configuration sets `regex_engine='python-re'` and the installed pydantic knows the
+        setting (2.5 or later; an earlier one ignores it and keeps the rust engine).
+    """
+    config = getattr(model, "model_config", None) or {}
+    if config.get("regex_engine") != "python-re":
+        return False
+    try:
+        import pydantic
+        major, minor = (int(part) for part in pydantic.VERSION.split(".")[:2])
+    except (ImportError, ValueError):
+        return False
+    return (major, minor) >= (2, 5)
 
 
 def _patterns(fields: Any, prefix: str) -> list[tuple[str, str, bool]]:

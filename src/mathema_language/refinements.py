@@ -86,7 +86,7 @@ class _LengthLanguage(RefinedLanguage):
     hazard that changes length under case mapping or normalisation,
     repeated up to the upper bound: the input that grows the most."""
 
-    def to_json(self) -> dict:
+    def to_json(self) -> dict[str, Any]:
         """The base's persisted form with the length bound; a base that
         states a `definition` states the refined one, its strings of a
         length in the bound."""
@@ -284,7 +284,7 @@ class _JsonStructureLanguage(RefinedLanguage):
     code that walks keys meets the bound as well as code that walks
     items."""
 
-    def to_json(self) -> dict:
+    def to_json(self) -> dict[str, Any]:
         """The base's persisted form with the length bound; a base that
         states a `definition` states the refined one, its strings of a
         length in the bound."""

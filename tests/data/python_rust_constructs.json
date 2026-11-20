@@ -1,9 +1,27 @@
 {
  "engines": {
   "python": "re, CPython 3.13",
-  "rust": "the regex crate through pydantic-core 2.50.5 (pydantic 2.14.4)"
+  "rust": "the regex crate through pydantic-core, at the versions in measured_against"
  },
  "referee": "tests/test_pydantic_pattern_engine.py validates strings through a pydantic model",
+ "measured_against": {
+  "pydantic": [
+   "2.0",
+   "2.14.4"
+  ],
+  "pydantic_core": [
+   "2.0.1",
+   "2.50.5"
+  ],
+  "refused_at_build": {
+   "2.0": [
+    "[a&&b]",
+    "\\<",
+    "\\-\\/"
+   ]
+  },
+  "note": "a pattern the installed engine refuses when the model is built gives no model and so no language; every other row reads the same on both measured versions"
+ },
  "identical": [
   {
    "construct": "literal characters and escaped punctuation",
