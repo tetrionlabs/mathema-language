@@ -3,6 +3,13 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
+## Unreleased
+
+- An inclusion between two JSON Schema record languages whose string
+  fields carry patterns ending in `$` is decided; it came back unknown.
+  Inside a JSON Schema record a pattern is read the way the `jsonschema`
+  validator reads it, by `re.search`, on both sides of the inclusion.
+
 ## 0.3.0
 
 For mathema 0.6.6.1 (`mathema>=0.6.6.1,<0.7`).
