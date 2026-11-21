@@ -32,7 +32,7 @@ def test_both_are_languages_and_path_resolves_by_name():
     assert languages.language_problems(PATH) == []
     assert languages.language_problems(WS) == []
     assert languages.resolve_language("path") is PATH
-    assert WS.render(True) == 'L[path, within "/ws"]'
+    assert WS.render(True) == 'L[path, within ("/ws")]'
 
 
 @pytest.mark.parametrize("text, inside", CASES.items(), ids=repr)
@@ -101,3 +101,24 @@ def test_a_command_line_s_path_option_is_proven_within_the_root_or_falsified(par
         assert not WS.contains(value)
         if received is not None:
             assert value == received
+
+
+@pytest.mark.parametrize("written", ['within "/ws"', 'within ("/ws")', 'within("/ws")', 'Within  "/ws/"'])
+def test_the_keyword_spelling_of_within_still_reads_and_renders_in_brackets(written):
+    from mathema_language.text.within import WITHIN_KEYWORD, within, within_arguments
+    assert WITHIN_KEYWORD is True
+    language = within(PATH, *within_arguments(written))
+    assert language.render(True) == 'L[path, within ("/ws")]'
+    assert language.pattern == WS.pattern
+
+
+@pytest.mark.parametrize("written", ['within "/a", "/b"', "within /ws", 'within ("/ws"', 'inside "/ws"', "within ()"])
+def test_within_written_any_other_way_is_refused(written):
+    from mathema_language.text.within import within_arguments
+    with pytest.raises(ValueError):
+        within_arguments(written)
+
+
+def test_several_arguments_read_in_the_bracket_spelling():
+    from mathema_language.text.within import within_arguments
+    assert within_arguments('within ("/a", "/b c", "/q\\"d")') == ("/a", "/b c", '/q"d')

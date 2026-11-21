@@ -419,7 +419,7 @@ class MembershipEncoding:
         """The formula: the z3 string `x` is a member of a text language
         defined by a regular expression: its `pattern`, under its `flags`
         (none when it states none), read by its `mode` (`fullmatch` when it
-        states none, as `L[path]` and `L[path, within "/root"]` are)."""
+        states none, as `L[path]` and `L[path, within ("/root")]` are)."""
         pattern = getattr(language, "pattern", None)
         if not isinstance(pattern, (str, re.Pattern)):
             raise Untranslated(f"{getattr(language, 'name', language)!r}, which states no pattern")

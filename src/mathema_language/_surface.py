@@ -47,3 +47,24 @@ from mathema.interfaces.extension import synth_other_params as synth_other_param
 from mathema.interfaces.extension import unregister_language as unregister_language
 from mathema.interfaces.extension import write_lexicon_golden as write_lexicon_golden
 
+
+def _later(name: str) -> object:
+    """Intent:
+        A name of mathema's word registry: taken from the extension surface where it is there,
+        else from the module the surface's own `resolve_language` lives in, where a mathema
+        that has the registry but has not yet put it on the surface keeps it; None on a
+        mathema with no registry.
+    """
+    import sys
+
+    for module in (sys.modules.get(describe_language.__module__.rsplit(".", 1)[0] + ".interfaces.extension"),
+                   sys.modules.get(resolve_language.__module__)):
+        found = getattr(module, name, None)
+        if found is not None:
+            return found
+    return None
+
+
+#: mathema's predicate-word and alphabet-constructor records, None where it has no word registry
+PredicateWord = _later("PredicateWord")
+AlphabetConstructor = _later("AlphabetConstructor")

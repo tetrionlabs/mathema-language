@@ -89,6 +89,9 @@ astral = "mathema_language.text:ASTRAL"
 yaml = "mathema_language.text.yaml_language:YAML_TEXT"
 toml = "mathema_language.text.toml_language:TOML_TEXT"
 path = "mathema_language.text.path_language:PATH"
+# provisional names
+lower = "mathema_language.text.alphabet:LOWER"
+upper = "mathema_language.text.alphabet:UPPER"
 
 [project.entry-points."mathema.claim_families"]
 is_length_safe = "mathema_language.families:LENGTH_SAFE"
@@ -111,6 +114,14 @@ len = "mathema_language.refinements:length"
 depth = "mathema_language.refinements:depth"
 nodes = "mathema_language.refinements:nodes"
 width = "mathema_language.refinements:width"
+# the words below have provisional names
+matches = "mathema_language.words:MATCHES"
+contains = "mathema_language.words:CONTAINS"
+starts_with = "mathema_language.words:STARTS_WITH"
+ends_with = "mathema_language.words:ENDS_WITH"
+within = "mathema_language.words:WITHIN_WORD"
+shape = "mathema_language.words:SHAPE_WORD"
+alphabet = "mathema_language.words:ALPHABET"
 
 [project.entry-points."mathema.lexicon"]
 language = "mathema_language.lexicon"

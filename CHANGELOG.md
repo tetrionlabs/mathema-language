@@ -3,6 +3,14 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
+## Unreleased
+
+- Upgrade note for 0.4: a path language confined to one root renders
+  `L[path, within ("/root")]`, the word followed by its arguments in
+  brackets, where it rendered `L[path, within "/root"]`. Text that was
+  stored or compared in the old spelling changes; the old spelling is
+  still read (`within_arguments` reads both to the same arguments).
+
 ## 0.3.0
 
 For mathema 0.6.6.1 (`mathema>=0.6.6.1,<0.7`).
