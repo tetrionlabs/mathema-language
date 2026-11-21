@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The encoding's public names keep their meaning for callers that pass
-a field's own name: `MembershipEncoding.var` and `row` read a plain name
-as the field of the record of that name, whatever it holds, and a dotted
-name as a nested field only when no field of the top record is named so.
-Every reader of a record keyed by field name (the float-bound check, a
-sampled member, `build`) reads one spelling. A solver's text form of an
-encoding reads back. A witness is nested by the shape that admits it."""
+"""The encoding names a field one way, whatever has been read before: by
+its names from the top record down, each with its backslashes and dots
+preceded by a backslash, joined by dots (`field_names`). A plain name
+(`x`, `x.qty`) is named as it always was. Every public call reads that
+name, and every reader of a record keyed by field name (the float-bound
+check, a sampled member, `build`) reads the same one. A solver's text
+form of an encoding reads back. A witness is nested by the shape that
+admits it. Reading two languages in either order gives one answer."""
 import pytest
 
 z3 = pytest.importorskip("z3")
@@ -30,15 +31,16 @@ def valid(schema, value):
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_a_caller_naming_an_added_field_by_its_own_name_constrains_that_field(name):
+def test_a_caller_naming_an_added_field_by_its_field_name_constrains_that_field(name):
     old = adapt_row(closed({"x": {"enum": [1]}}))
     new = adapt_row(closed({"x": {"enum": [1]}, name: {"enum": [5], "default": 5}}, ["x"]))
     enc = smt.MembershipEncoding(z3)
-    own = [f.name for f in old.schema.fields]
-    added = [f for f in new.schema.fields if f.name not in own]
+    spelled = dict(zip([f.name for f in new.schema.fields], smt.field_names(new), strict=True))
+    own = [spelled[f.name] for f in old.schema.fields]
+    added = [f for f in new.schema.fields if spelled[f.name] not in own]
     inside = enc.row(old.schema, own, "older", True)
-    still = enc.row(new.schema, own + [f.name for f in added], "newer", True)
-    carried = [enc.var(f.name) == enc.const(f.default) for f in added
+    still = enc.row(new.schema, own + [spelled[f.name] for f in added], "newer", True)
+    carried = [enc.var(spelled[f.name]) == enc.const(f.default) for f in added
                if f.default is not NO_DEFAULT]
     solver = z3.Solver()
     solver.add(*carried, inside, z3.Not(still))
@@ -46,7 +48,13 @@ def test_a_caller_naming_an_added_field_by_its_own_name_constrains_that_field(na
     assert len(enc.vars) == 2
 
 
-def test_a_dotted_name_names_a_nested_field_when_no_top_field_has_it():
+@pytest.mark.parametrize("name", ["ab", "é", "a b", "a\x00b", ""])
+def test_a_plain_name_is_the_field_name_of_that_field(name):
+    language = adapt_row(closed({name: {"enum": [1]}}))
+    assert smt.field_names(language) == [name]
+
+
+def test_a_dotted_name_names_a_nested_field():
     language = adapt_row(closed({"x": closed({"qty": {"enum": [1]}})}))
     enc = smt.MembershipEncoding(z3)
     formula = enc.language(language, smt.field_names(language), "older")
@@ -61,9 +69,9 @@ def test_field_names_name_each_field_once_and_read_back_to_it():
     language = adapt_row(closed({"a.b": {"enum": [1]}, "a": closed({"b": {"enum": [2]}}),
                                  "c": closed({"d.e": {"enum": [3]}})}))
     names = smt.field_names(language)
-    assert names == ["a.b", "a", ("a", "b"), "c", ("c", "d.e")]
-    assert smt.build(language, {"a.b": 1, ("a", "b"): 2, "a": True, "c": True,
-                                ("c", "d.e"): 3}) == {"a.b": 1, "a": {"b": 2}, "c": {"d.e": 3}}
+    assert names == ["a\\.b", "a", "a.b", "c", "c.d\\.e"]
+    assert smt.build(language, {"a\\.b": 1, "a.b": 2, "a": True, "c": True,
+                                "c.d\\.e": 3}) == {"a.b": 1, "a": {"b": 2}, "c": {"d.e": 3}}
 
 
 @pytest.mark.parametrize("name", NAMES)
@@ -73,9 +81,10 @@ def test_a_float_bound_and_a_built_record_read_a_field_by_its_own_name(name):
     newer = adapt_row({"type": "object",
                        "properties": {name: {"type": "number", "exclusiveMaximum": 1.0}},
                        "required": [name]})
+    (spelled,) = smt.field_names(older)
     _, edge = smt._float_line(older, newer, smt._a_member(older))
-    assert edge == {name: 1.0}
-    assert smt.build(older, {name: 1.0}) == {name: 1.0}
+    assert edge == {spelled: 1.0}
+    assert smt.build(older, {spelled: 1.0}) == {name: 1.0}
 
 
 @pytest.mark.parametrize("name", ["é", "a b", "a|b", "a\\b", "a\nb", "a\x00b", "", "\U0001F600"])
