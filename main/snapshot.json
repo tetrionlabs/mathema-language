@@ -2111,7 +2111,7 @@
       "clarity": 23
     },
     "mathema_language.smt._scalar": {
-      "implementation": 91,
+      "implementation": 87,
       "intent": 93,
       "clarity": 28
     },
@@ -3155,13 +3155,5 @@
       "intent": 52,
       "clarity": 16
     }
-  },
-  "capped": [
-    [
-      "mathema_language.smt._decides",
-      [
-        "implementation"
-      ]
-    ]
-  ]
+  }
 }
