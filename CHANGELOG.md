@@ -5,6 +5,13 @@ release onward.
 
 ## Unreleased
 
+- Fixed: from 0.3.0, an inclusion between two record languages (two JSON
+  Schemas, for example) could be reported proven when it does not hold
+  if a field's name held a dot. Such a field was read as the same field
+  as one of a nested record spelled the same way (a field named `"a.b"`
+  and field `b` of a record `a`), and a closed record that declares no
+  field of that name did not refuse it. Every field is now read as its
+  own, whatever its name holds.
 - An inclusion between two JSON Schema record languages whose string
   fields carry patterns ending in `$` is decided; it came back unknown.
   Inside a JSON Schema record a pattern is read the way the `jsonschema`
