@@ -65,8 +65,6 @@ from .text._regular import _Regex
 
 #: a field by its path: the names from the top record down to the field
 FieldPath = tuple[str, ...]
-#: a field as a caller names it: its path, or a name `_resolve` reads
-FieldName = str | FieldPath
 
 #: the ecosystems whose records the encoding reads, and whether a record
 #: is a mapping that may leave a key out
@@ -161,17 +159,15 @@ class MembershipEncoding:
         v.declare("seq", ("items", z3.SeqSort(self.I)))
         self.V = v.create()
         self.vars: dict[FieldPath, Any] = {}
-        # every field path a schema or language read so far has, which a name is read against
-        self.known: set[FieldPath] = set()
         self.extra: list[Any] = []
         self.no_surrogates = ""
         # how the library validating the record in hand reads a pattern, when that is known
         self.pattern_mode = ""
 
-    def var(self, name: FieldName) -> Any:
-        """The z3 variable of the field `name` names: a path, or a name
-        read against the fields this encoding has read (`_resolve`)."""
-        path = _resolve(name, self.known)
+    def var(self, name: str) -> Any:
+        """The z3 variable of the field `name` names, as `field_names`
+        names fields (`_spell`)."""
+        path = _parse(name)
         if path not in self.vars:
             self.vars[path] = self.z3.Const(f"f_{len(self.vars)}_{_label(path)}", self.V)
         return self.vars[path]
@@ -244,7 +240,7 @@ class MembershipEncoding:
         n = V.iv(x) * shift
         on_int = z3.And(n < bound, n > -bound) if bound is not None else z3.BoolVal(True)
         if side == "older":
-            k = z3.Int(f"k_{len(self.extra)}_{_label((name,))}")
+            k = z3.Int(f"k_{len(self.extra)}_{_label(_parse(name))}")
             self.extra.append(k)
             on_real = [x == V.r(z3.ToReal(k) / shift)]
             if bound is not None:
@@ -292,13 +288,14 @@ class MembershipEncoding:
         return _pattern_regex(self.z3, pattern, 0, "search", "older")
 
     def member(self, f: Field, x: Any, side: str, mapping: bool, D: Any = None,
-               path: FieldPath | None = None) -> Any:
+               path: str | None = None) -> Any:
         """The formula: `x` is a value field `f` admits. `side` is
         `older` (admit at least what the library admits) or `newer`
         (admit at most). With `D`, `x` is a list item of that type.
-        `path` is the field's path; a nested record's fields are
-        variables of their own under it (`("body", "sku")`), and `x`
-        itself only says whether the record is there."""
+        `path` is the field's name as `field_names` gives it; a nested
+        record's fields are variables of their own under it
+        (`body.sku`), and `x` itself only says whether the record is
+        there."""
         z3, c, t = self.z3, f.constraints, f.type
         V = D if D is not None else self.V
         options = []
@@ -370,8 +367,7 @@ class MembershipEncoding:
                 raise Untranslated(f"the record items of the list field .{f.name}")
             present = [x == V.b(z3.BoolVal(True))]
             for sub in t.fields or ():
-                child = (*path, sub.name)
-                self.known.add(child)
+                child = _spell((*_parse(path), sub.name))
                 present.append(self.member(sub, self.var(child), side, mapping, path=child))
             conds.append(z3.And(*present))
         elif t.base == "list":
@@ -401,32 +397,30 @@ class MembershipEncoding:
         options.append(z3.And(*conds))
         return z3.Or(*options)
 
-    def present(self, name: FieldName) -> Any:
+    def present(self, name: str) -> Any:
         """The formula: field `name` is there (not absent, not null)."""
         x = self.var(name)
         return self.z3.And(self.z3.Not(self.V.is_absent(x)), self.z3.Not(self.V.is_null(x)))
 
-    def number(self, name: FieldName) -> tuple[Any, Any]:
+    def number(self, name: str) -> tuple[Any, Any]:
         """`(holds a finite number, its exact real value)` for field
         `name`, the terms a relation over a numeric field is written in:
         `x.qty <= 10` is `Implies(is_number, value <= 10)`."""
         return self._number(self.var(name), self.V)
 
-    def string(self, name: FieldName) -> tuple[Any, Any]:
+    def string(self, name: str) -> tuple[Any, Any]:
         """`(holds text, the z3 string)` for field `name`."""
         x = self.var(name)
         return self.V.is_s(x), self.V.sv(x)
 
-    def decode(self, model: Any, language: Any, names: Sequence[FieldName]) -> dict[str, Any]:
+    def decode(self, model: Any, language: Any, names: Sequence[str]) -> dict[str, Any]:
         """A z3 model of this encoding as the nested value of `language`
         it describes, absent fields left out."""
-        known = set(_paths(language))
-        values: dict[FieldPath, Any] = {}
+        values: dict[str, Any] = {}
         for name in names:
-            path = _resolve(name, known)
-            present, value = _value(self, model, self.var(path), _field_at(language, path))
+            present, value = _value(self, model, self.var(name), _field_at(language, name))
             if present:
-                values[path] = value
+                values[name] = value
         return _nest(language, values)
 
     def text(self, language: Any, x: Any, side: str) -> Any:
@@ -440,12 +434,11 @@ class MembershipEncoding:
         return _pattern(self.z3, pattern, getattr(language, "flags", 0),
                         getattr(language, "mode", "fullmatch"), x, side)
 
-    def language(self, language: Any, names: Sequence[FieldName], side: str) -> Any:
-        """The formula: the values of `names` make a member of `language`,
-        one of its shapes when it has several (a command line's
-        subcommands)."""
-        self.known.update(_paths(language))
-        paths = [_resolve(name, self.known) for name in names]
+    def language(self, language: Any, names: Sequence[str], side: str) -> Any:
+        """The formula: the values of `names` (fields named as
+        `field_names` names them) make a member of `language`, one of its
+        shapes when it has several (a command line's subcommands)."""
+        paths = [_parse(name) for name in names]
         shapes = []
         for b in _branches(language):
             # pydantic encodes a str it holds to a length, a pattern or a str_ setting, and
@@ -458,7 +451,7 @@ class MembershipEncoding:
             # the jsonschema validator reads `pattern` by `re.search`
             self.pattern_mode = "search" if b.ecosystem.name == "jsonschema" else ""
             try:
-                shape = self.row(b.schema, paths, side, _SUPPORTED[b.ecosystem.name])
+                shape = self.row(b.schema, names, side, _SUPPORTED[b.ecosystem.name])
             finally:
                 self.no_surrogates = ""
                 self.pattern_mode = ""
@@ -467,33 +460,32 @@ class MembershipEncoding:
             for dest, convert in (getattr(b.ecosystem, "converters", None) or {}).items():
                 if (dest,) in paths and \
                         getattr(convert, "__name__", "") in _TEXT_CONVERTERS - {"str"}:
-                    x = self.var((dest,))
+                    x = self.var(_spell((dest,)))
                     shape = self.z3.And(shape, self.z3.Implies(
                         self.V.is_s(x), self.z3.Length(self.V.sv(x)) >= 1))
             shapes.append(shape)
         formula = shapes[0] if len(shapes) == 1 else self.z3.Or(*shapes)
         # a nested field is there only when the record holding it is
-        nested = [self.z3.Implies(self.var(p[:-1]) != self.V.b(self.z3.BoolVal(True)),
-                                  self.V.is_absent(self.var(p)))
+        nested = [self.z3.Implies(self.var(_spell(p[:-1])) != self.V.b(self.z3.BoolVal(True)),
+                                  self.V.is_absent(self.var(_spell(p))))
                   for p in paths if len(p) > 1]
         return self.z3.And(formula, *nested) if nested else formula
 
-    def row(self, schema: RowSchema, names: Sequence[FieldName], side: str, mapping: bool) -> Any:
-        """The formula: the values of `names` make a record `schema`
-        admits. A name is a field's path, or its name as `var` reads it:
-        a field of the record by its own name."""
+    def row(self, schema: RowSchema, names: Sequence[str], side: str, mapping: bool) -> Any:
+        """The formula: the values of `names` (fields named as
+        `field_names` names them) make a record `schema` admits."""
         z3, V = self.z3, self.V
         if schema.checks:
             raise Untranslated(f"a check of {schema.name}'s own")
-        self.known.update(_schema_paths(schema.fields, ()))
         own = {(f.name,) for f in schema.fields}
-        conds = [self.member(f, self.var((f.name,)), side, mapping, path=(f.name,))
+        conds = [self.member(f, self.var(_spell((f.name,))), side, mapping,
+                             path=_spell((f.name,)))
                  for f in schema.fields]
         for name in names:
-            path = _resolve(name, self.known)
+            path = _parse(name)
             if path in own or len(path) > 1:
                 continue
-            x = self.var(path)
+            x = self.var(name)
             if not mapping or schema.column_policy == "exact":
                 conds.append(V.is_absent(x))
         return z3.And(*conds) if conds else z3.BoolVal(True)
@@ -866,32 +858,37 @@ def _paths(language: Any) -> list[FieldPath]:
     return list(dict.fromkeys(out))
 
 
-def _resolve(name: FieldName, known: set[FieldPath] | frozenset[FieldPath]) -> FieldPath:
+def _spell(path: FieldPath) -> str:
     """Intent:
-        Returns the path `name` names: a path as it is; a text as the field of the top record of
-        that name when one is known or when it holds no dot; else, when its dots split it into
-        a known path, that path (`x.qty`, field `qty` of record `x`); else the field of the top
-        record of that name.
+        Returns the name of the field at `path`: its names from the top record down, each with
+        its backslashes and dots preceded by a backslash, joined by dots. A field whose names
+        hold neither is named as before (`x`, `x.qty`); two different fields never share a
+        name.
     """
-    if isinstance(name, tuple):
-        return name
-    if (name,) in known or "." not in name:
-        return (name,)
-    parts = tuple(name.split("."))
-    return parts if parts in known else (name,)
+    return ".".join(part.replace("\\", "\\\\").replace(".", "\\.") for part in path)
 
 
-def _spelling(path: FieldPath, known: set[FieldPath]) -> FieldName:
+def _parse(name: str) -> FieldPath:
     """Intent:
-        Returns the name a caller writes for `path`: the field's name for a field of the top
-        record, its dotted path when that reads back as the path (`_resolve`), else the path.
+        Returns the path a field's name names: the inverse of `_spell`, read the same way
+        whatever has been read before.
     """
-    if len(path) == 1:
-        return path[0]
-    dotted = ".".join(path)
-    if all("." not in part for part in path) and _resolve(dotted, known) == path:
-        return dotted
-    return path
+    parts: list[str] = []
+    part: list[str] = []
+    escaped = False
+    for c in name:
+        if escaped:
+            part.append(c)
+            escaped = False
+        elif c == "\\":
+            escaped = True
+        elif c == ".":
+            parts.append("".join(part))
+            part = []
+        else:
+            part.append(c)
+    parts.append("".join(part))
+    return tuple(parts)
 
 
 def _label(path: FieldPath) -> str:
@@ -905,25 +902,24 @@ def _label(path: FieldPath) -> str:
                     else "u" + part.encode("utf-8", "surrogatepass").hex() for part in path)
 
 
-def field_names(language: Any) -> list[FieldName]:
+def field_names(language: Any) -> list[str]:
     """Every field of a language once, a nested record's fields after
     the record's own: the variables an encoding of the language uses,
     and the union two languages share when one is checked against the
-    other. A field of the top record is named by its own name; a nested
-    field by its dotted path (`x.qty`) when that reads back as its path,
-    else by the path as a tuple of names. Each names one field."""
-    paths = _paths(language)
-    known = set(paths)
-    return [_spelling(p, known) for p in paths]
+    other. A field is named by its names from the top record down, each
+    with its backslashes and dots preceded by a backslash, joined by
+    dots: `x`, `x.qty`, and `a\\.b` for a field of the top record named
+    `a.b`."""
+    return [_spell(p) for p in _paths(language)]
 
 
-def _field_at(language: Any, name: FieldName) -> Field | None:
+def _field_at(language: Any, name: str) -> Field | None:
     """Intent:
-        Returns the field a name or path names in any of the language's shapes, or None.
+        Returns the field a name (`field_names`) names in any of the language's shapes, or None.
     """
     fields: Any = [f for b in _branches(language) for f in b.schema.fields]
     found = None
-    for part in _resolve(name, set(_paths(language))):
+    for part in _parse(name):
         found = next((f for f in fields if f.name == part), None)
         if found is None:
             return None
@@ -931,16 +927,17 @@ def _field_at(language: Any, name: FieldName) -> Field | None:
     return found
 
 
-def _nest(language: Any, values: dict[Any, Any]) -> dict[str, Any]:
+def _nest(language: Any, values: dict[str, Any]) -> dict[str, Any]:
     """Intent:
-        Returns values keyed by field name or path (`_resolve`) as the nested record they
-        describe: a record that is there holds its fields, one that is null is None.
+        Returns values keyed by field name (`field_names`) as the nested record they describe: a
+        record that is there holds its fields, one that is null is None. The values are copied:
+        nothing of `values` is changed.
     """
-    known = set(_paths(language))
-    at = {_resolve(name, known): value for name, value in values.items()}
+    import copy
+    at = {_parse(name): copy.deepcopy(value) for name, value in values.items()}
     out: dict[str, Any] = {}
     for path in sorted(at, key=len):
-        f = _field_at(language, path)
+        f = _field_at(language, _spell(path))
         value = {} if f is not None and f.type.base == "struct" and at[path] is True \
             else at[path]
         *parents, last = path
@@ -1231,10 +1228,11 @@ def new_encoding(z3: Any = None) -> MembershipEncoding:
     return MembershipEncoding(z3 if z3 is not None else _z3())
 
 
-def build(language: Any, values: dict[Any, Any]) -> Any:
-    """The record `language` builds from `values` (nested, or by field
-    name or path as `field_names` names them): the first of its shapes whose record it admits, else the first
-    record a shape builds, else None when no shape's class builds one.
+def build(language: Any, values: dict[str, Any]) -> Any:
+    """The record `language` builds from `values`, keyed by field name
+    as `field_names` names fields: the first of its shapes whose record
+    it admits, else the first record a shape builds, else None when no
+    shape's class builds one.
     A caller confirms a candidate with `language.contains(build(...))`."""
     built = []
     for branch in _branches(language):
@@ -1248,7 +1246,7 @@ def build(language: Any, values: dict[Any, Any]) -> Any:
     return built[0] if built else None
 
 
-def _admits(language: Any, values: dict[Any, Any]) -> bool:
+def _admits(language: Any, values: dict[str, Any]) -> bool:
     """Intent:
         Whether the record built from `values` is a member, the language's own validation
         deciding; a record its class refuses to build is not.
@@ -1289,7 +1287,7 @@ def _float_line(older: Any, newer: Any, base: dict[str, Any] | None) -> tuple[li
                 continue
             b = float(bound)
             for point in (math.nextafter(b, -math.inf), b, math.nextafter(b, math.inf)):
-                values = {**base, f.name: point}
+                values = {**base, _spell((f.name,)): point}
                 tried.append(f".{f.name} = {point!r}")
                 if _admits(older, values) and not _admits(newer, values):
                     return tried, values
@@ -1323,7 +1321,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         if why:
             return _InclusionResult("unknown", f"not translated: {why}")
     enc = MembershipEncoding(z3)
-    names = list(dict.fromkeys([*_paths(older), *_paths(newer)]))
+    names = list(dict.fromkeys([*field_names(older), *field_names(newer)]))
     try:
         m_older = enc.language(older, names, "older")
         m_newer = enc.language(newer, names, "newer")
@@ -1334,7 +1332,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     solver.add(m_older, z3.Not(m_newer))
     # a witness reads best with the keys `older` does not declare left out,
     # so those are tried absent first and allowed only if they must be
-    own = set(_paths(older))
+    own = set(field_names(older))
     undeclared = [enc.V.is_absent(enc.var(n)) for n in names if n not in own]
     answer = solver.check(*undeclared) if undeclared else solver.check()
     kept = undeclared
@@ -1351,8 +1349,8 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
                                    edge, tried)
         return _InclusionResult("proven", f"every record {older.name} admits, {newer.name} admits",
                                float_line=tried)
-    def read(model: Any) -> dict[FieldPath, Any]:
-        found: dict[FieldPath, Any] = {}
+    def read(model: Any) -> dict[str, Any]:
+        found: dict[str, Any] = {}
         for name in names:
             f = _field_at(older, name) or _field_at(newer, name)
             present, value = _value(enc, model, enc.var(name), f)
@@ -1360,7 +1358,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
                 found[name] = value
         return found
 
-    def confirmed(found: dict[FieldPath, Any]) -> bool:
+    def confirmed(found: dict[str, Any]) -> bool:
         return _admits(older, found) and not _admits(newer, found)
 
     first = solver.model()
@@ -1375,9 +1373,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         shape = next((b for b in _branches(older) if _admits(b, values)), older)
         return _InclusionResult("falsified", f"{older.name} admits it and {newer.name} refuses it",
                                _nest(shape, values))
-    known = set(names)
-    offered = {_spelling(path, known): value for path, value in values.items()}
-    return _InclusionResult("unknown", f"z3 offered {offered!r}, which the validations do not "
+    return _InclusionResult("unknown", f"z3 offered {values!r}, which the validations do not "
                            f"confirm ({older.name} must admit it and {newer.name} refuse it); "
                            "this is a gap in the encoding")
 
@@ -1398,8 +1394,8 @@ _READABILITY = (
 
 
 def _most_readable(enc: MembershipEncoding, solver: Any, kept: list[Any],
-                   names: Sequence[FieldName], values: dict[Any, Any], read: Any,
-                   confirmed: Any) -> dict[Any, Any]:
+                   names: Sequence[str], values: dict[str, Any], read: Any,
+                   confirmed: Any) -> dict[str, Any]:
     """Intent:
         Returns the confirmed witness the rule of `_schema_inclusion` prefers to `values`, itself
         a confirmed witness: for each text field in order the shortest text, then each of its
@@ -1578,7 +1574,7 @@ def _text_equivalence(a: Any, b: Any, *, timeout_ms: int = 5000) -> _InclusionRe
     return ab if ab.verdict == "unknown" else ba
 
 
-def _field_in(language: Any, name: FieldName, text_language: Any, *,
+def _field_in(language: Any, name: str, text_language: Any, *,
               timeout_ms: int = 5000) -> _InclusionResult:
     """Intent:
         Decides whether every member of `language` whose field `name` holds text has that text in
@@ -1589,7 +1585,7 @@ def _field_in(language: Any, name: FieldName, text_language: Any, *,
     if why:
         return _InclusionResult("unknown", f"not translated: {why}")
     enc = MembershipEncoding(z3)
-    names = _paths(language)
+    names = field_names(language)
     try:
         member = enc.language(language, names, "older")
         x = enc.var(name)
@@ -1606,7 +1602,7 @@ def _field_in(language: Any, name: FieldName, text_language: Any, *,
         return _InclusionResult("proven", f"every {name} {language.name} admits is in "
                                 f"L[{text_language.name}]")
     model = solver.model()
-    values: dict[FieldPath, Any] = {}
+    values: dict[str, Any] = {}
     for n in names:
         present, value = _value(enc, model, enc.var(n), _field_at(language, n))
         if present:
@@ -1615,12 +1611,10 @@ def _field_in(language: Any, name: FieldName, text_language: Any, *,
     if _admits(language, values) and received is not None and not text_language.contains(received):
         return _InclusionResult("falsified", f"{name} is not in L[{text_language.name}]",
                                _nest(language, values))
-    known = set(names)
-    offered = {_spelling(path, known): value for path, value in values.items()}
-    return _InclusionResult("unknown", f"z3 offered {offered!r}, which does not confirm")
+    return _InclusionResult("unknown", f"z3 offered {values!r}, which does not confirm")
 
 
-def _received(language: Any, values: dict[Any, Any], name: FieldName) -> Any:
+def _received(language: Any, values: dict[str, Any], name: str) -> Any:
     """Intent:
         Returns field `name` of the record the first admitting shape builds from `values`, as a
         program receives it (a path as its text), or None when no shape admits it.
@@ -1633,7 +1627,7 @@ def _received(language: Any, values: dict[Any, Any], name: FieldName) -> Any:
         if not branch.contains(row):
             continue
         value: Any = row
-        for part in _resolve(name, set(_paths(language))):
+        for part in _parse(name):
             value = value.get(part) if isinstance(value, dict) else getattr(value, part, None)
         return str(value) if isinstance(value, PurePath) else value
     return None
@@ -1642,7 +1636,7 @@ def _received(language: Any, values: dict[Any, Any], name: FieldName) -> Any:
 def _a_member(language: Any) -> dict[str, Any] | None:
     """Intent:
         Returns the top-level field values of one member the language samples with a fixed seed,
-        or None when it cannot sample one.
+        each keyed by its field name (`field_names`), or None when it cannot sample one.
     """
     import random
     try:
@@ -1653,9 +1647,9 @@ def _a_member(language: Any) -> dict[str, Any] | None:
     for f in _fields(language).values():
         if isinstance(row, dict):
             if f.name in row:
-                out[f.name] = row[f.name]
+                out[_spell((f.name,))] = row[f.name]
         elif hasattr(row, f.name):
-            out[f.name] = getattr(row, f.name)
+            out[_spell((f.name,))] = getattr(row, f.name)
     return out
 
 
