@@ -12,6 +12,11 @@ release onward.
   and field `b` of a record `a`), and a closed record that declares no
   field of that name did not refuse it. Every field is now read as its
   own, whatever its name holds.
+- For callers of the record encoding: a field whose name holds a dot or
+  a backslash is now named with that character preceded by a backslash,
+  in `field_names` and in the names `MembershipEncoding` and `build`
+  read (a field of the top record named `a.b` is `a\.b`; `x.qty` is
+  still field `qty` of record `x`). Plain names are unchanged.
 - An inclusion between two JSON Schema record languages whose string
   fields carry patterns ending in `$` is decided; it came back unknown.
   Inside a JSON Schema record a pattern is read the way the `jsonschema`
