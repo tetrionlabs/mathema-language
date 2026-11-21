@@ -162,7 +162,7 @@ class MembershipEncoding:
 
     def var(self, name: str) -> Any:
         if name not in self.vars:
-            self.vars[name] = self.z3.Const(f"f_{len(self.vars)}_{name}", self.V)
+            self.vars[name] = self.z3.Const(f"f_{len(self.vars)}_{_label(name)}", self.V)
         return self.vars[name]
 
     def const(self, value: Any, D: Any = None) -> Any:
@@ -233,7 +233,7 @@ class MembershipEncoding:
         n = V.iv(x) * shift
         on_int = z3.And(n < bound, n > -bound) if bound is not None else z3.BoolVal(True)
         if side == "older":
-            k = z3.Int(f"k_{len(self.extra)}_{name}")
+            k = z3.Int(f"k_{len(self.extra)}_{_label(name)}")
             self.extra.append(k)
             on_real = [x == V.r(z3.ToReal(k) / shift)]
             if bound is not None:
@@ -359,7 +359,7 @@ class MembershipEncoding:
                 raise Untranslated(f"the record items of the list field .{f.name}")
             present = [x == V.b(z3.BoolVal(True))]
             for sub in t.fields or ():
-                child = f"{path}.{sub.name}"
+                child = _path(path, sub.name)
                 present.append(self.member(sub, self.var(child), side, mapping, path=child))
             conds.append(z3.And(*present))
         elif t.base == "list":
@@ -374,7 +374,7 @@ class MembershipEncoding:
                 conds.append(n >= c.min_len)
             if c.max_len is not None:
                 conds.append(n <= c.max_len)
-            k = z3.Int(f"k_{len(self.extra)}_{f.name}")
+            k = z3.Int(f"k_{len(self.extra)}_{_label(f.name)}")
             self.extra.append(k)
             item = Field("item", item_t, nullable=f.type.nullable_items)
             conds.append(z3.ForAll([k], z3.Implies(z3.And(k >= 0, k < n),
@@ -456,9 +456,10 @@ class MembershipEncoding:
             shapes.append(shape)
         formula = shapes[0] if len(shapes) == 1 else self.z3.Or(*shapes)
         # a nested field is there only when the record holding it is
-        nested = [self.z3.Implies(self.var(n.rsplit(".", 1)[0]) != self.V.b(self.z3.BoolVal(True)),
+        parents = {n: _parent(n) for n in names}
+        nested = [self.z3.Implies(self.var(parent) != self.V.b(self.z3.BoolVal(True)),
                                   self.V.is_absent(self.var(n)))
-                  for n in names if "." in n]
+                  for n, parent in parents.items() if parent is not None]
         return self.z3.And(formula, *nested) if nested else formula
 
     def row(self, schema: RowSchema, names: list[str], side: str, mapping: bool) -> Any:
@@ -467,10 +468,12 @@ class MembershipEncoding:
         z3, V = self.z3, self.V
         if schema.checks:
             raise Untranslated(f"a check of {schema.name}'s own")
-        own = {f.name for f in schema.fields}
-        conds = [self.member(f, self.var(f.name), side, mapping, path=f.name) for f in schema.fields]
+        own = {_path(None, f.name) for f in schema.fields}
+        conds = [self.member(f, self.var(_path(None, f.name)), side, mapping,
+                             path=_path(None, f.name))
+                 for f in schema.fields]
         for name in names:
-            if name in own or "." in name:
+            if name in own or _parent(name) is not None:
                 continue
             x = self.var(name)
             if not mapping or schema.column_policy == "exact":
@@ -822,31 +825,86 @@ def _fields(language: Any) -> dict[str, Field]:
     return out
 
 
+def _path(prefix: str | None, name: str) -> str:
+    """Intent:
+        Returns the path of field `name` of the record at path `prefix` (None for the top record):
+        the field names from the top, each with its backslashes and dots preceded by a
+        backslash, joined by dots. A path names one field: two different fields never have the
+        same path, whatever their names hold.
+    """
+    part = name.replace("\\", "\\\\").replace(".", "\\.")
+    return part if prefix is None else f"{prefix}.{part}"
+
+
+def _parts(path: str) -> list[str]:
+    """Intent:
+        Returns the field names a path holds, from the top: the inverse of `_path`.
+    """
+    parts, part, escaped = [], [], False
+    for c in path:
+        if escaped:
+            part.append(c)
+            escaped = False
+        elif c == "\\":
+            escaped = True
+        elif c == ".":
+            parts.append("".join(part))
+            part = []
+        else:
+            part.append(c)
+    parts.append("".join(part))
+    return parts
+
+
+def _parent(path: str) -> str | None:
+    """Intent:
+        Returns the path of the record holding the field at `path`, or None for a field of the top
+        record.
+    """
+    parts = _parts(path)
+    if len(parts) == 1:
+        return None
+    parent: str | None = None
+    for part in parts[:-1]:
+        parent = _path(parent, part)
+    return parent
+
+
+def _label(name: str) -> str:
+    """Intent:
+        Returns `name` as printable ASCII with no NUL, for the label of a z3 variable; the
+        variable's number, not its label, keeps it apart from the others.
+    """
+    return name.encode("unicode_escape").decode("ascii").replace("\\x00", "<nul>")
+
+
 def field_names(language: Any) -> list[str]:
-    """Every field name of a language once, a nested record's fields by
-    their dotted name after the record's own: the variables an encoding
-    of the language uses, and the union two languages share when one is
-    checked against the other."""
+    """Every field of a language once, by its path (`_path`), a nested
+    record's fields after the record's own: the variables an encoding of
+    the language uses, and the union two languages share when one is
+    checked against the other. A path is the field's name when no name
+    on the way holds a dot or a backslash, so `x.qty` is field `qty` of
+    record `x`."""
     out: list[str] = []
 
-    def walk(fields: Any, prefix: str) -> None:
+    def walk(fields: Any, prefix: str | None) -> None:
         for f in fields or ():
-            name = prefix + f.name
+            name = _path(prefix, f.name)
             out.append(name)
             if f.type.base == "struct":
-                walk(f.type.fields, name + ".")
+                walk(f.type.fields, name)
     for branch in _branches(language):
-        walk(branch.schema.fields, "")
+        walk(branch.schema.fields, None)
     return list(dict.fromkeys(out))
 
 
 def _field_at(language: Any, name: str) -> Field | None:
     """Intent:
-        Returns the field a dotted name names in any of the language's shapes, or None.
+        Returns the field a path names in any of the language's shapes, or None.
     """
     fields: Any = [f for b in _branches(language) for f in b.schema.fields]
     found = None
-    for part in name.split("."):
+    for part in _parts(name):
         found = next((f for f in fields if f.name == part), None)
         if found is None:
             return None
@@ -856,15 +914,15 @@ def _field_at(language: Any, name: str) -> Field | None:
 
 def _nest(language: Any, values: dict[str, Any]) -> dict[str, Any]:
     """Intent:
-        Returns values keyed by dotted name as the nested record they describe: a record that is
-        there holds its fields, one that is null is None.
+        Returns values keyed by path as the nested record they describe: a record that is there
+        holds its fields, one that is null is None.
     """
     out: dict[str, Any] = {}
-    for name in sorted(values, key=lambda n: n.count(".")):
+    for name in sorted(values, key=lambda n: len(_parts(n))):
         f = _field_at(language, name)
         value = {} if f is not None and f.type.base == "struct" and values[name] is True \
             else values[name]
-        *parents, last = name.split(".")
+        *parents, last = _parts(name)
         holder: Any = out
         for part in parents:
             holder = holder.get(part) if isinstance(holder, dict) else None
@@ -1546,7 +1604,7 @@ def _received(language: Any, values: dict[str, Any], name: str) -> Any:
         if not branch.contains(row):
             continue
         value: Any = row
-        for part in name.split("."):
+        for part in _parts(name):
             value = value.get(part) if isinstance(value, dict) else getattr(value, part, None)
         return str(value) if isinstance(value, PurePath) else value
     return None
