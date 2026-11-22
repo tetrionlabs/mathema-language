@@ -12,11 +12,16 @@ release onward.
   and field `b` of a record `a`), and a closed record that declares no
   field of that name did not refuse it. Every field is now read as its
   own, whatever its name holds.
-- For callers of the record encoding: a field whose name holds a dot or
-  a backslash is now named with that character preceded by a backslash,
-  in `field_names` and in the names `MembershipEncoding` and `build`
-  read (a field of the top record named `a.b` is `a\.b`; `x.qty` is
-  still field `qty` of record `x`). Plain names are unchanged.
+- For callers of the record encoding: a field is now named one way, its
+  field names from the top record down, each with its backslashes and
+  dots preceded by a backslash, joined by dots. `field_names` gives
+  these names, and `MembershipEncoding` (`var`, `row`, `language`,
+  `present`, `number`, `string`) and `build` read them. A plain name is
+  unchanged: `x`, and `x.qty` for field `qty` of record `x`. A field of
+  the top record named `a.b` is now `a\.b`. A dotted name a caller
+  passes is read as a nested field, so a caller should pass the names
+  `field_names` gives. `MembershipEncoding.vars` is keyed by field paths
+  (tuples of names), and the labels of the z3 variables changed.
 - An inclusion between two JSON Schema record languages whose string
   fields carry patterns ending in `$` is decided; it came back unknown.
   Inside a JSON Schema record a pattern is read the way the `jsonschema`
