@@ -119,6 +119,14 @@ def _named_bounds(name: str, version: str | None = None) -> tuple[Ranges, Ranges
     return named_ranges(name), named_ranges(name)
 
 
+def _quoted_character(c: str) -> str:
+    """Intent:
+        One character between double quotes as JSON writes it, with a surrogate code point
+        written as its `\\u` escape, since it cannot stand in text by itself.
+    """
+    return json.dumps(c) if 0xD800 <= ord(c) <= 0xDFFF else json.dumps(c, ensure_ascii=False)
+
+
 @dataclass(frozen=True)
 class Alphabet:
     """A set of characters: the union of the named alphabets `names`
@@ -141,8 +149,9 @@ class Alphabet:
 
     @property
     def text(self) -> str:
-        """The canonical text of the expression."""
-        return " + ".join([*self.names, *(json.dumps(c, ensure_ascii=False) for c in self.characters)])
+        """The canonical text of the expression: each character quoted as
+        JSON writes it, a lone surrogate as its escape."""
+        return " + ".join([*self.names, *(_quoted_character(c) for c in self.characters)])
 
     @property
     def ranges(self) -> Ranges:
