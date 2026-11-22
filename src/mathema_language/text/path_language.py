@@ -84,9 +84,10 @@ def _normal_roots(root: str, more: tuple[str, ...]) -> tuple[str, ...]:
 def _absolute(root: str) -> str:
     """Intent:
         The regular expression of the absolute paths at or under the normalised `root` that
-        name no `..` segment.
+        name no `..` segment; under `/` that is every absolute path with none, `//a`
+        included, as under any other root a doubled slash is read as part of the path.
     """
-    return (r"/(?:" + _RELATIVE + r")?" if root == "/"
+    return (r"/" + _SEGMENT + r"(?:/" + _SEGMENT + r")*" if root == "/"
             else re.escape(root) + r"(?:/" + _SEGMENT + r")*")
 
 
@@ -101,12 +102,29 @@ def within_pattern(root: str, *more: str) -> str:
     return r"(?:" + "|".join([_RELATIVE, *(_absolute(r) for r in roots)]) + r")"
 
 
+#: the top-level directories an operating system keeps its own files, devices, users and
+#: scratch space in (the Filesystem Hierarchy Standard's, and macOS's own)
+SYSTEM_DIRECTORIES = frozenset({
+    "bin", "boot", "dev", "etc", "home", "lib", "lib32", "lib64", "libx32", "media", "mnt",
+    "opt", "proc", "root", "run", "sbin", "srv", "sys", "tmp", "usr", "var",
+    "Applications", "Library", "Network", "System", "Users", "Volumes", "cores", "private"})
+
+
+def _safe_beside(path: str) -> bool:
+    """Intent:
+        Whether an absolute path may be offered as a value outside a path language: none of
+        its segments is `.` or `..`, and it is not at or under a system directory.
+    """
+    segments = path.split("/")[1:]
+    return not any(s in (".", "..") for s in segments) and segments[0] not in SYSTEM_DIRECTORIES
+
+
 def _near(roots: tuple[str, ...]) -> tuple[str, ...]:
     """Intent:
         Absolute paths just beside each root: a sibling whose name starts with the root's
         (`/workspace2` for `/workspace`) and the root's name cut short. None climbs through
-        `..` or names a place outside the roots' own parent, since a function under test may
-        open or remove what it is given.
+        `.` or `..`, or names a place at or under a system directory (`/etc` beside
+        `/etcd`), since a function under test may open or remove what it is given.
     """
     out: list[str] = []
     for root in roots:
@@ -115,7 +133,7 @@ def _near(roots: tuple[str, ...]) -> tuple[str, ...]:
         out += [root + "2", root + "x"]
         if len(posixpath.basename(root)) > 1:
             out.append(root[:-1])
-    return tuple(dict.fromkeys(out))
+    return tuple(p for p in dict.fromkeys(out) if _safe_beside(p))
 
 
 @dataclass(frozen=True)
@@ -190,9 +208,12 @@ PATH = PathLanguage(
 def _quoted(text: str) -> str:
     """Intent:
         `text` between double quotes, as a region is written inside `within (...)`: a backslash
-        and a double quote each take a backslash before them.
+        and a double quote each take a backslash before them, and a character that does not
+        print is written as its escape, so the text reads back as a string literal.
     """
-    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    out = text.replace("\\", "\\\\").replace('"', '\\"')
+    return '"' + "".join(c if c.isprintable() else c.encode("unicode_escape").decode("ascii")
+                         for c in out) + '"'
 
 
 def path_within(root: str, *more: str) -> PathLanguage:

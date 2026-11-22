@@ -48,6 +48,7 @@ meant from the arguments it gave.
 """
 from __future__ import annotations
 
+import ast
 import datetime as _dt
 import functools
 import ipaddress
@@ -1013,7 +1014,8 @@ def within_arguments(text: str) -> tuple[str, ...]:
     """Intent:
         The arguments of the word as written after a base language, in either spelling: the
         bracket form `within ("/a", "/b")`, or the keyword form `within "/a"` with one
-        argument. Inside the quotes a backslash makes the next character itself.
+        argument. Each quoted argument is read as a Python string literal, as the word reads
+        it: `"/a\\tb"` holds a tab.
 
     Raises:
         ValueError: the text is not the word followed by quoted arguments in one of the two
@@ -1033,7 +1035,11 @@ def within_arguments(text: str) -> tuple[str, ...]:
         argument = _ARGUMENT.match(rest, at)
         if argument is None:
             raise refusal
-        found.append(re.sub(r"\\(.)", r"\1", argument.group(1), flags=re.DOTALL))
+        try:
+            value = ast.literal_eval('"' + argument.group(1) + '"')
+        except (ValueError, SyntaxError):
+            raise refusal from None
+        found.append(value)
         at = argument.end()
         if at >= len(rest):
             break
