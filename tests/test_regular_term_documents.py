@@ -64,7 +64,7 @@ def test_the_alphabet_bounds_each_bound_of_a_pair():
 
 def test_every_term_this_package_compiles_is_over_all_of_unicode():
     from mathema_language.text import LANGUAGES, pattern_language
-    docs = [lang.to_json().get("definition") for lang in LANGUAGES.values()]
+    docs = [lang.to_json().get("term") for lang in LANGUAGES.values()]
     docs += [rx.term(r"[a-z]+\d", 0, p) for p in rx.PREDICATES]
-    docs += [pattern_language(r"\w+").to_json()["definition"]]
+    docs += [pattern_language(r"\w+").to_json()["term"]]
     assert [d["alphabet"] for d in docs if d is not None] == [FULL] * sum(d is not None for d in docs)
