@@ -18,7 +18,7 @@ pytest.importorskip("mathema")
 
 from mathema_language import words  # noqa: E402
 
-ROWS = words.DRAFT_ROWS
+ROWS = words._DRAFT_ROWS
 
 
 def _entry_points(group):
@@ -29,19 +29,19 @@ def _entry_points(group):
 def _predicate_words():
     """The registered predicate words, by entry-point key: an entry that
     loads as a word of the registry, not a measure or a constructor."""
-    if not words.WORDS:
+    if not words._WORDS:
         pytest.skip("this mathema has no word registry")
     found = {}
     for key, ep in _entry_points("mathema.language_refinements").items():
         loaded = ep.load()
-        if getattr(loaded, "word", None) is not None and loaded in words.WORDS.values():
+        if getattr(loaded, "word", None) is not None and loaded in words._WORDS.values():
             found[key] = loaded.word
     return found
 
 
 def test_every_registered_predicate_word_has_a_row_in_the_canonical_spelling():
     found = _predicate_words()
-    assert set(found) == {"matches", "contains", "starts_with", "ends_with", "within", "shape"}
+    assert set(found) == {"matches", "contains", "starts_with", "ends_with", "within", "pattern"}
     for key, word in found.items():
         assert word == key.replace("_", " ")
         assert key in ROWS, key
@@ -61,12 +61,12 @@ def test_the_alphabet_constructor_has_a_row_headed_by_an_alphabet_expression():
 
 def test_there_is_a_row_for_every_new_entry_point_and_no_other():
     assert set(ROWS) == {"lower", "upper", "matches", "contains", "starts_with", "ends_with",
-                         "within", "shape", "alphabet"}
+                         "within", "pattern", "alphabet"}
 
 
-@pytest.mark.parametrize("key", sorted(words.DRAFT_ROWS))
+@pytest.mark.parametrize("key", sorted(words._DRAFT_ROWS))
 def test_a_row_parses_and_renders_back_to_itself(key):
-    if not words.WORDS and key not in ("lower", "upper"):
+    if not words._WORDS and key not in ("lower", "upper"):
         pytest.skip("this mathema has no word registry")
     from mathema.conjecture import claim
     from mathema.spec import render_claim_text

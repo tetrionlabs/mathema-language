@@ -15,13 +15,13 @@ from mathema_language import words
     ('re(r"(?i)(?i)a")', 're(r"(?i)a")'),
 ])
 def test_leading_flag_groups_are_all_read_as_flags(text, same_as):
-    canonical = words.canonical_pattern_argument(text)
-    assert canonical == words.canonical_pattern_argument(same_as)
-    assert words.canonical_pattern_argument(canonical) == canonical
+    canonical = words._canonical_pattern_argument(text)
+    assert canonical == words._canonical_pattern_argument(same_as)
+    assert words._canonical_pattern_argument(canonical) == canonical
     assert "(?" not in canonical
 
 
 def test_a_scoped_flag_group_at_the_start_stays_in_the_pattern():
-    canonical = words.canonical_pattern_argument('re(r"(?i:a)b")')
+    canonical = words._canonical_pattern_argument('re(r"(?i:a)b")')
     assert canonical.startswith('re(r"(?i:a)')
-    assert words.canonical_pattern_argument(canonical) == canonical
+    assert words._canonical_pattern_argument(canonical) == canonical

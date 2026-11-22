@@ -9,9 +9,9 @@ import json
 import pytest
 
 from mathema_language.text import _regular as rx
-from mathema_language.text.alphabet import alphabet, alphabet_language
+from mathema_language.text.alphabets import alphabet, alphabet_language
 from mathema_language.text.explain import explain
-from mathema_language.text.shape import Shape
+from mathema_language.text.pattern import Pattern
 
 VERSIONS = rx.versions_data()["versions"]
 NEW_LETTER = "\U00010570"       # a letter from Unicode 14.0: Python 3.11 and later
@@ -21,11 +21,11 @@ UNASSIGNED = chr(rx.versions_data()["unassigned"][0][0])
 @pytest.mark.parametrize("expression, exact", [
     ("unicode_alpha", False), ("unicode_alnum + \"_\"", False), ("printable", False),
     ("unicode_alpha + digit", False), ("alnum", True), ("lower + digit + \"-\"", True),
-    ("hex", True), ("ascii", True), ("unicode", True), ("latin-1", True),
+    ("hexdigit", True), ("ascii", True), ("unicode", True), ("latin-1", True),
 ])
 def test_an_alphabet_language_states_one_definition_for_every_python(expression, exact):
     language = alphabet_language(expression)
-    doc = language.to_json()["definition"]
+    doc = language.to_json()["term"]
     assert doc["exact"] is exact and json.loads(json.dumps(doc)) == doc
     assert doc["source"]["versions"] == VERSIONS
     if exact:
@@ -42,12 +42,12 @@ def test_an_alphabet_language_states_one_definition_for_every_python(expression,
 
 def test_an_alphabet_pinned_to_a_version_is_that_python_reading():
     language = alphabet_language("unicode_alpha")
-    old, new = language.definition(version="3.10"), language.definition(version="3.14")
+    old, new = language.term(version="3.10"), language.term(version="3.14")
     assert old["exact"] and new["exact"] and old["source"]["versions"] == ["3.10"]
     assert rx.member(new, NEW_LETTER) and not rx.member(old, NEW_LETTER)
     assert rx.term_hash(old) != rx.term_hash(new)
     with pytest.raises(ValueError, match="supported"):
-        language.definition(version="3.9")
+        language.term(version="3.9")
 
 
 @pytest.mark.parametrize("written, base, exact", [
@@ -56,7 +56,7 @@ def test_an_alphabet_pinned_to_a_version_is_that_python_reading():
     ("a{1+}[-9]", "ascii", True),
 ])
 def test_a_shape_states_one_term_for_every_python(written, base, exact):
-    doc = Shape(written, base).term()
+    doc = Pattern(written, base).term()
     assert doc["exact"] is exact and json.loads(json.dumps(doc)) == doc
     if not exact:
         assert doc["source"]["versions"] == VERSIONS
@@ -64,7 +64,7 @@ def test_a_shape_states_one_term_for_every_python(written, base, exact):
 
 
 def test_a_shape_bounds_hold_what_every_python_and_any_python_reads():
-    shape = Shape("A9")
+    shape = Pattern("A9")
     doc = shape.term()
     assert doc["source"]["not_exact"] == ["digits, which differ slightly between Python versions",
                                           "letters, which differ slightly between Python versions"]
@@ -77,21 +77,21 @@ def test_a_shape_bounds_hold_what_every_python_and_any_python_reads():
 
 
 def test_a_bound_symbol_takes_its_alphabet_bounds():
-    assert Shape("WW", "unicode", W="unicode_alnum").term()["exact"] is False
-    assert Shape("WW", "unicode", W="alnum").term()["exact"] is True
-    assert Shape("WW", "ascii", W="hex").term()["exact"] is True
+    assert Pattern("WW", "unicode", W="unicode_alnum").term()["exact"] is False
+    assert Pattern("WW", "unicode", W="alnum").term()["exact"] is True
+    assert Pattern("WW", "ascii", W="hexdigit").term()["exact"] is True
 
 
 def test_a_reading_says_a_bound_in_words():
-    said = explain(Shape("A{1+}").term())
+    said = explain(Pattern("A{1+}").term())
     assert said == (
         "approximate because it holds letters, which differ slightly between Python versions; "
         "every accepted text fits: one or more of: letters (Unicode, every character a supported "
         "Python holds or may come to); not every text that fits is accepted; certainly accepted: "
         f"one or more of: letters (Unicode, {_size('unicode_alpha')} characters)")
-    assert Shape("AA99", "ascii").explain() == "exactly 2 of: ASCII letters; then exactly 2 of: 0-9"
+    assert Pattern("AA99", "ascii").explain() == "exactly 2 of: ASCII letters; then exactly 2 of: 0-9"
     assert "approximate because it holds letters and digits, which differ slightly between Python versions" \
-        in explain(alphabet_language("unicode_alnum").to_json()["definition"])
+        in explain(alphabet_language("unicode_alnum").to_json()["term"])
 
 
 def _size(name):
@@ -102,7 +102,7 @@ def _size(name):
 def test_the_terms_are_built_from_the_table_alone():
     # no class of an unpinned term is read from the running interpreter: each set in the
     # bounds is one the table states
-    doc = Shape("Aa9").term()
+    doc = Pattern("Aa9").term()
     stated = set()
     for name in ("unicode_alpha", "lowercase_letter", "decimal"):
         low, high = rx.class_bounds(name)

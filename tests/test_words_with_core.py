@@ -22,11 +22,11 @@ from mathema.domain import InvalidDomain, parse_binding  # noqa: E402
 
 from mathema_language import words  # noqa: E402
 from mathema_language.text import _regular  # noqa: E402
-from mathema_language.text.shape import Shape  # noqa: E402
+from mathema_language.text.pattern import Pattern  # noqa: E402
 
 HERE = __name__
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
-POSTCODE = Shape("AA99[ ]9AA", "ascii")
+POSTCODE = Pattern("AA99[ ]9AA", "ascii")
 
 
 def _ref(text):
@@ -52,11 +52,11 @@ def _relation(text):
 
 def test_the_words_and_the_alphabet_constructor_are_registered_through_the_entry_points():
     assert {w.word for w in languages.predicate_words()} >= {
-        "matches", "contains", "starts with", "ends with", "within", "shape"}
+        "matches", "contains", "starts with", "ends with", "within", "pattern"}
     assert languages.predicate_word("startsWith") is words.STARTS_WITH
     assert languages.alphabet_constructor() is words.ALPHABET
     assert languages.word_for_sugar("^=") is words.STARTS_WITH
-    assert languages.word_for_sugar("in") is words.MATCHES
+    assert languages.word_for_sugar("in") is None
     assert languages.resolve_language("lower").contains("abc")
     assert not languages.resolve_language("upper").contains("abc")
 
@@ -74,19 +74,19 @@ def test_a_pattern_claim_is_a_subset_of_its_alphabet_and_the_reverse_fails_at_th
 
 
 @pytest.mark.parametrize("smaller, larger, witness", [
-    ('L[ascii, shape ("AA99[ ]9AA")]', 'L[alnum + " "]', None),
-    ('L[alnum + " "]', 'L[ascii, shape ("AA99[ ]9AA")]', ""),
+    ('L[ascii, pattern ("AA99[ ]9AA")]', 'L[alnum + " "]', None),
+    ('L[alnum + " "]', 'L[ascii, pattern ("AA99[ ]9AA")]', ""),
     ('L[path, within ("/workspace/src")]', 'L[path, within "/workspace"]', None),
     ('L[unicode, starts with ("http://")]', 'L[unicode, contains ("://")]', None),
     ('L[unicode, contains ("://")]', 'L[unicode, starts with ("http://")]', "://"),
     ('L[ascii, ^= "ab"]', 'L[ascii, contains (re("B", ignoreCase))]', None),
-    ('L[ascii, shape ("AW{0+}", W = alnum + "_")]', 'L[unicode, matches (re(r"[A-Za-z]\\w*\\Z", python))]', None),
+    ('L[ascii, pattern ("AW{0+}", W = alnum + "_")]', 'L[unicode, matches (re(r"[A-Za-z]\\w*\\Z", python))]', None),
     ('L[unicode, starts with (re(r"[a-z]+$", python))]', 'L[lower]', "a\n"),
     ('L[unicode, matches (re(r"[a-z]+$", python))]', 'L[lower]', None),
     ('L[unicode, matches (re(r"[a-z]+$", python))]', 'L[unicode, starts with (re(r"[a-z]+$", python))]', None),
     (f"L[unicode, matches ({HERE}.SLUG)]", 'L[lower + digit + "-"]', None),
-    (f"L[unicode, matches ({HERE}.POSTCODE)]", 'L[ascii, shape ("AA99[ ]9AA")]', None),
-    ('L[ascii, shape ("AA99")]', 'L[ascii, shape ("AA99", A = upper)]', "aa00"),
+    (f"L[unicode, matches ({HERE}.POSTCODE)]", 'L[ascii, pattern ("AA99[ ]9AA")]', None),
+    ('L[ascii, pattern ("AA99")]', 'L[ascii, pattern ("AA99", A = upper)]', "aa00"),
     ('L[lower, len <= 3]', 'L[lower + digit, not contains (re(r"[0-9]", python))]', None),
 ], ids=lambda value: value if isinstance(value, str) and value.startswith("L[") else None)
 def test_relations_between_the_registered_languages_are_decided_from_their_terms(smaller, larger, witness):
@@ -103,22 +103,17 @@ def test_relations_between_the_registered_languages_are_decided_from_their_terms
 
 CANONICAL = [
     ('L[unicode, matches(re("[a-z]+"))]', 'L[unicode, matches (re(r"[a-z]+", python))]'),
-    ('L[unicode, Matches (re(r"(?i)[a-z]+", multiline, PY, dotAll))]',
+    ('L[unicode, Matches (re(r"(?i)[a-z]+", multiline, PYTHON, dotAll))]',
      'L[unicode, matches (re(r"[a-z]+", python, dot all, ignore case, multi line))]'),
     ('L[ascii, ^= "ab"]', 'L[ascii, starts with ("ab")]'),
     ('L[ascii, $= ".csv"]', 'L[ascii, ends with (".csv")]'),
-    ('L[ascii, *= "a"]', 'L[ascii, contains ("a")]'),
-    ('L[ascii, == "a"]', 'L[ascii, matches ("a")]'),
-    ('L[ascii, != "a"]', 'L[ascii, not matches ("a")]'),
-    ('L[ascii, in re(r"a+")]', 'L[ascii, matches (re(r"a+", python))]'),
-    ('L[ascii, not in app.text.PAT]', 'L[ascii, not matches (app.text.PAT)]'),
     ('L[ascii, starts_with("a"), endsWith ("b")]', 'L[ascii, ends with ("b"), starts with ("a")]'),
     ('L[path, within "/ws"]', 'L[path, within ("/ws")]'),
     ('L[path, WITHIN("/a",  "/b")]', 'L[path, within ("/a", "/b")]'),
     ('L[iso_date, within ("2026-01-01", "2026-12-31")]', 'L[iso_date, within ("2026-01-01", "2026-12-31")]'),
-    ('L[ascii, shape ("AW{0+}", W = "_" + alnum)]', 'L[ascii, shape ("AW{0+}", W = alnum + "_")]'),
-    ('L[ascii, shape("ZA9", Z = upper, A = lower, 9 = hex)]', 'L[ascii, shape ("ZA9", 9 = hex, A = lower, Z = upper)]'),
-    ('L[unicode, matches (shape ("AA99", A = upper))]', 'L[unicode, matches (shape("AA99", A = upper))]'),
+    ('L[ascii, pattern ("AW{0+}", W = "_" + alnum)]', 'L[ascii, pattern ("AW{0+}", W = alnum + "_")]'),
+    ('L[ascii, pattern("ZA9", Z = upper, A = lower, 9 = hexdigit)]', 'L[ascii, pattern ("ZA9", 9 = hex, A = lower, Z = upper)]'),
+    ('L[unicode, matches (pattern ("AA99", A = upper))]', 'L[unicode, matches (pattern("AA99", A = upper))]'),
     ('L["_" + digit + lower, len <= 8]', 'L[lower + digit + "_", len <= 8]'),
     ('L[lower + "ba" + "a"]', 'L[lower + "a" + "b"]'),
 ]
@@ -131,7 +126,7 @@ def test_every_spelling_renders_to_the_canonical_text_and_that_text_to_itself(wr
 
 
 def test_every_example_the_words_carry_parses_renders_back_to_itself_and_resolves():
-    examples = [text for word in words.WORDS.values() for text in word.examples.values()]
+    examples = [text for word in words._WORDS.values() for text in word.examples.values()]
     assert len(examples) >= 11
     for text in examples:
         assert _canonical(text) == text, text
@@ -142,11 +137,11 @@ def test_every_example_the_words_carry_parses_renders_back_to_itself_and_resolve
 
 RESOLVED = ['L[unicode, matches (re(r"[a-z0-9-]+\\Z", python))]', 'L[ascii, starts with ("ab"), len <= 6]',
             'L[ascii, not contains (re(r"[0-9]", python)), len in [1, 8]]', 'L[unicode, ends with (".csv")]',
-            'L[ascii, shape ("AW{0+}", W = alnum + "_")]', 'L[ascii, not shape ("AA")]',
+            'L[ascii, pattern ("AW{0+}", W = alnum + "_")]', 'L[ascii, not pattern ("AA")]',
             'L[path, len <= 20, within ("/ws")]', 'L[ipv4, within ("10.0.0.0/8", "192.168.0.0/16")]',
             'L[iso_date, not within ("2026-01-01", "2026-12-31")]', 'L[lower + digit + "_", len in [3, 32]]',
-            f"L[unicode, matches ({HERE}.SLUG)]", 'L[ascii, matches (shape("AA99[ ]9AA"))]',
-            'L[unicode, contains (shape("99"))]']
+            f"L[unicode, matches ({HERE}.SLUG)]", 'L[ascii, matches (pattern("AA99[ ]9AA"))]',
+            'L[unicode, contains (pattern("99"))]']
 
 
 @pytest.mark.parametrize("text", RESOLVED)
@@ -162,30 +157,31 @@ def test_a_registered_language_resolves_passes_the_language_checks_and_draws_mem
 
 def test_a_pattern_language_over_unicode_states_the_pattern_s_own_term():
     language = _resolve('L[unicode, matches (re(r"[a-z0-9-]+\\Z", python))]')
-    doc = language.to_json()["definition"]
+    doc = language.to_json()["term"]
     assert doc["exact"] is True
     assert _regular.term_hash(doc) == _regular.term_hash(_regular.term(r"[a-z0-9-]+\Z", 0, "matches"))
-    over_ascii = _resolve('L[ascii, matches (re(r"\\w+", python))]').to_json()["definition"]
+    over_ascii = _resolve('L[ascii, matches (re(r"\\w+", python))]').to_json()["term"]
     assert _regular.member(over_ascii, "a_1") and not _regular.member(over_ascii, "é")
 
 
 REFUSED = [
-    ('L[unicode, == re(r"a")]', 'a string is not equal to a pattern: == takes a quoted literal; write matches (re(r"a"))',
-     None),
-    ('L[unicode, in "abc"]', 'in takes a pattern or an object; for the literal text write == "abc"', None),
+    ('L[ascii, *= "a"]', "no registered predicate reads `*=`", None),
+    ('L[ascii, == "a"]', "no registered predicate reads `==`", None),
+    ('L[ascii, != "a"]', "no registered predicate reads `!=`", None),
+    ('L[ascii, in re(r"a+")]', "no registered predicate reads `in`", None),
+    ('L[ascii, shape ("AA99")]', "shape", None),
     ('L[unicode, matches ("a", "b")]', "matches takes one argument, a pattern", None),
     ('L[unicode, matches (re(r"[a-z]+", javascript))]', "the javascript dialect is not available yet.",
      're(r"[a-z]+", python)'),
-    ('L[unicode, contains (re(r"a", js, ignore case))]', "the javascript dialect is not available yet.",
-     're(r"a", python, ignore case)'),
-    ('L[unicode, starts with (re(r"a", ecma))]', "the javascript dialect is not available yet.", 're(r"a", python)'),
+    ('L[unicode, contains (re(r"a", js, ignore case))]', "is neither a dialect nor a flag of re", None),
+    ('L[unicode, starts with (re(r"a", ecma))]', "is neither a dialect nor a flag of re", None),
     *[(f'L[unicode, matches (re(r"a+", {word}))]', f"the {named} dialect is reserved, not available yet.",
-       're(r"a+", python)') for word, named in sorted(words.RESERVED.items())],
+       're(r"a+", python)') for word, named in sorted(words._RESERVED.items())],
     ('L[unicode, matches (re(r"a", ignorcase))]', "Did you mean ignore case?", None),
     ('L[unicode, matches (re(r"a", python 3.9))]', "python 3.9 is not a supported version", None),
     ('L[unicode, matches (re(r"("))]', 'the pattern r"(" does not compile', None),
-    ('L[ascii, shape ("KEY-99")]', "K, E and Y are not symbols. For the literal text write 'KEY': "
-                                   "shape (\"'KEY'-99\").", None),
+    ('L[ascii, pattern ("KEY-99")]', "K, E and Y are not symbols. For the literal text write 'KEY': "
+                                   "pattern (\"'KEY'-99\").", None),
     ('L[path, within (ws)]', 'within takes quoted arguments, within ("/workspace"), not \'ws\'', None),
 ]
 
@@ -213,11 +209,11 @@ MEANINGLESS = [
      "Did you mean L[path, within (\"/ws\")]?", 'L[path, within ("/ws")]'),
     ('L[unicode, within ("10.0.0.0/8")]', None, 'L[ipv4, within ("10.0.0.0/8")]'),
     ('L[unicode, within ("2026-01-01", "2026-12-31")]', None, 'L[iso_date, within ("2026-01-01", "2026-12-31")]'),
-    ('L[iso_date, shape ("9999-99-99")]',
-     "L[iso_date, shape (\"9999-99-99\")]: 'shape' has no meaning for L[iso_date]: it applies to text in "
-     "L[ascii] or text in L[unicode], for example L[ascii, shape (\"AA99[ ]9AA\")]. "
-     "Did you mean L[ascii, shape (\"9999-99-99\")]?", 'L[ascii, shape ("9999-99-99")]'),
-    ('L[json, shape ("AW", W = upper)]', None, 'L[ascii, shape ("AW", W = upper)]'),
+    ('L[iso_date, pattern ("9999-99-99")]',
+     "L[iso_date, pattern (\"9999-99-99\")]: 'pattern' has no meaning for L[iso_date]: it applies to text in "
+     "L[ascii] or text in L[unicode], for example L[ascii, pattern (\"AA99[ ]9AA\")]. "
+     "Did you mean L[ascii, pattern (\"9999-99-99\")]?", 'L[ascii, pattern ("9999-99-99")]'),
+    ('L[json, pattern ("AW", W = upper)]', None, 'L[ascii, pattern ("AW", W = upper)]'),
 ]
 
 
@@ -245,11 +241,11 @@ def test_an_argument_of_the_wrong_form_for_the_base_is_refused_with_the_form_and
     assert "takes 2 arguments, an interval of dates, not 1" in str(caught.value)
     assert str(caught.value).endswith('Did you mean L[iso_date, within ("2026-01-01", "2026-12-31")]?')
     with pytest.raises(InvalidDomain) as caught:
-        _resolve('L[ascii, shape ("A-\u00e9")]')
+        _resolve('L[ascii, pattern ("A-\u00e9")]')
     assert "\u00e9 is not a symbol" in str(caught.value)
     with pytest.raises(ValueError) as caught:
-        _resolve("L[ascii, shape (\"A-'\u00e9'\")]")
-    assert "expected an ASCII character in a shape over ascii at position 3" in str(caught.value)
+        _resolve("L[ascii, pattern (\"A-'\u00e9'\")]")
+    assert "expected an ASCII character in a pattern over ascii at position 3" in str(caught.value)
 
 
 def test_a_pattern_word_on_a_language_that_is_not_text_is_refused():

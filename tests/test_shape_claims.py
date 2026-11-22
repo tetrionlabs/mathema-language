@@ -12,9 +12,9 @@ import pytest
 mathema = pytest.importorskip("mathema")
 
 import mathema_language.text.explain as explain  # noqa: E402
-import mathema_language.text.shape as shape  # noqa: E402
+import mathema_language.text.pattern as shape  # noqa: E402
 
-FUNCTIONS = [shape._reads, shape._pattern_reads, shape._term_reads, shape._canonical, explain._reading]
+FUNCTIONS = [shape._reads, shape._regex_reads, shape._term_reads, shape._canonical, explain._reading]
 
 
 def _declared(fn) -> list[str]:

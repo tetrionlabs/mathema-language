@@ -22,7 +22,6 @@ from mathema_language.text.path_language import PATH, path_within
 from mathema_language.text.url_language import URL
 from mathema_language.text.within import (
     WITHIN,
-    claim_text,
     ipv4_within,
     ipv6_within,
     iso_date_within,
@@ -30,6 +29,7 @@ from mathema_language.text.within import (
     suggest_within,
     url_within,
     within,
+    within_claim_text,
     within_examples,
     within_refusal,
 )
@@ -60,7 +60,7 @@ def _corpus(language, n: int = 60) -> list[str]:
 @pytest.mark.parametrize("build", EXACT.values(), ids=list(EXACT))
 def test_the_term_is_exact_and_its_matcher_agrees_with_the_language(build):
     language = build()
-    doc = language.to_json()["definition"]
+    doc = language.to_json()["term"]
     assert doc["kind"] == "regular_language" and doc["exact"] is True
     assert json.loads(json.dumps(doc)) == doc
     texts = _corpus(language)
@@ -70,14 +70,14 @@ def test_the_term_is_exact_and_its_matcher_agrees_with_the_language(build):
 
 
 def test_the_path_language_itself_states_its_term():
-    doc = PATH.to_json()["definition"]
+    doc = PATH.to_json()["term"]
     assert doc["exact"] is True
     for text in ["a", "/", "a\nb", "", "a\x00b"]:
         assert _regular.member(doc, text) == PATH.contains(text)
 
 
 def test_the_url_language_states_its_term():
-    doc = URL.to_json()["definition"]
+    doc = URL.to_json()["term"]
     assert doc["exact"] is True
     rng = random.Random(12)
     texts = [URL.sample(rng) for _ in range(60)] + [h.value for h in URL.hazards()]
@@ -87,11 +87,11 @@ def test_the_url_language_states_its_term():
 
 
 def test_one_region_hashes_the_same_however_it_is_built_and_another_differently():
-    one = _regular.term_hash(ipv4_within("10.0.0.0/8").definition())
-    assert one == _regular.term_hash(within(languages.resolve_language("ipv4"), "10.0.0.0/8").definition())
-    assert one != _regular.term_hash(ipv4_within("10.0.0.0/9").definition())
-    assert (_regular.term_hash(path_within("/workspace").definition())
-            != _regular.term_hash(path_within("/workspace2").definition()))
+    one = _regular.term_hash(ipv4_within("10.0.0.0/8").term())
+    assert one == _regular.term_hash(within(languages.resolve_language("ipv4"), "10.0.0.0/8").term())
+    assert one != _regular.term_hash(ipv4_within("10.0.0.0/9").term())
+    assert (_regular.term_hash(path_within("/workspace").term())
+            != _regular.term_hash(path_within("/workspace2").term()))
 
 
 @pytest.mark.parametrize("lo, hi, some_most", [
@@ -104,7 +104,7 @@ def test_one_region_hashes_the_same_however_it_is_built_and_another_differently(
 ], ids=repr)
 def test_a_datetime_interval_states_bounds_around_its_members(lo, hi, some_most):
     language = iso_datetime_within(lo, hi)
-    doc = language.to_json()["definition"]
+    doc = language.to_json()["term"]
     assert doc["exact"] is False and "language" not in doc
     assert json.loads(json.dumps(doc)) == doc
     texts = _corpus(language, 80)
@@ -122,7 +122,7 @@ def test_a_datetime_interval_states_bounds_around_its_members(lo, hi, some_most)
 def _inside(small, large, witness: str) -> None:
     """Every draw and boundary value of `small` is in `large`'s term, and
     `witness` is in `large`'s term and not in `small`'s."""
-    a, b = small.definition(), large.definition()
+    a, b = small.term(), large.term()
     rng = random.Random(14)
     for text in [small.sample(rng) for _ in range(200)] + [h.value for h in small.hazards()]:
         assert _regular.member(a, text) and _regular.member(b, text), text
@@ -231,8 +231,8 @@ def test_every_suggested_within_names_a_language_that_builds():
             if ", within (" not in text:
                 continue
             name = text[2:text.index(",")]
-            assert text == claim_text(name, "within", arguments) or text == within_examples()[name]
-            regions = arguments if text == claim_text(name, "within", arguments) else WITHIN[name].example
+            assert text == within_claim_text(name, "within", arguments) or text == within_examples()[name]
+            regions = arguments if text == within_claim_text(name, "within", arguments) else WITHIN[name].example
             assert languages.language_problems(WITHIN[name].build(*regions)) == []
 
 
@@ -241,7 +241,7 @@ def test_every_suggested_within_names_a_language_that_builds():
 
 def test_at_least_holds_a_member_written_two_days_from_the_bounds_written_dates():
     language = iso_datetime_within("2026-01-02T00:30:00+14:00", "2026-01-05T00:00:00+14:00")
-    doc = language.definition()
+    doc = language.term()
     for text in ["2025-12-31T22:30:00-12:00", "2026-01-01T10:30:00+00:00", "2026-01-05T00:00:00+14:00",
                  "2026-01-03T21:59:59-12:00", "2026-01-04T10:00:00+00:00", "2025-12-31T10:31:00-23:59"]:
         assert language.contains(text), text
@@ -249,7 +249,7 @@ def test_at_least_holds_a_member_written_two_days_from_the_bounds_written_dates(
     early = iso_datetime_within("2026-01-05T00:00:00-12:00", "2026-01-05T06:00:00-12:00")
     for text in ["2026-01-06T02:00:00+14:00", "2026-01-06T12:00:00+23:59", "2026-01-05T12:00:00+00:00"]:
         assert early.contains(text), text
-        assert _regular.member(early.definition(), text, "at_least"), text
+        assert _regular.member(early.term(), text, "at_least"), text
 
 
 def test_at_least_holds_members_at_every_whole_hour_offset_around_generated_intervals():
@@ -261,7 +261,7 @@ def test_at_least_holds_members_at_every_whole_hour_offset_around_generated_inte
                          rng.randint(0, 59), tzinfo=zone)
         hi = lo + dt.timedelta(minutes=rng.randint(0, 3 * 24 * 60))
         language = iso_datetime_within(lo, hi)
-        doc = language.definition()
+        doc = language.term()
         for bound in (lo, hi):
             for minutes in (-1439, -720, -1, 0, 1, 330, 840, 1439):
                 text = bound.astimezone(dt.timezone(dt.timedelta(minutes=minutes))).isoformat()
@@ -281,7 +281,7 @@ def test_at_most_holds_only_members_when_a_bound_carries_a_zone_whose_offset_cha
                    (dt.datetime(2026, 10, 25, 0, 30, tzinfo=london),
                     dt.datetime(2026, 10, 25, 1, 30, fold=1, tzinfo=london))]:
         language = iso_datetime_within(lo, hi)
-        doc = language.definition()
+        doc = language.term()
         offset = lo.isoformat()[19:]
         day = lo.date().isoformat()
         assert not _regular.member(doc, f"{day}T24:15:00{offset}", "at_most")
@@ -305,7 +305,7 @@ def test_the_url_language_and_its_term_agree_on_a_user_part_with_a_delete_charac
     import re
 
     from mathema_language.text.url_language import URL_PATTERN
-    doc = URL.to_json()["definition"]
+    doc = URL.to_json()["term"]
     for text in ["x://a\x7f@h", "http://u\x7fser@example.com/", "http://user@example.com/a\x7fb",
                  "http://u~ser@example.com/", "http://u!ser@example.com/", "http://u\x80ser@example.com/"]:
         assert URL.contains(text) == (re.fullmatch(URL_PATTERN, text) is not None) == _regular.member(doc, text), text

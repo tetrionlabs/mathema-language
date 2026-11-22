@@ -113,7 +113,7 @@ def drawn(node, rng):
 @pytest.fixture(scope="module", params=[*EXACT, *BOUNDED])
 def stated(request):
     language = _language(request.param)
-    doc = language.to_json().get("definition")
+    doc = language.to_json().get("term")
     assert isinstance(doc, dict), f"L[{request.param}] states no definition"
     return request.param, language, doc
 
@@ -174,13 +174,13 @@ def test_strings_drawn_from_the_term_are_members(stated):
 def test_shell_safe_is_every_nonempty_string_over_the_characters_quote_leaves():
     language = LANGUAGES["shell_safe"]
     kept = {c for c in range(0x110000) if language.contains(chr(c))}
-    sets = rx._re_sets(rx.from_node(language.to_json()["definition"]["language"]), set())
+    sets = rx._re_sets(rx.from_node(language.to_json()["term"]["language"]), set())
     assert {c for s in sets for lo, hi in s for c in range(lo, hi + 1)} == kept
     assert not language.contains("") and language.contains("a.b") and not language.contains("a b")
 
 
 def test_an_identifier_is_a_first_character_then_later_ones_on_this_python():
-    language, doc = LANGUAGES["identifier"], LANGUAGES["identifier"].to_json()["definition"]
+    language, doc = LANGUAGES["identifier"], LANGUAGES["identifier"].to_json()["term"]
     first = {c for c in range(0x110000) if chr(c).isidentifier()}
     later = {c for c in range(0x110000) if ("a" + chr(c)).isidentifier()}
     for bound, holds in (("at_least", lambda own, stated: own <= stated),
@@ -197,12 +197,12 @@ def test_an_identifier_is_a_first_character_then_later_ones_on_this_python():
 @pytest.mark.parametrize("name", NOT_REGULAR)
 def test_a_language_that_is_not_regular_says_so_in_the_definition_s_place(name):
     form = _language(name).to_json()
-    assert "definition" not in form
-    assert "not regular" in form["no_definition"]
+    assert "term" not in form
+    assert "not regular" in form["no_term"]
 
 
 def test_a_length_bound_on_a_format_language_cuts_its_definition():
-    bounded = length(LANGUAGES["slug"], length_bound(0, 4)).to_json()["definition"]
+    bounded = length(LANGUAGES["slug"], length_bound(0, 4)).to_json()["term"]
     assert bounded["exact"]
     for text in ("a", "a-b", "ab-c", "abcde", "a-b-c", "", "-a"):
         assert rx.member(bounded, text) == (LANGUAGES["slug"].contains(text) and len(text) <= 4)
@@ -210,18 +210,18 @@ def test_a_length_bound_on_a_format_language_cuts_its_definition():
 
 def test_a_length_bound_on_a_language_that_is_not_regular_states_neither():
     form = length(LANGUAGES["json"], length_bound(0, 4)).to_json()
-    assert "definition" not in form and "no_definition" not in form
-    assert "no_definition" in length(LANGUAGES["json"], length_bound(2, None)).to_json()
+    assert "term" not in form and "no_term" not in form
+    assert "no_term" in length(LANGUAGES["json"], length_bound(2, None)).to_json()
 
 
 @pytest.mark.parametrize("name", sorted(LANGUAGES))
 def test_every_registered_text_language_states_a_definition_or_why_not(name):
     form = LANGUAGES[name].to_json()
-    assert ("definition" in form) != ("no_definition" in form)
+    assert ("term" in form) != ("no_term" in form)
 
 
 def test_ipv4_agrees_on_every_four_part_address_of_boundary_octets():
-    language, doc = LANGUAGES["ipv4"], LANGUAGES["ipv4"].to_json()["definition"]
+    language, doc = LANGUAGES["ipv4"], LANGUAGES["ipv4"].to_json()["term"]
     octets = ("", "0", "1", "9", "00", "01", "10", "99", "100", "199", "200", "249", "250",
               "255", "256", "260", "300", "999", "1000")
     texts = [".".join(parts) for parts in itertools.product(octets, repeat=4)]
@@ -230,7 +230,7 @@ def test_ipv4_agrees_on_every_four_part_address_of_boundary_octets():
 
 
 def test_which_pythons_read_a_basic_date_followed_by_one_two_byte_character():
-    language, doc = LANGUAGES["iso_date"], LANGUAGES["iso_date"].to_json()["definition"]
+    language, doc = LANGUAGES["iso_date"], LANGUAGES["iso_date"].to_json()["term"]
     odd = ("20260928\u00e9", "2026W391\u00e9", "20260928\u0080")
     if sys.version_info[:2] > (3, 14):
         pytest.skip("not recorded for this Python yet")

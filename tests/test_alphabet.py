@@ -15,7 +15,7 @@ import mathema.languages as languages
 import pytest
 
 from mathema_language.text import _regular
-from mathema_language.text.alphabet import (
+from mathema_language.text.alphabets import (
     LOWER,
     NAMES,
     UPPER,
@@ -32,7 +32,7 @@ from mathema_language.text.alphabet import (
 
 @pytest.mark.parametrize("written, canonical", [
     ('lower + digit + "_"', 'lower + digit + "_"'), ('"_" + digit + lower', 'lower + digit + "_"'),
-    ('alnum+"_-"', 'alnum + "-" + "_"'), ("hex", "hex"), ("upper + upper", "upper"),
+    ('alnum+"_-"', 'alnum + "-" + "_"'), ("hexdigit", "hexdigit"), ("upper + upper", "upper"),
     ("'b' + 'a' + \"a\"", '"a" + "b"'), ('digit + "\\""', 'digit + "\\""'), ('"\\\\"', '"\\\\"'),
     (' lower  +  " " ', 'lower + " "'), ("unicode_alpha + digit + alpha", "unicode_alpha + alpha + digit"),
     ("latin-1 + 'é'", 'latin-1 + "é"'),
@@ -46,11 +46,11 @@ def test_the_canonical_text_names_alphabets_in_a_fixed_order_then_characters_by_
 @pytest.mark.running_unicode
 def test_named_alphabets_are_the_registered_alphabet_languages_and_three_more():
     assert named_ranges("upper") == ((65, 90),) and named_ranges("lower") == ((97, 122),)
-    assert named_ranges("hex") == ((48, 57), (65, 70), (97, 102))
+    assert named_ranges("hexdigit") == ((48, 57), (65, 70), (97, 102))
     assert named_ranges("alnum") == ((48, 57), (65, 90), (97, 122))
     assert named_ranges("unicode") == ((0, 0x10FFFF),)
     for name in NAMES:
-        if name in ("upper", "lower", "hex"):
+        if name in ("upper", "lower", "hexdigit"):
             continue
         language = languages.resolve_language(name)
         ranges = named_ranges(name)
@@ -91,16 +91,16 @@ def test_alphabets_add_and_a_string_adds_each_of_its_characters():
 
 
 @pytest.mark.running_unicode
-@pytest.mark.parametrize("expression", ['lower + digit + "_"', "hex", "upper", 'alnum + "-" + "." + "_"',
+@pytest.mark.parametrize("expression", ['lower + digit + "_"', "hexdigit", "upper", 'alnum + "-" + "." + "_"',
                                         "unicode_alpha + digit", '"a" + "b"', "unicode", "ascii"])
 def test_the_language_over_an_alphabet_draws_directly_and_states_an_exact_term(expression):
     language = alphabet_language(expression)
     found = alphabet(expression)
     assert language.name == found.text
     assert languages.language_problems(language) == []
-    doc = language.to_json()["definition"]
+    doc = language.to_json()["term"]
     assert doc["exact"] is (not found.varying) and json.loads(json.dumps(doc)) == doc
-    here = language.definition(version=_regular.RUNNING)
+    here = language.term(version=_regular.RUNNING)
     assert here["exact"] is True
     assert doc["source"]["alphabet"] == found.text
     assert language.to_json()["alphabet"] == {"names": list(found.names), "characters": list(found.characters)}
@@ -137,16 +137,16 @@ def test_a_custom_alphabet_is_named_by_its_dotted_path_and_states_its_term():
     assert USERNAME_CHARACTERS.name == "username characters"
     assert USERNAME_CHARACTERS.alphabet.text == 'lower + digit + "_"'
     stated = USERNAME_CHARACTERS.to_json()
-    assert stated["definition"] == alphabet_language('"_" + digit + lower').definition()
-    one = _regular.term_hash(stated["definition"])
-    assert one == _regular.term_hash(alphabet_language('lower + digit + "_"').definition())
-    assert one != _regular.term_hash(alphabet_language('lower + digit + "-"').definition())
+    assert stated["term"] == alphabet_language('"_" + digit + lower').term()
+    one = _regular.term_hash(stated["term"])
+    assert one == _regular.term_hash(alphabet_language('lower + digit + "_"').term())
+    assert one != _regular.term_hash(alphabet_language('lower + digit + "-"').term())
     assert one == _regular.term_hash(_regular.term(r"[a-z0-9_]*", 0, "matches"))
 
     def fits(text: str) -> bool:
         return re.fullmatch(r"[a-z0-9_]*", text) is not None
 
-    path = "mathema_language.text.alphabet.USERNAME_CHARACTERS"
+    path = "mathema_language.text.alphabets.USERNAME_CHARACTERS"
     (plain,) = check_conjectures(fits, [claim(f"for text in L[{path}], f(text) == True")])
     assert plain.verdict in ("holds", "proven"), plain.note
     def size(text: str) -> int:
@@ -154,5 +154,5 @@ def test_a_custom_alphabet_is_named_by_its_dotted_path_and_states_its_term():
 
     (bounded,) = check_conjectures(size, [claim(f"for text in L[{path}, len in [3, 32]], 3 <= f(text) <= 32")])
     assert bounded.verdict in ("holds", "proven"), bounded.note
-    (upper,) = check_conjectures(fits, [claim("for text in L[mathema_language.text.alphabet.UPPER], f(text) == True")])
+    (upper,) = check_conjectures(fits, [claim("for text in L[mathema_language.text.alphabets.UPPER], f(text) == True")])
     assert upper.verdict == "falsified"

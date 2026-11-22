@@ -7,7 +7,7 @@ Two surrogates written together are two characters, not one."""
 import pytest
 
 from mathema_language import words
-from mathema_language.text.alphabet import parse_alphabet
+from mathema_language.text.alphabets import parse_alphabet
 
 
 @pytest.mark.parametrize("expression, codes", [
@@ -28,7 +28,7 @@ def test_an_alphabet_with_a_lone_surrogate_reads_back(expression, codes):
 
 def test_a_lone_surrogate_binding_reads_back_through_the_shape_word():
     found = parse_alphabet('"\\ud800"')
-    shape = words.read_shape(['"W"', "W = " + found.text])
+    shape = words._read_pattern(['"W"', "W = " + found.text])
     assert shape.bindings[0][1].ranges == found.ranges
-    again = words.read_shape(words._split(words.shape_text(shape, call=False)))
+    again = words._read_pattern(words._split(words._pattern_text(shape, call=False)))
     assert again == shape
