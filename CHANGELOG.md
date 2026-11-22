@@ -14,10 +14,12 @@ release onward.
   a decimal with a scale and no precision (decimal(scale=2) between -1
   and 1 was proven inside decimal(3, 2), though 0.001 is in the one and
   not the other), and in pydantic models a decimal with one of its two
-  digit limits inside a nested model, a decimal whose digits are all
-  places (pydantic refuses zero there), and a custom validator on a
-  nested model. Each of these is now declined by name, wherever the
-  field stands, and the inclusion is unknown with the reason.
+  digit limits inside a nested model, a custom validator on a nested
+  model, and a decimal whose digits are all places (pydantic refuses a
+  number written with no point there, zero included). The pydantic
+  decimal whose digits are all places is now read as pydantic validates
+  it; each of the other cases is declined by name, wherever the field
+  stands, and the inclusion is unknown with the reason.
 - Fixed: from 0.3.0, an inclusion between two record languages (two JSON
   Schemas, for example) could be reported proven when it does not hold
   if a field's name held a dot. Such a field was read as the same field
