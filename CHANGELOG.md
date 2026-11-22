@@ -5,6 +5,49 @@ release onward.
 
 ## Unreleased
 
+- Fixed: from 0.3.0, an inclusion between two record languages (two JSON
+  Schemas, for example) could be reported proven when it does not hold
+  if a field's name held a dot. Such a field was read as the same field
+  as one of a nested record spelled the same way (a field named `"a.b"`
+  and field `b` of a record `a`), and a closed record that declares no
+  field of that name did not refuse it. Every field is now read as its
+  own, whatever its name holds.
+- For callers of the record encoding: a field is now named one way, its
+  field names from the top record down, each with its backslashes and
+  dots preceded by a backslash, joined by dots. `field_names` gives
+  these names, and `MembershipEncoding` (`var`, `row`, `language`,
+  `present`, `number`, `string`) and `build` read them. A plain name is
+  unchanged: `x`, and `x.qty` for field `qty` of record `x`. A field of
+  the top record named `a.b` is now `a\.b`. A dotted name a caller
+  passes is read as a nested field, so a caller should pass the names
+  `field_names` gives. `MembershipEncoding.vars` is keyed by field paths
+  (tuples of names), and the labels of the z3 variables changed.
+- An inclusion between two JSON Schema record languages whose string
+  fields carry patterns ending in `$` is decided; it came back unknown.
+  Inside a JSON Schema record a pattern is read the way the `jsonschema`
+  validator reads it, by `re.search`, on both sides of the inclusion.
+- A Python `re` pattern is translated exactly by the z3 encoding or
+  refused by name: anchors (`^`, `$`, `\A`, `\Z`, `\b`, `\B`), flags,
+  classes and repeats are read as `re` reads them, and a construct the
+  encoding does not read (a possessive repeat, a back-reference, a
+  look-around) gives `unknown` with the reason where it could give a
+  wrong answer before.
+- `mathema_language.text.pattern_language(source)` is the text language
+  of a compiled pattern, a pattern text, or a bound `PAT.fullmatch`,
+  `PAT.search` or `PAT.match`.
+- A text language states what it is as a regular-language term under
+  `definition` in its persisted form (`to_json`): the alphabet
+  languages, `L[path]`, and the format languages `L[slug]`, `L[hex]`,
+  `L[base64]`, `L[ipv4]`, `L[ipv6]` and `L[shell_safe]` exactly;
+  `L[identifier]`, `L[uuid]`, `L[iso_date]` and `L[iso_datetime]` as a
+  pair of bounds that hold on every supported Python. `L[json]`,
+  `L[yaml]` and `L[toml]` are not regular and say so under
+  `no_definition`. A length bound on a language with a definition
+  states the bounded definition.
+- A regular-language term whose document is malformed (a version or an
+  exact flag of the wrong type, a flag that contradicts the keys
+  present, a missing key) is refused with `ValueError`, and a text with
+  a character outside a term's alphabet is not a member of it.
 - Upgrade note for 0.4: a path language confined to one root renders
   `L[path, within ("/root")]`, the word followed by its arguments in
   brackets, where it rendered `L[path, within "/root"]`. Text that was
