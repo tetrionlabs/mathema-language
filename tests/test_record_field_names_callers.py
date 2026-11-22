@@ -83,7 +83,7 @@ def test_a_float_bound_and_a_built_record_read_a_field_by_its_own_name(name):
                        "required": [name]})
     (spelled,) = smt.field_names(older)
     _, edge = smt._float_line(older, newer, smt._a_member(older))
-    assert edge == {spelled: 1.0}
+    assert edge == {name: 1.0}
     assert smt.build(older, {spelled: 1.0}) == {name: 1.0}
 
 
