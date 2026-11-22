@@ -35,12 +35,12 @@ def _picture(rng, depth=0):
         atom = "[" + _picture(rng, depth + 1) + "]" if depth < 2 and rng.random() < 0.2 else rng.choice(atoms)
         roll = rng.random()
         if roll < 0.2:
-            atom += "{%d}" % rng.randint(1, 3)
+            atom += f"{{{rng.randint(1, 3)}}}"
         elif roll < 0.3:
             lo = rng.randint(0, 2)
-            atom += "{%d,%d}" % (lo, lo + rng.randint(0 if lo else 1, 2))
+            atom += f"{{{lo},{lo + rng.randint(0 if lo else 1, 2)}}}"
         elif roll < 0.35:
-            atom += "{%d+}" % rng.randint(0, 2)
+            atom += f"{{{rng.randint(0, 2)}+}}"
         out += atom
     return out
 

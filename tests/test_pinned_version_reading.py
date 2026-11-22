@@ -3,9 +3,9 @@
 """A pattern is parsed by the running interpreter's `re`, so a language
 about another Python is built only from constructs every supported
 version reads alike, or those the shipped version table records for the
-versions it covers. A pattern this interpreter reads only with a
-warning (global flags after the start, read by 3.10 and refused from
-3.11) is refused for any other version and for every version at once,
+versions it covers. A construct the regex delta table does not show
+reading alike on the other version (global flags after the start, read
+by 3.10 and refused from 3.11) is refused for any other version and for every version at once,
 and a possessive repeat or atomic group is refused for 3.10, by
 `pattern_language` and the `re(...)` word alike, whichever supported
 Python runs them."""
