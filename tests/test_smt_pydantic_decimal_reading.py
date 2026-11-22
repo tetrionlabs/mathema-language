@@ -2,10 +2,12 @@
 # Copyright 2026 Tetrion Ltd
 """Pydantic decimal settings the record encoding does not read the way
 pydantic validates are declined by name wherever they stand: a decimal
-with one of its two digit limits in a nested model, a decimal whose
-digits are all places (pydantic then refuses zero), and a decimal that
-admits NaN and the infinities. An inclusion over any of them is unknown
-with the reason, never proven on a reading pydantic does not share."""
+with one of its two digit limits in a nested model, and a decimal that
+admits NaN and the infinities. A decimal whose digits are all places is
+read as pydantic validates it
+(tests/test_smt_pydantic_decimal_regressions.py). An inclusion over any
+of them is unknown with the reason, never proven on a reading pydantic
+does not share."""
 import decimal
 
 import pytest
@@ -65,7 +67,6 @@ def admits(model, value) -> bool:
 @pytest.mark.parametrize("older, newer, refuting", [
     (Outer, OuterThree, {"r": {"y": decimal.Decimal("1234")}}),
     (Outer, OuterMaybeThree, {"r": {"y": decimal.Decimal("1234")}}),
-    (Zero, AllPlaces, {"x": decimal.Decimal("0")}),
     (WithSpecials, Plain, {"x": decimal.Decimal("NaN")}),
 ])
 def test_a_decimal_setting_pydantic_reads_otherwise_is_declined(older, newer, refuting):
