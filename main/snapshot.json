@@ -1,5 +1,5 @@
 {
-  "implementation": 87,
+  "implementation": 88,
   "intent": 71,
   "clarity": 16,
   "overall": 29,
@@ -2095,9 +2095,14 @@
       "intent": 88,
       "clarity": 12
     },
+    "mathema_language.smt._one_digit_limit": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 19
+    },
     "mathema_language.smt.untranslated": {
-      "implementation": 94,
-      "intent": 50,
+      "implementation": 95,
+      "intent": 49,
       "clarity": 4
     },
     "mathema_language.smt._reads_patterns_with_re": {
@@ -2115,10 +2120,20 @@
       "intent": 90,
       "clarity": 8
     },
-    "mathema_language.smt._unread_pydantic": {
-      "implementation": 88,
+    "mathema_language.smt._pydantic_models": {
+      "implementation": 86,
+      "intent": 93,
+      "clarity": 15
+    },
+    "mathema_language.smt._inner_fields": {
+      "implementation": 100,
       "intent": 92,
-      "clarity": 21
+      "clarity": 16
+    },
+    "mathema_language.smt._unread_pydantic": {
+      "implementation": 89,
+      "intent": 85,
+      "clarity": 16
     },
     "mathema_language.smt._nullable_pair": {
       "implementation": 0,
@@ -2132,13 +2147,13 @@
     },
     "mathema_language.smt._value": {
       "implementation": 100,
-      "intent": 85,
+      "intent": 94,
       "clarity": 23
     },
     "mathema_language.smt._scalar": {
-      "implementation": 87,
-      "intent": 93,
-      "clarity": 28
+      "implementation": 92,
+      "intent": 92,
+      "clarity": 27
     },
     "mathema_language.smt.new_encoding": {
       "implementation": 100,
