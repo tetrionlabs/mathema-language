@@ -87,7 +87,7 @@ def test_a_flag_with_no_word_is_refused():
     ('pattern ( "AW{0+}", W = "_" + alnum )', None, 'pattern("AW{0+}", W = alnum + "_")'),
     ('pattern("\\\\K\\\\E\\\\Y-99")', None, 'pattern("\'KEY\'-99")'), (' app.PAT ', None, "app.PAT"),
 ])
-def test_a_pattern_argument_is_a_literal_a_call_of_re_a_shape_or_a_dotted_name(written, sugar, canonical):
+def test_a_pattern_argument_is_a_literal_a_call_of_re_a_pattern_or_a_dotted_name(written, sugar, canonical):
     assert words._canonical_pattern_argument(written, sugar) == canonical
     assert words._canonical_pattern_argument(canonical, sugar) == canonical
 

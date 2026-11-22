@@ -2,7 +2,7 @@
 # Copyright 2026 Tetrion Ltd
 """`explain` reads a regular-language term out in plain words. The
 wording is pinned here on patterns under each predicate, the package's
-own validators among them, and on shapes: sequences, repeats by their
+own validators among them, and on patterns: sequences, repeats by their
 counts, choices, character sets by range, by name and by what they leave
 out, the final newline `$` allows, and a term stated as bounds, which
 says what made it approximate. Terms with one canonical form read the
@@ -103,7 +103,7 @@ PATTERNS = [
      'nothing (no text is accepted)'),
 ]
 
-#: shape, base, the reading
+#: pattern, base, the reading
 SHAPES = [
     ('AA99[ ]9AA', 'ascii',
      'exactly 2 of: ASCII letters; then exactly 2 of: 0-9; then optionally: " "; then one of: 0-9; then exactly 2 of: ASCII letters'),
@@ -131,7 +131,7 @@ def test_a_pattern_reads_in_plain_words(name, pattern, flags, predicate, reading
 
 @pytest.mark.running_unicode
 @pytest.mark.parametrize("shape, base, reading", SHAPES, ids=[s[0] for s in SHAPES])
-def test_a_shape_reads_in_plain_words(shape, base, reading):
+def test_a_pattern_reads_in_plain_words(shape, base, reading):
     assert explain(Pattern(shape, base).term(version=_regular.RUNNING)) == reading.format(**SIZES)
 
 

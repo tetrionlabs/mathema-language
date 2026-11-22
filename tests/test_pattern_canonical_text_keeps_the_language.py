@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""A shape's canonical picture is the same language as the picture it
+"""A pattern's canonical picture is the same language as the picture it
 was read from, and reads back to itself: two quoted texts written side
 by side never merge into one, whatever counts they carry. A count is
-bounded, so a shape's members, draws, pattern and term are written in
+bounded, so a pattern's members, draws, pattern and term are written in
 bounded time, and a picture past the bound is refused by name."""
 import random
 import re
@@ -85,7 +85,7 @@ def test_a_count_past_the_bound_is_refused_by_name(picture):
     assert refusal is not None and "count" in refusal
 
 
-def test_a_shape_at_the_bound_is_written_in_full():
+def test_a_pattern_at_the_bound_is_written_in_full():
     shape = Pattern("9{1000}")
     assert len(shape.draw(random.Random(0))) == 1000
     assert all(len(m) == 1000 for m in shape.members())

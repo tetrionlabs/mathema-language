@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""Shapes, alphabets and readings take their Unicode classes from the
+"""Patterns, alphabets and readings take their Unicode classes from the
 version table: a term without a version is the same on every supported
 Python, a pair of bounds where a class differs between versions and
 exact over ASCII; a term with a version is that Python's, exact."""
@@ -55,7 +55,7 @@ def test_an_alphabet_pinned_to_a_version_is_that_python_reading():
     ("X{0+}", "unicode", True), ("'ID-'X", "unicode", True), ("AA99", "ascii", True),
     ("a{1+}[-9]", "ascii", True),
 ])
-def test_a_shape_states_one_term_for_every_python(written, base, exact):
+def test_a_pattern_states_one_term_for_every_python(written, base, exact):
     doc = Pattern(written, base).term()
     assert doc["exact"] is exact and json.loads(json.dumps(doc)) == doc
     if not exact:
@@ -63,7 +63,7 @@ def test_a_shape_states_one_term_for_every_python(written, base, exact):
         assert all(why.endswith("between Python versions") for why in doc["source"]["not_exact"])
 
 
-def test_a_shape_bounds_hold_what_every_python_and_any_python_reads():
+def test_a_pattern_bounds_hold_what_every_python_and_any_python_reads():
     shape = Pattern("A9")
     doc = shape.term()
     assert doc["source"]["not_exact"] == ["digits, which differ slightly between Python versions",

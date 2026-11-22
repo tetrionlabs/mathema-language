@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""A shape given to a pattern word, `matches (pattern("A9"))`, states one
-term on every supported Python: the shape's own term under the word's
+"""A pattern given to a pattern word, `matches (pattern("A9"))`, states one
+term on every supported Python: the pattern's own term under the word's
 predicate. Where a symbol stands for a Unicode class that differs
-between versions it is a pair of bounds, as the shape word gives, never
+between versions it is a pair of bounds, as the pattern word gives, never
 an exact term built from this interpreter's Unicode tables."""
 import pytest
 
@@ -24,21 +24,21 @@ def _same_meaning(a, b):
         _algebra.canonical(a[k]) == _algebra.canonical(b[k]) for k in keys)
 
 
-def test_matches_a_unicode_shape_is_the_shape_s_own_term():
+def test_matches_a_unicode_pattern_is_the_pattern_s_own_term():
     found = _definition('pattern("A9")', "matches", "unicode")
     want = Pattern("A9", "unicode").term()
     assert want["exact"] is False
     assert _same_meaning(found, want)
 
 
-def test_matches_a_named_shape_object_is_its_own_term():
-    found = _definition("tests.test_words_shape_argument_term.POSTCODE", "matches", "ascii")
+def test_matches_a_named_pattern_object_is_its_own_term():
+    found = _definition("tests.test_words_pattern_argument_term.POSTCODE", "matches", "ascii")
     assert _same_meaning(found, POSTCODE.term())
 
 
 @pytest.mark.parametrize("word, before, after", [
     ("contains", True, True), ("starts with", False, True), ("ends with", True, False)])
-def test_the_other_words_put_any_text_around_the_shape_s_term(word, before, after):
+def test_the_other_words_put_any_text_around_the_pattern_s_term(word, before, after):
     found = _definition('pattern("A9")', word, "unicode")
     shape = Pattern("A9", "unicode").term()
     assert found["exact"] is False
@@ -51,7 +51,7 @@ def test_the_other_words_put_any_text_around_the_shape_s_term(word, before, afte
             assert holds == expect, (word, bound, outer)
 
 
-def test_membership_still_reads_the_shape():
+def test_membership_still_reads_the_pattern():
     language = words._regex_language_of('pattern("AA99[ ]9AA")', "matches", "ascii")
     assert language.contains("SW19 3AB")
     assert not language.contains("SW19 3AB\n")

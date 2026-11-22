@@ -2,7 +2,7 @@
 # Copyright 2026 Tetrion Ltd
 """A lone surrogate is a value an alphabet can hold, and the alphabet's
 canonical text names it with its escape, so the text reads back to the
-same alphabet, alone, beside other characters and as a shape's binding.
+same alphabet, alone, beside other characters and as a pattern's binding.
 Two surrogates written together are two characters, not one."""
 import pytest
 
@@ -26,7 +26,7 @@ def test_an_alphabet_with_a_lone_surrogate_reads_back(expression, codes):
     assert found.text.isascii() or all(not 0xD800 <= ord(c) <= 0xDFFF for c in found.text)
 
 
-def test_a_lone_surrogate_binding_reads_back_through_the_shape_word():
+def test_a_lone_surrogate_binding_reads_back_through_the_pattern_word():
     found = parse_alphabet('"\\ud800"')
     shape = words._read_pattern(['"W"', "W = " + found.text])
     assert shape.bindings[0][1].ranges == found.ranges

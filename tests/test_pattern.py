@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""A shape pictures text one character at a time: `A` a letter, `a` a
+"""A pattern pictures text one character at a time: `A` a letter, `a` a
 lower-case letter, `9` a digit, `X` any character, anything else
 itself, `[...]` an optional part, and counts `{n}`, `{n,m}`, `{n+}`.
-A shape that does not read says what was expected and where. Its own
+A pattern that does not read says what was expected and where. Its own
 reading, its regular expression and its term agree on every text over a
-small alphabet for generated shapes; a letter and a digit are ASCII over
+small alphabet for generated patterns; a letter and a digit are ASCII over
 `ascii` and Unicode over `unicode`; members are written directly and
-are members, near misses are not; a record field marked with a shape
+are members, near misses are not; a record field marked with a pattern
 holds it, two records deep, in a dataclass, a TypedDict and a pydantic
 model."""
 import dataclasses
@@ -41,7 +41,7 @@ POSTCODE = Pattern("AA99[ ]9AA", "ascii")
     "SW19 3A": False, "SW19 3ABC": False, "SW19 3AB\n": False, "": False, "ÉW19 3AB": False,
     "SW١9 3AB": False,
 }.items(), ids=repr)
-def test_a_postcode_shape_admits_two_letters_two_digits_an_optional_space_a_digit_two_letters(text, inside):
+def test_a_postcode_pattern_admits_two_letters_two_digits_an_optional_space_a_digit_two_letters(text, inside):
     assert POSTCODE.matches(text) == inside
     assert (re.fullmatch(POSTCODE.regex, text) is not None) == inside
     assert _regular.member(POSTCODE.term(), text) == inside
@@ -69,7 +69,7 @@ def test_a_letter_and_a_digit_follow_the_base_language():
     (r"\-\b\A", "-'bA'"), ("9{0+}a{1+}", "9{0+}a{1+}"), ("[a[9]]{2}", "[a[9]]{2}"), (r"\[\]\{\}\\", r"\[\]\{\}\\"),
     ("9{0,1}", "9{0,1}"), ("'ID'-9{4,6}", "'ID'-9{4,6}"), (" {2}", " {2}"), ("[a]{1}", "[a]{1}"),
 ])
-def test_the_canonical_text_is_the_shape_as_written_with_needless_marks_dropped(written, canonical):
+def test_the_canonical_text_is_the_pattern_as_written_with_needless_marks_dropped(written, canonical):
     shape = Pattern(written, "ascii")
     assert shape.canonical == canonical
     again = Pattern(canonical, "ascii")
@@ -97,14 +97,14 @@ def test_the_canonical_text_is_the_shape_as_written_with_needless_marks_dropped(
     ("9''9", 2, "at least one character between the quotes"),
     ("'a'" + "'", 4, "\"'\" to close the quoted text opened at position 0"),
 ])
-def test_a_shape_that_does_not_read_says_what_was_expected_and_where(written, position, expected):
+def test_a_pattern_that_does_not_read_says_what_was_expected_and_where(written, position, expected):
     with pytest.raises(PatternError) as caught:
         Pattern(written, "ascii")
     assert (caught.value.position, caught.value.expected) == (position, expected)
     assert f"expected {expected} at position {position}, found " in str(caught.value)
 
 
-def test_a_shape_over_ascii_holds_no_character_outside_it_and_a_base_is_one_of_two():
+def test_a_pattern_over_ascii_holds_no_character_outside_it_and_a_base_is_one_of_two():
     with pytest.raises(PatternError) as caught:
         Pattern("A-é", "ascii")
     assert caught.value.position == 2
@@ -114,7 +114,7 @@ def test_a_shape_over_ascii_holds_no_character_outside_it_and_a_base_is_one_of_t
 
 
 def _random_shape(rng: random.Random, depth: int = 0) -> str:
-    """A shape of one to four items drawn from the whole notation."""
+    """A pattern of one to four items drawn from the whole notation."""
     out = []
     for _ in range(rng.randint(1, 4 if depth == 0 else 2)):
         kind = rng.random()
@@ -175,7 +175,7 @@ SHAPES = ["AA99[ ]9AA", "9{0+}", "a{1+}", "X{2}", "[a[9]]{2}", "'ID-'9{4,6}", "A
 @pytest.mark.running_unicode
 @pytest.mark.parametrize("base", ["ascii", "unicode"])
 @pytest.mark.parametrize("written", SHAPES)
-def test_every_member_written_from_a_shape_is_a_member_and_every_near_miss_is_not(written, base):
+def test_every_member_written_from_a_pattern_is_a_member_and_every_near_miss_is_not(written, base):
     shape = Pattern(written, base)
     compiled, doc = re.compile(shape.regex), shape.term(version=_regular.RUNNING)
     rng = random.Random(23)
@@ -192,7 +192,7 @@ def test_every_member_written_from_a_shape_is_a_member_and_every_near_miss_is_no
 
 
 @pytest.mark.running_unicode
-def test_the_members_of_a_shape_take_both_branches_and_both_ends_of_every_count():
+def test_the_members_of_a_pattern_take_both_branches_and_both_ends_of_every_count():
     assert set(Pattern("AA99[ ]9AA", "ascii").members()) >= {"AA000AA", "AA00 0AA", "ZZ00 0ZZ", "zz00 0zz",
                                                            "AA99 9AA"}
     assert set(Pattern("'ID-'9{4,6}", "ascii").members()) >= {"ID-0000", "ID-000000", "ID-9999", "ID-999999"}
@@ -200,7 +200,7 @@ def test_the_members_of_a_shape_take_both_branches_and_both_ends_of_every_count(
     assert set(Pattern("A9").members()) >= {"A0", "É0", "中0", "A٣"}
 
 
-def test_the_near_misses_of_a_shape_are_each_one_step_outside_it():
+def test_the_near_misses_of_a_pattern_are_each_one_step_outside_it():
     near = dict(POSTCODE.near_misses())
     assert {"1A000AA": "a character of another class in place of a letter",
             "AAa00AA": "a character of another class in place of a digit",
@@ -222,7 +222,7 @@ def test_the_near_misses_of_a_shape_are_each_one_step_outside_it():
             "ID-0000-a": "an optional part cut one character short"}.items() <= counted.items()
 
 
-def test_a_shape_is_a_text_language_whose_draws_are_written_directly():
+def test_a_pattern_is_a_text_language_whose_draws_are_written_directly():
     language = text_pattern_language("AA99[ ]9AA", "ascii")
     assert language.name == 'ascii, pattern ("AA99[ ]9AA")'
     assert languages.language_problems(language) == []
@@ -241,7 +241,7 @@ def test_a_shape_is_a_text_language_whose_draws_are_written_directly():
     assert text_pattern_language(POSTCODE).name == language.name
 
 
-# --- a shape on a record field
+# --- a pattern on a record field
 
 
 @dataclasses.dataclass
@@ -285,7 +285,7 @@ def _field_json(stated: dict, *path: str) -> dict:
     return node
 
 
-def test_a_dataclass_field_two_records_deep_holds_its_shape():
+def test_a_dataclass_field_two_records_deep_holds_its_pattern():
     from mathema_language.schema.adaptors.dataclass import adapt
     language = adapt(Order)
     assert languages.language_problems(language) == []
@@ -306,7 +306,7 @@ def test_a_dataclass_field_two_records_deep_holds_its_shape():
     assert field["x-mathema"]["term"] == POSTCODE.term()
 
 
-def test_a_typeddict_key_two_records_deep_holds_its_shape():
+def test_a_typeddict_key_two_records_deep_holds_its_pattern():
     from mathema_language.schema.adaptors.typeddict import adapt
     language = adapt(OrderDict)
     assert languages.language_problems(language) == []
@@ -320,7 +320,7 @@ def test_a_typeddict_key_two_records_deep_holds_its_shape():
     assert field["x-mathema"]["term"] == POSTCODE.term()
 
 
-def test_a_pydantic_field_two_models_deep_holds_its_shape_and_the_model_validates_it():
+def test_a_pydantic_field_two_models_deep_holds_its_pattern_and_the_model_validates_it():
     pydantic = pytest.importorskip("pydantic")
     from mathema_language.schema.adaptors.pydantic import adapt
 
@@ -525,7 +525,7 @@ BOUND = [("AW{0+}", {"W": 'alnum + "_"'}), ("HH[:HH]{0,2}", {"H": "hexdigit"}), 
 
 
 @pytest.mark.parametrize("written, bindings", BOUND, ids=[b[0] for b in BOUND])
-def test_a_bound_shape_agrees_three_ways_and_writes_members_and_near_misses(written, bindings):
+def test_a_bound_pattern_agrees_three_ways_and_writes_members_and_near_misses(written, bindings):
     shape = Pattern(written, "ascii", bindings)
     compiled, doc = re.compile(shape.regex), shape.term()
     assert _regular.term_hash(doc) == _regular.term_hash(_regular.term(shape.regex, 0, "matches"))
@@ -544,7 +544,7 @@ def test_a_bound_shape_agrees_three_ways_and_writes_members_and_near_misses(writ
             assert shape.matches(text) == (compiled.fullmatch(text) is not None), text
 
 
-def test_the_reading_of_a_shape_names_a_bound_symbol_by_its_alphabet():
+def test_the_reading_of_a_pattern_names_a_bound_symbol_by_its_alphabet():
     assert Pattern("AW{0+}", "ascii", W='alnum + "_"').explain() == (
         'one of: ASCII letters; then any number of: alnum + "_"')
     assert Pattern("HH:HH", "ascii", H="hexdigit").explain() == 'exactly 2 of: hexdigit; then ":"; then exactly 2 of: hexdigit'
@@ -554,7 +554,7 @@ def test_the_reading_of_a_shape_names_a_bound_symbol_by_its_alphabet():
     assert Pattern("AA99", "ascii").explain() == "exactly 2 of: ASCII letters; then exactly 2 of: 0-9"
 
 
-def test_a_bound_shape_marks_a_record_field():
+def test_a_bound_pattern_marks_a_record_field():
     from mathema_language.schema.adaptors.dataclass import adapt
 
     @dataclasses.dataclass

@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""The claims written on the shape and explain functions, checked by
-mathema and pinned: a shape's own reading, its pattern and its term
-agree on text of several languages, the widest shapes admit every text
+"""The claims written on the pattern and explain functions, checked by
+mathema and pinned: a pattern's own reading, its pattern and its term
+agree on text of several languages, the widest patterns admit every text
 of their base, canonical text is settled, and a reading does not depend
 on how a pattern spells one language."""
 import re
