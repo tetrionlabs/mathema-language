@@ -6,14 +6,18 @@ release onward.
 ## Unreleased
 
 - Fixed: from 0.2.1, an inclusion between two record languages could be
-  reported proven when it does not hold if a decimal field stated a
-  precision with no scale: the encoding read no digit limit there, while
-  the validation reads it as a whole number of at most that many digits
-  (decimal(3) was proven inside decimal(2), though 123 is in the one and
-  not the other). A decimal with one of its two digit limits, a
-  precision with no scale or a scale with no precision, is now declined
-  by name and the inclusion is unknown with the reason, as the
-  encoding's documentation states.
+  reported proven when it does not hold over a decimal field the
+  encoding read otherwise than its validation: a decimal with a
+  precision and no scale (decimal(3) was proven inside decimal(2),
+  though 123 is in the one and not the other); a decimal with a scale
+  and no precision (decimal(scale=2) between -1 and 1 was proven inside
+  decimal(3, 2), though 0.001 is in the one and not the other); and, in
+  pydantic models, a decimal with one of its two digit limits inside a
+  nested model, a decimal whose digits are all places (pydantic refuses
+  zero there), and a decimal that admits NaN and the infinities. Each of
+  these is now declined by name, wherever the field stands, and the
+  inclusion is unknown with the reason; so is a custom validator on a
+  nested pydantic model.
 - Fixed: from 0.3.0, an inclusion between two record languages (two JSON
   Schemas, for example) could be reported proven when it does not hold
   if a field's name held a dot. Such a field was read as the same field
