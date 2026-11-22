@@ -5,6 +5,23 @@ release onward.
 
 ## Unreleased
 
+- Fixed: from 0.3.0, an inclusion between two record languages (two JSON
+  Schemas, for example) could be reported proven when it does not hold
+  if a field's name held a dot. Such a field was read as the same field
+  as one of a nested record spelled the same way (a field named `"a.b"`
+  and field `b` of a record `a`), and a closed record that declares no
+  field of that name did not refuse it. Every field is now read as its
+  own, whatever its name holds.
+- For callers of the record encoding: a field is now named one way, its
+  field names from the top record down, each with its backslashes and
+  dots preceded by a backslash, joined by dots. `field_names` gives
+  these names, and `MembershipEncoding` (`var`, `row`, `language`,
+  `present`, `number`, `string`) and `build` read them. A plain name is
+  unchanged: `x`, and `x.qty` for field `qty` of record `x`. A field of
+  the top record named `a.b` is now `a\.b`. A dotted name a caller
+  passes is read as a nested field, so a caller should pass the names
+  `field_names` gives. `MembershipEncoding.vars` is keyed by field paths
+  (tuples of names), and the labels of the z3 variables changed.
 - An inclusion between two JSON Schema record languages whose string
   fields carry patterns ending in `$` is decided; it came back unknown.
   Inside a JSON Schema record a pattern is read the way the `jsonschema`
