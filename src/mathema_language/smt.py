@@ -163,6 +163,8 @@ class MembershipEncoding:
         self.no_surrogates = ""
         # how the library validating the record in hand reads a pattern, when that is known
         self.pattern_mode = ""
+        # whether the record in hand is validated by pydantic
+        self.pydantic = False
 
     def var(self, name: str) -> Any:
         """The z3 variable of the field `name` names, as `field_names`
@@ -337,6 +339,10 @@ class MembershipEncoding:
                 raise Untranslated(f"the decimal .{f.name} with one of its two digit limits")
             if t.base == "decimal" and t.scale is not None:
                 num.append(self._decimal_digits(x, V, t.scale, t.precision, side, f.name))
+                if self.pydantic and t.precision == t.scale:
+                    # pydantic refuses a number written with no point here, zero included:
+                    # the int arm holds those, the real arm a zero written as 0.0
+                    num.append(z3.Not(V.is_i(x)))
             alternatives = [z3.And(*num)]
             if t.base == "float":
                 specials = side == "older" or f.nan_allowed
@@ -452,11 +458,13 @@ class MembershipEncoding:
                     else "constrained"
             # the jsonschema validator reads `pattern` by `re.search`
             self.pattern_mode = "search" if b.ecosystem.name == "jsonschema" else ""
+            self.pydantic = b.ecosystem.name == "pydantic"
             try:
                 shape = self.row(b.schema, names, side, _SUPPORTED[b.ecosystem.name])
             finally:
                 self.no_surrogates = ""
                 self.pattern_mode = ""
+                self.pydantic = False
             # the text of a path a converter builds is never empty
             # (`Path("")` is `.`), so neither is the text the encoding holds
             for dest, convert in (getattr(b.ecosystem, "converters", None) or {}).items():
@@ -1177,9 +1185,9 @@ def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) 
         fields `schema` holds for them.
 
     Notes:
-        A decimal with one of its two digit limits, or whose digits are all places (pydantic
-        then refuses zero, which the neutral reading admits), and a setting that admits NaN and
-        the infinities are named; they are read by pydantic otherwise than by the encoding.
+        A decimal with one of its two digit limits and `allow_inf_nan=True` are named; pydantic
+        reads them otherwise than the encoding does. `allow_inf_nan=False` states what the
+        encoding already reads, no NaN and no infinity, and is no constraint here.
     """
     seen = set() if seen is None else seen
     if model in seen:
@@ -1196,16 +1204,20 @@ def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) 
             kind = type(marker).__name__
             if kind == "_PydanticGeneralMetadata":
                 given = {k for k, v in vars(marker).items() if v is not None}
-                odd = given - _PYDANTIC_SETTINGS
+                if vars(marker).get("allow_inf_nan") is True:
+                    return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
+                            "infinities")
+                odd = given - _PYDANTIC_SETTINGS - {"allow_inf_nan"}
                 if odd:
                     return f"the setting {sorted(odd)[0]!r} on {at}"
                 if given & {"max_digits", "decimal_places"}:
                     t = fields[name].type if name in fields else None
                     if t is None or t.precision is None or t.scale is None:
                         return f"decimal digits on {at} the neutral model does not carry"
-                    if t.precision == t.scale:
-                        return (f"decimal digits on {at} that are all places, where pydantic "
-                                "refuses zero")
+            elif kind == "AllowInfNan":
+                if getattr(marker, "allow_inf_nan", None) is not False:
+                    return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
+                            "infinities")
             elif kind not in _PYDANTIC_MARKERS:
                 return f"the {kind} constraint on {at}"
         inner = _inner_fields(fields[name].type) if name in fields else ()
@@ -1290,6 +1302,9 @@ def _scalar(enc: MembershipEncoding, model: Any, v: Any, D: Any, f: Field | None
         r = model.eval(D.rv(v))
         q = Fraction(r.numerator_as_long(), r.denominator_as_long())
         if f is not None and f.type.base == "decimal":
+            # a zero on the real arm is one written with a point
+            if q == 0:
+                return decimal.Decimal("0.0")
             return decimal.Decimal(q.numerator) / decimal.Decimal(q.denominator)
         return float(q)
     text = model.eval(D.sv(v)).as_string()
