@@ -154,7 +154,7 @@ class Constraints:
     def __bool__(self) -> bool:
         return any(v is not None for v in (self.min, self.max, self.exclusive_min,
                                            self.exclusive_max, self.min_len, self.max_len,
-                                           self.regex, self.enum, self.multiple_of)) \
+                                           self.regex, self.pattern, self.enum, self.multiple_of)) \
             or self.const is not NO_DEFAULT
 
     @property
@@ -178,6 +178,8 @@ class Constraints:
             parts.append(f"len in [{self.min_len or 0}, {self.max_len if self.max_len is not None else 'inf'}]")
         if self.regex is not None:
             parts.append(f"matches {self.regex!r}")
+        if self.pattern is not None:
+            parts.append(f"pattern ({self.pattern.arguments})")
         if self.enum is not None:
             parts.append("one of {" + ", ".join(repr(v) for v in self.enum) + "}")
         if self.const is not NO_DEFAULT:

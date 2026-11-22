@@ -312,6 +312,8 @@ class MembershipEncoding:
             return z3.Or(*options)
         if c.regex is not None and t.base != "string":
             raise Untranslated(f"a pattern on the {t.base} field .{f.name}")
+        if getattr(c, "pattern", None) is not None:
+            raise Untranslated(f"the picture pattern on the field .{f.name}, which this encoding does not read")
         conds: list[Any] = []
         if t.base == "bool":
             conds.append(V.is_b(x))

@@ -44,12 +44,10 @@ letter category (`L*`, what `str.isalpha` accepts of one character),
 newline included. Over `ascii` a bound alphabet holds ASCII characters
 only.
 
-A pattern states itself three ways that agree: `term`, its
-regular-language term, whose own matcher decides membership on the
-running Python's reading of the classes; `regex`, an equivalent Python
-regular expression to be read in full, made of literals, character
-classes, `(?:...)` groups and counts only; and `canonical`, its
-canonical text. The canonical picture is the picture as written with
+A pattern states itself two ways: `term`, its regular-language term,
+whose own matcher decides membership on the running Python's reading of
+the classes, and `canonical`, its canonical text. The canonical picture
+is the picture as written with
 these changes: a backslash before a character that needs none is
 dropped; `{n,n}` is written `{n}`; a count that changes nothing (`{1}`,
 or `{0,1}` after a group) is dropped; quoted text with no letter or
@@ -59,9 +57,9 @@ follow, sorted by symbol, each alphabet in its own canonical order.
 
 `Pattern` is also the marker for a record field,
 `Annotated[str, Pattern("AA99[ ]9AA", "ascii")]`: the dataclass, TypedDict
-and pydantic adaptors read its `regex` into the field's regular
-expression constraint, and a pydantic model validates the field with the
-pattern itself.
+and pydantic adaptors read it as the field's pattern constraint, checked
+and drawn by the pattern itself, and a pydantic model validates the
+field with the pattern.
 
 `PATTERN` is the word's own description, for a registry: the base
 languages it has a meaning for, an example for each, and
@@ -540,49 +538,6 @@ class _Classes:
         return chr(rng.randint(lo, min(hi, lo + 4095)))
 
 
-def _code(code: int) -> str:
-    """Intent:
-        One code point as it is written inside a character class of a regular expression: an
-        ASCII letter or digit as itself, any other by its number.
-    """
-    if code < 128 and chr(code).isalnum():
-        return chr(code)
-    return f"\\x{code:02x}" if code < 256 else f"\\u{code:04x}" if code < 65536 else f"\\U{code:08x}"
-
-
-def _class_pattern(ranges: tuple[tuple[int, int], ...]) -> str:
-    """Intent:
-        The character class of exactly the code points in `ranges`.
-    """
-    return "[" + "".join(_code(lo) if lo == hi else _code(lo) + "-" + _code(hi) for lo, hi in ranges) + "]"
-
-
-# -- the four readings -----------------------------------------------------------
-
-def _regex(items: tuple[_Item, ...], classes: _Classes) -> str:
-    """Intent:
-        The Python regular expression that, read in full, admits what the items admit.
-    """
-    out = []
-    for item in items:
-        atom = item.atom
-        lo, hi = item.lo, item.hi
-        if isinstance(atom, _Group):
-            piece = "(?:" + _regex(atom.items, classes) + ")"
-        elif isinstance(atom, _Class):
-            piece = _class_pattern(classes.ranges(atom.symbol))
-        elif isinstance(atom, _Run):
-            piece = re.escape(atom.text)
-            if len(atom.text) > 1 and (lo, hi) != (1, 1):
-                piece = "(?:" + piece + ")"
-        else:
-            piece = re.escape(atom.char)
-        out.append(piece + ("" if (lo, hi) == (1, 1) else "?" if (lo, hi) == (0, 1)
-                            else f"{{{lo},}}" if hi is None else f"{{{lo}}}" if lo == hi
-                            else f"{{{lo},{hi}}}"))
-    return "".join(out)
-
-
 def _symbols(items: tuple[_Item, ...]) -> set[str]:
     """Intent:
         The class symbols the items use, groups included.
@@ -807,13 +762,6 @@ class Pattern:
         the quoted picture, then each binding, sorted by symbol."""
         return _quoted(self.canonical) + self._bound_text()
 
-    @property
-    def regex(self) -> str:
-        """The Python regular expression that, read in full, admits
-        exactly the pattern's members: literals, character classes,
-        `(?:...)` groups and counts only."""
-        return _regex(self._items, self._classes)
-
     def _reading(self) -> _algebra.Expr:
         """The term of the pattern's members as the running Python reads
         its classes, in the term module's own form, built once."""
@@ -931,7 +879,6 @@ class PatternLanguage(TextLanguage):
     """The members of a pattern, as a text language. Draws are written
     from the pattern directly; `outside` is a near miss."""
     pattern: Pattern | None = None
-    regex: str = ""
 
     def sample(self, rng: random.Random) -> str:
         assert self.pattern is not None
@@ -977,7 +924,6 @@ def text_pattern_language(pattern: Pattern | str, base: str = "unicode",
     return PatternLanguage(
         f"{found.base}, pattern ({found.arguments})", level="regular", accepts=found._holds,
         generate=found.draw, pool=under.pool, simplest="a", pattern=found,
-        regex=found.regex,
         extra_hazards=tuple(HazardValue("text", m, "a member at a boundary of the pattern")
                             for m in found.members()))
 
@@ -1005,26 +951,6 @@ def _reads(pattern: str, base: str, text: str) -> bool:
         ValueError: the base is not one of `BASES`.
     """
     return _cached_pattern(pattern, base)._holds(text)
-
-
-def _regex_reads(pattern: str, base: str, text: str) -> bool:
-    """Intent:
-        Whether `text` is a member of the pattern over the base, by the pattern's regular
-        expression read in full.
-
-    Claims:
-        the_regex_admits_every_drawn_member: for text in L[mathema_language.text.pattern._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
-        the_regex_refuses_every_near_miss: for text in L[mathema_language.text.pattern._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
-        the_regex_admits_every_drawn_member_of_a_counted_shape: for text in L[mathema_language.text.pattern._COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == True
-        the_regex_refuses_every_near_miss_of_a_counted_shape: for text in L[mathema_language.text.pattern._NEAR_COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == False
-        the_regex_agrees_on_digits_either_side_of_a_count: let reads = mathema_language.text.pattern._reads, for text in L[digit, len <= 6], f("9{2,4}", "unicode", text) == reads("9{2,4}", "unicode", text)
-        the_regex_agrees_on_any_text: let reads = mathema_language.text.pattern._reads, for text in L[unicode], f("A{0+}9{0+}X{0,2}", "unicode", text) == reads("A{0+}9{0+}X{0,2}", "unicode", text)
-
-    Raises:
-        PatternError: the pattern does not read.
-        ValueError: the base is not one of `BASES`.
-    """
-    return re.fullmatch(_cached_pattern(pattern, base).regex, text) is not None
 
 
 def _term_reads(pattern: str, base: str, text: str) -> bool:

@@ -382,12 +382,12 @@ def _object(name: str) -> Any:
 def _regex_of(argument: str, base: str) -> tuple[str, int]:
     """Intent:
         The Python regular expression and flags a canonical argument states, to be read under
-        the word's predicate: a literal escaped, a `re(...)` call's own, a pattern's equivalent
-        expression over the base (`ascii` or, for any other base, `unicode`), or those of the
-        compiled pattern or `Pattern` a dotted name names.
+        the word's predicate: a literal escaped, a `re(...)` call's own, or those of the compiled
+        pattern a dotted name names. A picture pattern has none: it is read by its term.
 
     Raises:
-        ValueError: the argument does not read, or the name is of neither kind of object.
+        ValueError: the argument does not read, is a picture pattern, or names neither a
+            compiled pattern nor a `Pattern`.
     """
     literal = _string(argument)
     if literal is not None:
@@ -395,15 +395,13 @@ def _regex_of(argument: str, base: str) -> tuple[str, int]:
     pattern = _read_re(argument)
     if pattern is not None:
         return pattern
-    over = base if base in PATTERN else "unicode"
-    parts = _pattern_call(argument)
-    if parts is not None:
-        return _read_pattern(parts, over).regex, 0
+    if _pattern_call(argument) is not None:
+        raise ValueError(f"{argument} is a picture pattern, read by its term, not by a regular expression")
     found = _object(argument)
     if isinstance(found, re.Pattern) and isinstance(found.pattern, str):
         return found.pattern, int(found.flags) & ~int(re.UNICODE)
     if isinstance(found, Pattern):
-        return found.regex, 0
+        raise ValueError(f"{argument} names a picture pattern, read by its term, not by a regular expression")
     raise ValueError(f"{argument} names {type(found).__name__}, not a compiled pattern or a Pattern")
 
 
@@ -571,13 +569,30 @@ def _regex_language_of(argument: str, word: str, base: str) -> Any:
     Raises:
         ValueError: the argument does not read.
     """
-    pattern, flags = _regex_of(argument, base)
-    found = _regular.regex_language(pattern, word, flags, version=_re_version(argument))
     picture = _text_pattern_of(argument, base)
-    if picture is None:
-        return found
-    return dataclasses.replace(found, schema={
-        **found.schema, "term": _regular.under_predicate(picture.term(), word)})
+    if picture is not None:
+        return _picture_language(picture, word)
+    pattern, flags = _regex_of(argument, base)
+    return _regular.regex_language(pattern, word, flags, version=_re_version(argument))
+
+
+def _picture_language(picture: Pattern, word: str) -> Any:
+    """Intent:
+        The language of the strings a pattern word holds of for a picture pattern: membership by
+        the term's own matcher on the running Python's reading of the picture, with any text
+        before it, after it or on both sides as the word says; draws written from the picture;
+        and the picture's own term under the word's predicate as the stated term.
+    """
+    from .text import _algebra
+    from .text._kit import TextLanguage
+    here = _regular.under_predicate({"kind": "regular_language", "version": _algebra.TERM_VERSION,
+                                     "alphabet": [[0, _algebra._MAX_CODE]], "exact": True,
+                                     "language": _algebra.to_node(picture._reading())}, word)
+    reading = _algebra.from_node(here["language"])
+    return TextLanguage(f"{word} (pattern({picture.arguments}))", level="predicate",
+                        accepts=lambda text: isinstance(text, str) and _algebra.holds(reading, text),
+                        generate=picture.draw,
+                        schema={"term": _regular.under_predicate(picture.term(), word)})
 
 
 def _text_pattern_of(argument: str, base: str) -> Pattern | None:
@@ -674,7 +689,6 @@ def _has_reads_call() -> bool:
     """Intent:
         Whether mathema's word record takes a `reads_call` function.
     """
-    import dataclasses
     return PredicateWord is not None and any(
         f.name == "reads_call" for f in dataclasses.fields(PredicateWord))  # type: ignore[arg-type]
 
