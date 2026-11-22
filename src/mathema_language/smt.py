@@ -333,6 +333,8 @@ class MembershipEncoding:
             num = [is_num, *self._bounds(f, real)]
             if c.multiple_of is not None:
                 raise Untranslated(f"the divisor on the {t.base} field .{f.name}")
+            if t.base == "decimal" and (t.precision is None) != (t.scale is None):
+                raise Untranslated(f"the decimal .{f.name} with one of its two digit limits")
             if t.base == "decimal" and t.scale is not None:
                 num.append(self._decimal_digits(x, V, t.scale, t.precision, side, f.name))
             alternatives = [z3.And(*num)]
@@ -949,6 +951,24 @@ def _nest(language: Any, values: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _one_digit_limit(fields: Any, prefix: str) -> str | None:
+    """Intent:
+        Returns the dotted path of the first decimal field, nested ones and list items included,
+        that states a precision with no scale or a scale with no precision, or None.
+    """
+    for f in fields or ():
+        path = f"{prefix}.{f.name}"
+        for t in (f.type, f.type.item, f.type.key, f.type.value):
+            if t is None:
+                continue
+            if t.base == "decimal" and (t.precision is None) != (t.scale is None):
+                return path
+            found = _one_digit_limit(t.fields, path) if t.fields else None
+            if found:
+                return found
+    return None
+
+
 def untranslated(language: Any) -> str | None:
     """Why a language's records cannot be encoded, or None."""
     if language is not None and getattr(language, "branches", None):
@@ -963,6 +983,11 @@ def untranslated(language: Any) -> str | None:
         return f"{getattr(language, 'name', language)!r} is not a record language"
     if ecosystem.name not in _SUPPORTED:
         return f"{language.name}: {ecosystem.name} records are not read by the encoding yet"
+    halved = _one_digit_limit(schema.fields, "")
+    if halved:
+        return (f"{language.name}: the decimal {halved} has one of its two digit limits (a "
+                "precision with no scale, or a scale with no precision), which the encoding "
+                "does not read")
     if ecosystem.name == "pydantic":
         decorators = getattr(ecosystem.model, "__pydantic_decorators__", None)
         if decorators is not None and (decorators.field_validators or decorators.model_validators):
