@@ -5,6 +5,15 @@ release onward.
 
 ## Unreleased
 
+- Fixed: from 0.2.1, an inclusion between two record languages could be
+  reported proven when it does not hold if a decimal field stated a
+  precision with no scale: the encoding read no digit limit there, while
+  the validation reads it as a whole number of at most that many digits
+  (decimal(3) was proven inside decimal(2), though 123 is in the one and
+  not the other). A decimal with one of its two digit limits, a
+  precision with no scale or a scale with no precision, is now declined
+  by name and the inclusion is unknown with the reason, as the
+  encoding's documentation states.
 - Fixed: from 0.3.0, an inclusion between two record languages (two JSON
   Schemas, for example) could be reported proven when it does not hold
   if a field's name held a dot. Such a field was read as the same field
