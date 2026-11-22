@@ -211,5 +211,29 @@
  ],
  "translated": {
   "not a word boundary": "not_boundary_in_empty"
+ },
+ "flags": {
+  "python": {
+   "ignore case": [
+    "IGNORECASE",
+    "i"
+   ],
+   "multi line": [
+    "MULTILINE",
+    "m"
+   ],
+   "dot all": [
+    "DOTALL",
+    "s"
+   ],
+   "ascii only": [
+    "ASCII",
+    "a"
+   ],
+   "verbose": [
+    "VERBOSE",
+    "x"
+   ]
+  }
  }
 }

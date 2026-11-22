@@ -10,7 +10,8 @@ the dumps of every supported Python into the file the package ships.
 A construct every version reads alike has no row and is listed under
 `read_alike`; a construct some version reads differently has one row
 per version, keyed by construct, dialect and version, saying whether
-that version reads it and a digest of how. Unicode class membership and
+that version reads it and a digest of how. Under `flags`, each flag
+word maps to the name and inline letter each dialect gives it. Unicode class membership and
 case mapping are the version table's (`python_versions.json`), so the
 probes use only characters every version classes alike. It uses the
 standard library only, so any interpreter runs it bare:
@@ -68,6 +69,11 @@ PROBES = {
 TEXTS = ["", "a", "aa", "aaa", "b", "ab", "ba", "c", "bc", "abc", "A", "AB", "Ab", "a b", "\n",
          "a\n", "b\na", "1", "_", ".", "&", "-", "]", " a", "ab "]
 
+#: each flag word, by dialect, with the name and inline letter that dialect gives it
+FLAG_NAMES = {"python": {
+    "ignore case": ["IGNORECASE", "i"], "multi line": ["MULTILINE", "m"], "dot all": ["DOTALL", "s"],
+    "ascii only": ["ASCII", "a"], "verbose": ["VERBOSE", "x"]}}
+
 #: constructs some version reads differently that the term's translation reads for each
 #: version on its own, by the version table's engine reading named
 TRANSLATED = {"not a word boundary": "not_boundary_in_empty"}
@@ -114,8 +120,10 @@ def merge(paths):
             rows.append({"construct": construct, "dialect": "python", "version": version,
                          "reads": "all" if r["reads"] else "none" if r["refuses"] else "some",
                          "digest": r["digest"]})
+    for word, (name, letter) in FLAG_NAMES["python"].items():
+        assert getattr(re, name) == getattr(re, letter.upper()), word
     out = {"dialect": "python", "versions": versions, "read_alike": alike, "rows": rows,
-           "translated": TRANSLATED}
+           "translated": TRANSLATED, "flags": FLAG_NAMES}
     DATA.write_text(json.dumps(out, indent=1, ensure_ascii=True) + "\n")
     print("versions", versions, "read alike", len(alike), "rows", len(rows),
           sorted({r["construct"] for r in rows}))
