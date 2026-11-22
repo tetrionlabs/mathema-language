@@ -90,6 +90,11 @@ SYMBOLS = {"A": "a letter", "a": "a lower-case letter", "9": "a digit", "X": "an
 #: the punctuation a picture writes with a backslash to mean itself
 _ESCAPED = "[]{}\\'"
 
+#: the most characters a member written with every count at its upper bound (two past the
+#: lower where there is none) may have; a picture past it is refused, so members, draws,
+#: the pattern and the term are written in bounded time
+MAX_LENGTH = 10_000
+
 #: the base languages a shape reads its classes from
 BASES = ("ascii", "unicode")
 
@@ -192,6 +197,9 @@ def _count(shape: str, at: int) -> tuple[int, int | None, int]:
     if found is None:
         raise ShapeError(shape, at, "a count such as {2}, {2,4} or {2+}",
                          '"' + shape[at:at + 8] + '"')
+    if any(len(n or "") > len(str(MAX_LENGTH)) for n in (found.group(1), found.group(3))):
+        raise ShapeError(shape, at, f"a count of at most {MAX_LENGTH}",
+                         '"' + found.group(0)[:16] + ('..."' if len(found.group(0)) > 16 else '"'))
     lo = int(found.group(1))
     hi = None if found.group(2) else int(found.group(3)) if found.group(3) is not None else lo
     if hi is not None and (hi < lo or hi == 0):
@@ -278,6 +286,19 @@ def _parse(shape: str, at: int, opened: int | None, symbols: frozenset[str],
     return tuple(items), at
 
 
+def _longest(items: tuple[_Item, ...]) -> int:
+    """Intent:
+        The length of the member written with every count at its upper bound, or two past
+        its lower where it has none.
+    """
+    total = 0
+    for item in items:
+        atom = item.atom
+        one = _longest(atom.items) if isinstance(atom, _Group) else len(atom.text) if isinstance(atom, _Run) else 1
+        total += one * (item.hi if item.hi is not None else item.lo + 2)
+    return total
+
+
 def _suffix(item: _Item, plain: tuple[int, int | None]) -> str:
     """Intent:
         The count of an item as canonical text writes it, empty when it is `plain`.
@@ -305,7 +326,9 @@ def _text(items: tuple[_Item, ...]) -> str:
         is `{n}`. Quoted text holding no letter or digit is written bare, unless it is several
         characters under one count. A letter or digit written with a backslash is written as
         quoted text, joined with uncounted quoted text beside it; where it carries a count,
-        or stands beside counted quoted text it cannot join, it keeps its backslash.
+        or stands beside counted quoted text it cannot join, it keeps its backslash. Quoted
+        text just before counted quoted text has its last character written outside the
+        quotes, so the two never read as one text with a doubled quote.
     """
     # each piece: its text, and for quoted text that may join its neighbours, that text
     pieces: list[tuple[str, str | None]] = []
@@ -338,12 +361,21 @@ def _text(items: tuple[_Item, ...]) -> str:
         end = at
         while end < len(pieces) and pieces[end][1] not in (None, ""):
             end += 1
-        beside_counted = (at > 0 and pieces[at - 1][1] == "") or (end < len(pieces) and pieces[end][1] == "")
+        before_counted = end < len(pieces) and pieces[end][1] == ""
+        beside_counted = (at > 0 and pieces[at - 1][1] == "") or before_counted
         escaped_only = all(p[0].startswith("\\") for p in pieces[at:end])
+        joined = "".join(str(p[1]) for p in pieces[at:end])
         if beside_counted and escaped_only:
             out += [p[0] for p in pieces[at:end]]
+        elif before_counted:
+            # quoted text just before counted quoted text would read as one text with a
+            # doubled quote, so its last character is written outside the quotes
+            head, last = joined[:-1], joined[-1]
+            if head:
+                out.append(_run_text(head) if any(c.isalnum() for c in head) else _bare(head))
+            out.append("\\" + last if last.isalnum() else _bare(last))
         else:
-            out.append(_run_text("".join(str(p[1]) for p in pieces[at:end])))
+            out.append(_run_text(joined))
         at = end
     return "".join(out)
 
@@ -758,6 +790,10 @@ class Shape:
                     groups.append(text[at])
             raise UnknownSymbol(text, unknown[0], tuple(dict.fromkeys(text[at] for at in unknown)),
                                 tuple(dict.fromkeys(groups)), _text(self._items), self._bound_text())
+        longest = _longest(self._items)
+        if longest > MAX_LENGTH:
+            raise ShapeError(text, 0, f"counts whose longest member is at most {MAX_LENGTH} characters",
+                             f"a longest member of {longest} characters")
         used = {item.atom.symbol for item, _ in _walk(self._items) if isinstance(item.atom, _Class)}
         for symbol in bound:
             if symbol not in used:
