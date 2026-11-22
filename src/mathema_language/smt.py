@@ -1271,8 +1271,9 @@ def _admits(language: Any, values: dict[str, Any]) -> bool:
 def _float_line(older: Any, newer: Any, base: dict[str, Any] | None) -> tuple[list[str], dict[str, Any] | None]:
     """Intent:
         Runs each float bound and its neighbouring doubles through both validations on the member
-        `base` of `older`, returning the points tried and the first record `older` admits and
-        `newer` refuses, if any.
+        `base` of `older` (keyed by field name, `field_names`), returning the points tried and the
+        first record `older` admits and `newer` refuses, if any, nested as the shape of `older`
+        that admits it reads it.
     """
     tried: list[str] = []
     if base is None:
@@ -1290,7 +1291,8 @@ def _float_line(older: Any, newer: Any, base: dict[str, Any] | None) -> tuple[li
                 values = {**base, _spell((f.name,)): point}
                 tried.append(f".{f.name} = {point!r}")
                 if _admits(older, values) and not _admits(newer, values):
-                    return tried, values
+                    shape = next(b for b in _branches(older) if _admits(b, values))
+                    return tried, _nest(shape, values)
     return tried, None
 
 
