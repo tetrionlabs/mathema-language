@@ -21,7 +21,7 @@ def schema_of(cls: type) -> RowSchema:
     """The row schema of a dataclass."""
     fields, definitions = read_record(cls)
     for f in fields:
-        if f.constraints.regex is not None and f.constraints.shape is None:
+        if f.constraints.regex is not None and f.constraints.pattern is None:
             raise ValueError(f"{cls.__name__}.{f.name}: a regular expression on a dataclass field "
                              "has no validator to hold it to; use a pydantic model or a JSON Schema")
     return RowSchema(cls.__name__, tuple(fields), definitions=definitions,

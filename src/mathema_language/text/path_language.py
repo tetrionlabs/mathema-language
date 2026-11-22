@@ -154,16 +154,16 @@ class PathLanguage(TextLanguage):
         seen = {h.value for h in own}
         return tuple(own) + tuple(h for h in super().hazards() if h.value not in seen)
 
-    def definition(self) -> dict[str, Any]:
+    def term(self) -> dict[str, Any]:
         """The regular-language term of this language: its pattern,
         read in full."""
         from . import _regular
         return _regular.term(self.pattern, 0, "matches")
 
     def to_json(self) -> dict[str, Any]:
-        """The persisted form with the language's `definition`, the
+        """The persisted form with the language's `term`, the
         term of the strings `pattern` matches in full."""
-        return {**super().to_json(), "definition": self.definition()}
+        return {**super().to_json(), "term": self.term()}
 
     def outside(self, rng: random.Random) -> Any:
         order = [text for text, _ in _HAZARDS] + ["", "a\x00b", *self.near]

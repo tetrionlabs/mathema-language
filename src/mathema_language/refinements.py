@@ -88,16 +88,16 @@ class _LengthLanguage(RefinedLanguage):
 
     def to_json(self) -> dict[str, Any]:
         """The base's persisted form with the length bound; a base that
-        states a `definition` states the refined one, its strings of a
+        states a `term` states the refined one, its strings of a
         length in the bound."""
         out = dict(super().to_json())
-        if isinstance(out.get("definition"), dict):
+        if isinstance(out.get("term"), dict):
             from .text._algebra import of_length
-            out["definition"] = of_length(out["definition"], int(self.lo), self.hi)
+            out["term"] = of_length(out["term"], int(self.lo), self.hi)
         if self.hi is not None:
             # a language of bounded length is finite, so a base's reason
-            # for having no definition does not carry over
-            out.pop("no_definition", None)
+            # for having no term does not carry over
+            out.pop("no_term", None)
         return out
 
     def hazards(self) -> tuple[Any, ...]:
@@ -290,15 +290,15 @@ class _JsonStructureLanguage(RefinedLanguage):
 
     def to_json(self) -> dict[str, Any]:
         """The base's persisted form with the length bound; a base that
-        states a `definition` states the refined one, its strings of a
+        states a `term` states the refined one, its strings of a
         length in the bound."""
         out = dict(super().to_json())
-        if isinstance(out.get("definition"), dict):
+        if isinstance(out.get("term"), dict):
             from .text._algebra import of_length
-            out["definition"] = of_length(out["definition"], int(self.lo), self.hi)
+            out["term"] = of_length(out["term"], int(self.lo), self.hi)
         # the base's reason speaks of every document, not of the ones a
         # structure bound keeps
-        out.pop("no_definition", None)
+        out.pop("no_term", None)
         return out
 
     def hazards(self) -> tuple[Any, ...]:

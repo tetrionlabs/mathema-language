@@ -32,7 +32,7 @@ release onward.
   encoding does not read (a possessive repeat, a back-reference, a
   look-around) gives `unknown` with the reason where it could give a
   wrong answer before.
-- `mathema_language.text.pattern_language(source)` is the text language
+- `mathema_language.text.regex_language(source)` is the text language
   of a compiled pattern, a pattern text, or a bound `PAT.fullmatch`,
   `PAT.search` or `PAT.match`.
 - A text language states what it is as a regular-language term under

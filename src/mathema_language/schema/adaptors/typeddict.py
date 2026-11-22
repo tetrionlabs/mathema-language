@@ -20,7 +20,7 @@ def schema_of(cls: Any) -> RowSchema:
     """The row schema of a TypedDict."""
     fields, definitions = read_record(cls)
     for f in fields:
-        if f.constraints.regex is not None and f.constraints.shape is None:
+        if f.constraints.regex is not None and f.constraints.pattern is None:
             raise ValueError(f"{cls.__name__}.{f.name}: a regular expression on a TypedDict key "
                              "has no validator to hold it to; use a pydantic model or a JSON Schema")
     total = getattr(cls, "__total__", True)

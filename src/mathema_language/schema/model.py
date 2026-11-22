@@ -133,8 +133,8 @@ class Constraints:
     """The value constraints a field carries beyond its type: bounds
     (inclusive `min`/`max`, or the exclusive pair), a length range for
     text, binary and lists, a regular expression the whole text must
-    match (with `shape`, the shape marker it was read from, when it was
-    read from one), an enumeration, a constant, and a divisor."""
+    match (with `pattern`, the pattern marker it was read from, when it
+    was read from one), an enumeration, a constant, and a divisor."""
     min: Any = None
     max: Any = None
     exclusive_min: Any = None
@@ -142,7 +142,7 @@ class Constraints:
     min_len: Count | None = None
     max_len: Count | None = None
     regex: str | None = None
-    shape: Any = None
+    pattern: Any = None
     enum: tuple[Any, ...] | None = None
     const: Any = NO_DEFAULT
     multiple_of: Any = None

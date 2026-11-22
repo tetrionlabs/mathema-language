@@ -24,7 +24,7 @@ from ..vocabulary.text import (
     utf8_len,
 )
 from ._kit import TextLanguage
-from ._regular import pattern_language
+from ._regular import regex_language
 from .alphabets import (
     ALNUM,
     ALPHA,
@@ -65,7 +65,7 @@ LANGUAGES: dict[str, TextLanguage] = {
         BASE64, HEX, SLUG, SHELL_SAFE,
         CONTROL, INVISIBLE, COMBINING, SURROGATE, COMPATIBILITY, ASTRAL)}
 
-__all__ = ["adapt", "pattern_language", "ALNUM", "ALPHA", "ASCII", "BASE64", "CONTROL", "COMBINING", "DIGIT",
+__all__ = ["adapt", "regex_language", "ALNUM", "ALPHA", "ASCII", "BASE64", "CONTROL", "COMBINING", "DIGIT",
            "INVISIBLE", "HEX", "IDENTIFIER", "IPV4", "IPV6", "ISO_DATE",
            "ISO_DATETIME", "JSON", "LANGUAGES", "LATIN1", "COMPATIBILITY",
            "ASTRAL", "PRINTABLE", "SHELL_SAFE", "SLUG", "SURROGATE", "UNICODE_ALNUM", "UNICODE_ALPHA",

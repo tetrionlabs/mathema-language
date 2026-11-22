@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
-"""Shapes: text pictured one character at a time.
+"""Patterns: text pictured one character at a time.
 
-A shape is a picture of the text it admits, read left to right.
+A pattern is a picture of the text it admits, read left to right.
 
 - Every letter and every digit in a picture is a symbol and stands for
   one character of one class. Four are built in: `A` a letter, `a` a
@@ -28,10 +28,10 @@ no alternation and no anchors, in which every position names its class,
 so members and near misses are written down directly, never searched
 for.
 
-A binding gives a symbol an alphabet (`mathema_language.text.alphabet`):
-`Shape("AW{0+}", W='alnum + "_"')` is a letter, then any number of
+A binding gives a symbol an alphabet (`mathema_language.text.alphabets`):
+`Pattern("AW{0+}", W='alnum + "_"')` is a letter, then any number of
 letters, digits and underscores. A binding may give a built-in symbol
-another alphabet for that one shape (`Shape("AA99", A="upper")`), which
+another alphabet for that one pattern (`Pattern("AA99", A="upper")`), which
 is seen in the bindings written after the picture; a binding the picture
 never uses is refused.
 
@@ -44,11 +44,11 @@ letter category (`L*`, what `str.isalpha` accepts of one character),
 newline included. Over `ascii` a bound alphabet holds ASCII characters
 only.
 
-A shape states itself four ways that agree: `matches`, its own reading
-of the picture; `pattern`, an equivalent Python regular expression to be
+A pattern states itself four ways that agree: `matches`, its own reading
+of the picture; `regex`, an equivalent Python regular expression to be
 read in full, made of literals, character classes, `(?:...)` groups and
 counts only; `term`, the regular-language term, always exact; and its
-canonical text. The canonical picture is the picture as written with
+canonical text, `canonical`. The canonical picture is the picture as written with
 these changes: a backslash before a character that needs none is
 dropped; `{n,n}` is written `{n}`; a count that changes nothing (`{1}`,
 or `{0,1}` after a group) is dropped; quoted text with no letter or
@@ -56,15 +56,15 @@ digit loses its quotes; and letters and digits written with backslashes
 become quoted text, joined with quoted text beside them. The bindings
 follow, sorted by symbol, each alphabet in its own canonical order.
 
-`Shape` is also the marker for a record field,
-`Annotated[str, Shape("AA99[ ]9AA", "ascii")]`: the dataclass, TypedDict
-and pydantic adaptors read its `pattern` into the field's regular
+`Pattern` is also the marker for a record field,
+`Annotated[str, Pattern("AA99[ ]9AA", "ascii")]`: the dataclass, TypedDict
+and pydantic adaptors read its `regex` into the field's regular
 expression constraint, and a pydantic model validates the field with the
-shape itself.
+pattern itself.
 
-`SHAPE` is the word's own description, for a registry: the base
+`PATTERN` is the word's own description, for a registry: the base
 languages it has a meaning for, an example for each, and
-`suggest_shape`, which guesses the claim that was meant when a use is
+`suggest_pattern`, which guesses the claim that was meant when a use is
 refused.
 """
 from __future__ import annotations
@@ -81,8 +81,14 @@ from typing import Any
 from .._surface import HazardValue
 from . import _algebra, _regular
 from ._kit import TextLanguage
-from .alphabet import Alphabet, alphabet, outside_characters, plain_character
-from .alphabets import ASCII, UNICODE
+from .alphabets import (
+    ASCII,
+    UNICODE,
+    Alphabet,
+    alphabet,
+    outside_characters,
+    plain_character,
+)
 
 #: the built-in symbols and what each stands for
 SYMBOLS = {"A": "a letter", "a": "a lower-case letter", "9": "a digit", "X": "any one character"}
@@ -95,17 +101,17 @@ _ESCAPED = "[]{}\\'"
 #: the pattern and the term are written in bounded time
 MAX_LENGTH = 10_000
 
-#: the base languages a shape reads its classes from
+#: the base languages a pattern reads its classes from
 BASES = ("ascii", "unicode")
 
 
-class ShapeError(ValueError):
-    """A shape that does not read, with what was expected and the
+class PatternError(ValueError):
+    """A pattern that does not read, with what was expected and the
     position, counted from 0, where it was expected."""
 
-    def __init__(self, shape: str, position: int, expected: str, found: str) -> None:
-        self.shape, self.position, self.expected, self.found = shape, position, expected, found
-        super().__init__(f"shape {shape!r}: expected {expected} at position {position}, found {found}")
+    def __init__(self, pattern: str, position: int, expected: str, found: str) -> None:
+        self.text, self.position, self.expected, self.found = pattern, position, expected, found
+        super().__init__(f"pattern {pattern!r}: expected {expected} at position {position}, found {found}")
 
 
 def _and(parts: list[str]) -> str:
@@ -115,25 +121,25 @@ def _and(parts: list[str]) -> str:
     return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1]
 
 
-class UnknownSymbol(ShapeError):
+class UnknownSymbol(PatternError):
     """A picture holding letters or digits that are neither built-in
     symbols nor bound. `symbols` are those characters in the order
     written, `quoted` the picture with each run of them quoted as
     literal text, and `bindings` the bindings given, as written after a
     picture. The message offers both ways to mend it."""
 
-    def __init__(self, shape: str, position: int, symbols: tuple[str, ...], runs: tuple[str, ...],
+    def __init__(self, pattern: str, position: int, symbols: tuple[str, ...], runs: tuple[str, ...],
                  quoted: str, bindings: str) -> None:
-        ShapeError.__init__(self, shape, position, "a symbol (A, a, 9, X or a bound one), quoted text "
+        PatternError.__init__(self, pattern, position, "a symbol (A, a, 9, X or a bound one), quoted text "
                             "or punctuation", '"' + symbols[0] + '"')
         self.symbols, self.runs, self.quoted, self.bindings = symbols, runs, quoted, bindings
         names = _and(list(symbols))
         self.args = (
             f"{names} {'is not a symbol' if len(symbols) == 1 else 'are not symbols'}. "
             f"For the literal text write {_and([_run_text(r) for r in runs])}: "
-            f"shape ({_quoted(quoted)}{bindings}). "
+            f"pattern ({_quoted(quoted)}{bindings}). "
             f"To use {symbols[0]} as a symbol, bind it: "
-            f"shape ({_quoted(shape)}{bindings}, {symbols[0]} = ...)",)
+            f"pattern ({_quoted(pattern)}{bindings}, {symbols[0]} = ...)",)
 
 
 @dataclass(frozen=True)
@@ -184,91 +190,91 @@ def _run_text(text: str) -> str:
     return "'" + text.replace("'", "''") + "'"
 
 
-def _count(shape: str, at: int) -> tuple[int, int | None, int]:
+def _count(pattern: str, at: int) -> tuple[int, int | None, int]:
     """Intent:
-        The count written at position `at` of `shape`, which holds a `{`: its lower bound, its
+        The count written at position `at` of `pattern`, which holds a `{`: its lower bound, its
         upper bound (None for `{n+}`), and the position after its `}`.
 
     Raises:
-        ShapeError: the text there is not `{n}`, `{n,m}` or `{n+}`, or its bounds admit
+        PatternError: the text there is not `{n}`, `{n,m}` or `{n+}`, or its bounds admit
             nothing (`m` below `n`, or `m` zero).
     """
-    found = re.compile(r"\{([0-9]+)(?:(\+)|,([0-9]+))?\}").match(shape, at)
+    found = re.compile(r"\{([0-9]+)(?:(\+)|,([0-9]+))?\}").match(pattern, at)
     if found is None:
-        raise ShapeError(shape, at, "a count such as {2}, {2,4} or {2+}",
-                         '"' + shape[at:at + 8] + '"')
+        raise PatternError(pattern, at, "a count such as {2}, {2,4} or {2+}",
+                         '"' + pattern[at:at + 8] + '"')
     if any(len(n or "") > len(str(MAX_LENGTH)) for n in (found.group(1), found.group(3))):
-        raise ShapeError(shape, at, f"a count of at most {MAX_LENGTH}",
+        raise PatternError(pattern, at, f"a count of at most {MAX_LENGTH}",
                          '"' + found.group(0)[:16] + ('..."' if len(found.group(0)) > 16 else '"'))
     lo = int(found.group(1))
     hi = None if found.group(2) else int(found.group(3)) if found.group(3) is not None else lo
     if hi is not None and (hi < lo or hi == 0):
-        raise ShapeError(shape, at, "a count from n to m with m at least n and at least 1",
+        raise PatternError(pattern, at, "a count from n to m with m at least n and at least 1",
                          '"' + found.group(0) + '"')
     return lo, hi, found.end()
 
 
-def _quoted_run(shape: str, at: int) -> tuple[str, int]:
+def _quoted_run(pattern: str, at: int) -> tuple[str, int]:
     """Intent:
-        The quoted text that opens at position `at` of `shape`, which holds a single quote, a
+        The quoted text that opens at position `at` of `pattern`, which holds a single quote, a
         doubled quote inside it read as one; and the position after its closing quote.
 
     Raises:
-        ShapeError: the quote is never closed, or nothing stands between the quotes.
+        PatternError: the quote is never closed, or nothing stands between the quotes.
     """
     out = []
     here = at + 1
-    while here < len(shape):
-        if shape[here] != "'":
-            out.append(shape[here])
+    while here < len(pattern):
+        if pattern[here] != "'":
+            out.append(pattern[here])
             here += 1
-        elif shape[here + 1:here + 2] == "'":
+        elif pattern[here + 1:here + 2] == "'":
             out.append("'")
             here += 2
         else:
             if not out:
-                raise ShapeError(shape, here, "at least one character between the quotes", '"\'"')
+                raise PatternError(pattern, here, "at least one character between the quotes", '"\'"')
             return "".join(out), here + 1
-    raise ShapeError(shape, here, f'"\'" to close the quoted text opened at position {at}',
-                     "the end of the shape")
+    raise PatternError(pattern, here, f'"\'" to close the quoted text opened at position {at}',
+                     "the end of the pattern")
 
 
-def _parse(shape: str, at: int, opened: int | None, symbols: frozenset[str],
+def _parse(pattern: str, at: int, opened: int | None, symbols: frozenset[str],
            unknown: list[int]) -> tuple[tuple[_Item, ...], int]:
     """Intent:
-        The items of `shape` from position `at` to the end, or, inside the bracket opened at
+        The items of `pattern` from position `at` to the end, or, inside the bracket opened at
         position `opened`, to its closing bracket; and the position after them. A letter or
         digit not in `symbols` is read as that character and its position added to `unknown`.
 
     Raises:
-        ShapeError: the shape does not read; the error names what was expected and where.
+        PatternError: the pattern does not read; the error names what was expected and where.
     """
     items: list[_Item] = []
-    while at < len(shape):
-        ch = shape[at]
+    while at < len(pattern):
+        ch = pattern[at]
         atom: Any
         if ch == "]":
             if opened is None:
-                raise ShapeError(shape, at, 'a symbol, a character or "["',
+                raise PatternError(pattern, at, 'a symbol, a character or "["',
                                  '"]" with no "[" open (write \\] for the character)')
             if not items:
-                raise ShapeError(shape, at, 'at least one symbol or character inside the "["',
+                raise PatternError(pattern, at, 'at least one symbol or character inside the "["',
                                  '"]"')
             return tuple(items), at + 1
         if ch in "{}":
-            raise ShapeError(shape, at, "a symbol, a character or a group before a count",
+            raise PatternError(pattern, at, "a symbol, a character or a group before a count",
                              f'"{ch}" (write \\{ch} for the character)')
         if ch == "[":
-            inner, after = _parse(shape, at + 1, at, symbols, unknown)
+            inner, after = _parse(pattern, at + 1, at, symbols, unknown)
             atom, at = _Group(inner), after
         elif ch == "'":
-            text, after = _quoted_run(shape, at)
+            text, after = _quoted_run(pattern, at)
             atom, at = _Run(text), after
         elif ch == "\\":
-            if at + 1 >= len(shape):
-                raise ShapeError(shape, at + 1, "a character after the backslash",
-                                 "the end of the shape")
-            atom, at = _Literal(shape[at + 1]), at + 2
+            if at + 1 >= len(pattern):
+                raise PatternError(pattern, at + 1, "a character after the backslash",
+                                 "the end of the pattern")
+            atom, at = _Literal(pattern[at + 1]), at + 2
         elif ch in symbols:
             atom, at = _Class(ch), at + 1
         else:
@@ -276,13 +282,13 @@ def _parse(shape: str, at: int, opened: int | None, symbols: frozenset[str],
                 unknown.append(at)
             atom, at = _Literal(ch), at + 1
         optional = isinstance(atom, _Group)
-        if at < len(shape) and shape[at] == "{":
-            lo, hi, at = _count(shape, at)
+        if at < len(pattern) and pattern[at] == "{":
+            lo, hi, at = _count(pattern, at)
             items.append(_Item(atom, lo, hi))
         else:
             items.append(_Item(atom, 0 if optional else 1, 1))
     if opened is not None:
-        raise ShapeError(shape, at, f'"]" to close the "[" at position {opened}', "the end of the shape")
+        raise PatternError(pattern, at, f'"]" to close the "[" at position {opened}', "the end of the pattern")
     return tuple(items), at
 
 
@@ -449,7 +455,7 @@ _EDGES = {
 
 @dataclass(frozen=True)
 class _Classes:
-    """What each symbol of one shape stands for: the alphabet it is
+    """What each symbol of one pattern stands for: the alphabet it is
     bound to, else the built-in class over the base."""
     base: str
     bound: tuple[tuple[str, Alphabet], ...] = ()
@@ -552,7 +558,7 @@ def _class_pattern(ranges: tuple[tuple[int, int], ...]) -> str:
 
 # -- the four readings -----------------------------------------------------------
 
-def _pattern(items: tuple[_Item, ...], classes: _Classes) -> str:
+def _regex(items: tuple[_Item, ...], classes: _Classes) -> str:
     """Intent:
         The Python regular expression that, read in full, admits what the items admit.
     """
@@ -561,7 +567,7 @@ def _pattern(items: tuple[_Item, ...], classes: _Classes) -> str:
         atom = item.atom
         lo, hi = item.lo, item.hi
         if isinstance(atom, _Group):
-            piece = "(?:" + _pattern(atom.items, classes) + ")"
+            piece = "(?:" + _regex(atom.items, classes) + ")"
         elif isinstance(atom, _Class):
             piece = _class_pattern(classes.ranges(atom.symbol))
         elif isinstance(atom, _Run):
@@ -644,7 +650,7 @@ def _ends(items: tuple[_Item, ...], classes: _Classes, text: str, starts: set[in
 
 @dataclass
 class _Draw:
-    """How one text is written from a shape. `rng` draws characters and
+    """How one text is written from a pattern. `rng` draws characters and
     counts (None: the plainest character, counts by `most`); `most`
     takes every count at its upper bound, else its lower (an unbounded
     count reads as two past its lower bound); `forced` fixes the count
@@ -706,7 +712,7 @@ class _Draw:
 
 def _walk(items: tuple[_Item, ...], above: tuple[_Item, ...] = ()) -> Iterator[tuple[_Item, tuple[_Item, ...]]]:
     """Intent:
-        Every item of the shape, outermost first, in the order written, each with the group
+        Every item of the pattern, outermost first, in the order written, each with the group
         items it lies inside.
     """
     for item in items:
@@ -717,7 +723,7 @@ def _walk(items: tuple[_Item, ...], above: tuple[_Item, ...] = ()) -> Iterator[t
 
 def _defects(items: tuple[_Item, ...], classes: _Classes) -> list[tuple[_Item, tuple[_Item, ...], str, str]]:
     """Intent:
-        Every single departure from the shape a near miss is written with: an item, the group
+        Every single departure from the pattern a near miss is written with: an item, the group
         items it lies inside, the kind of departure, and a note saying what it is.
     """
     out = []
@@ -739,44 +745,44 @@ def _defects(items: tuple[_Item, ...], classes: _Classes) -> list[tuple[_Item, t
     return out
 
 
-class Shape:
-    """A shape over a base language, `"ascii"` or `"unicode"`: the
+class Pattern:
+    """A pattern over a base language, `"ascii"` or `"unicode"`: the
     picture `text`, read once, with the alphabets its symbols are bound
     to. A binding is given by keyword (`W='alnum + "_"'`) or in
     `bindings`, a mapping from a symbol to an alphabet or the text of an
     alphabet expression, which also takes a digit as a symbol. Placed in
-    `Annotated[str, Shape(...)]` it marks a record field. Shapes are
+    `Annotated[str, Pattern(...)]` it marks a record field. Patterns are
     equal when their picture, base and bindings are.
 
     Raises:
         UnknownSymbol: the picture holds a letter or digit that is neither a built-in symbol
             nor bound; the error offers both ways to mend it.
-        ShapeError: the picture does not read, or a bound symbol is not in it; the error says
+        PatternError: the picture does not read, or a bound symbol is not in it; the error says
             what was expected and where.
         AlphabetError: a binding's text does not read as an alphabet expression.
         ValueError: the base is not one of `BASES`, a bound symbol is not one letter or digit,
-            or a shape over `ascii` binds an alphabet that holds a character outside ASCII.
+            or a pattern over `ascii` binds an alphabet that holds a character outside ASCII.
     """
 
     def __init__(self, text: str, base: str = "unicode", bindings: Mapping[str, Any] | None = None,
                  **symbols: Any) -> None:
         if base not in BASES:
-            raise ValueError(f"a shape is over one of {BASES}, not {base!r}")
+            raise ValueError(f"a pattern is over one of {BASES}, not {base!r}")
         if not isinstance(text, str) or text == "":
-            raise ShapeError(str(text), 0, "at least one symbol or character", "the end of the shape")
+            raise PatternError(str(text), 0, "at least one symbol or character", "the end of the pattern")
         bound: dict[str, Alphabet] = {}
         for symbol, expression in {**dict(bindings or {}), **symbols}.items():
             if not isinstance(symbol, str) or len(symbol) != 1 or not symbol.isalnum():
                 raise ValueError(f"a bound symbol is one letter or digit, not {symbol!r}")
             bound[symbol] = alphabet(expression)
             if base == "ascii" and bound[symbol].ranges[-1][1] > 127:
-                raise ValueError(f"a shape over ascii binds ASCII alphabets, and {symbol} = "
+                raise ValueError(f"a pattern over ascii binds ASCII alphabets, and {symbol} = "
                                  f"{bound[symbol].text} holds a character outside ASCII")
         self.text, self.base = text, base
         if base == "ascii":
             for at, ch in enumerate(text):
                 if ord(ch) > 127:
-                    raise ShapeError(text, at, "an ASCII character in a shape over ascii", f'"{ch}"')
+                    raise PatternError(text, at, "an ASCII character in a pattern over ascii", f'"{ch}"')
         self.bindings: tuple[tuple[str, Alphabet], ...] = tuple(sorted(bound.items()))
         self._classes = _Classes(base, self.bindings)
         unknown: list[int] = []
@@ -792,12 +798,12 @@ class Shape:
                                 tuple(dict.fromkeys(groups)), _text(self._items), self._bound_text())
         longest = _longest(self._items)
         if longest > MAX_LENGTH:
-            raise ShapeError(text, 0, f"counts whose longest member is at most {MAX_LENGTH} characters",
+            raise PatternError(text, 0, f"counts whose longest member is at most {MAX_LENGTH} characters",
                              f"a longest member of {longest} characters")
         used = {item.atom.symbol for item, _ in _walk(self._items) if isinstance(item.atom, _Class)}
         for symbol in bound:
             if symbol not in used:
-                raise ShapeError(text, len(text), f"the bound symbol {symbol} somewhere in the picture",
+                raise PatternError(text, len(text), f"the bound symbol {symbol} somewhere in the picture",
                                  f"no {symbol} (drop the binding, or use the symbol)")
 
     def _bound_text(self) -> str:
@@ -806,7 +812,7 @@ class Shape:
         return "".join(f", {symbol} = {found.text}" for symbol, found in self.bindings)
 
     def __eq__(self, other: object) -> bool:
-        return isinstance(other, Shape) and (self.text, self.base, self.bindings) == (
+        return isinstance(other, Pattern) and (self.text, self.base, self.bindings) == (
             other.text, other.base, other.bindings)
 
     def __hash__(self) -> int:
@@ -816,25 +822,25 @@ class Shape:
         bound = "".join(f", {symbol}={found.text!r}" for symbol, found in self.bindings
                         if symbol.isalpha())
         digits = {symbol: found.text for symbol, found in self.bindings if not symbol.isalpha()}
-        return f"Shape({self.text!r}, {self.base!r}{', bindings=' + repr(digits) if digits else ''}{bound})"
+        return f"Pattern({self.text!r}, {self.base!r}{', bindings=' + repr(digits) if digits else ''}{bound})"
 
     @property
-    def shape(self) -> str:
+    def canonical(self) -> str:
         """The canonical text of the picture."""
         return _text(self._items)
 
     @property
     def arguments(self) -> str:
-        """The shape as the arguments of the word, in canonical text:
+        """The pattern as the arguments of the word, in canonical text:
         the quoted picture, then each binding, sorted by symbol."""
-        return _quoted(self.shape) + self._bound_text()
+        return _quoted(self.canonical) + self._bound_text()
 
     @property
-    def pattern(self) -> str:
+    def regex(self) -> str:
         """The Python regular expression that, read in full, admits
-        exactly the shape's members: literals, character classes,
+        exactly the pattern's members: literals, character classes,
         `(?:...)` groups and counts only."""
-        return _pattern(self._items, self._classes)
+        return _regex(self._items, self._classes)
 
     def matches(self, text: object) -> bool:
         """Whether `text` is a member, by reading the picture against
@@ -842,7 +848,7 @@ class Shape:
         return isinstance(text, str) and len(text) in _ends(self._items, self._classes, text, {0})
 
     def term(self, version: str | None = None) -> dict[str, Any]:
-        """The regular-language term of the shape's members, the same on
+        """The regular-language term of the pattern's members, the same on
         every supported Python: exact, or, where a symbol stands for a
         Unicode class that differs between versions, the pair of bounds
         that holds on all of them. With a `version` (`"3.13"`), that
@@ -854,7 +860,7 @@ class Shape:
         doc: dict[str, Any] = {
             "kind": "regular_language", "version": _algebra.TERM_VERSION,
             "alphabet": [[0, sys.maxunicode]], "exact": low == high,
-            "source": {"dialect": "shape", "shape": self.shape, "base": self.base,
+            "source": {"dialect": "pattern", "pattern": self.canonical, "base": self.base,
                        "bindings": {symbol: found.text for symbol, found in self.bindings},
                        "unicode": list(dict.fromkeys(data["unicode"][v] for v in covered))}}
         if low == high:
@@ -869,7 +875,7 @@ class Shape:
         return doc
 
     def explain(self) -> str:
-        """The shape's members in plain words, a bound symbol's
+        """The pattern's members in plain words, a bound symbol's
         characters named by its alphabet."""
         from .explain import explain
         names = {ranges: found.text for _, found in self.bindings
@@ -900,13 +906,13 @@ class Shape:
         return tuple(dict.fromkeys(out))
 
     def near_misses(self, rng: random.Random | None = None) -> tuple[tuple[str, str], ...]:
-        """Texts one step outside the shape, each with a note: a
+        """Texts one step outside the pattern, each with a note: a
         position given a character of another class, a count taken once
         past its upper bound or once short of its lower, an optional
         part cut one character short, and a member with one character
         more, one fewer, a trailing newline or a space before it. Each
         is written from a member (the plainest, or one drawn with `rng`)
-        and kept only when the shape does not admit it."""
+        and kept only when the pattern does not admit it."""
         out: list[tuple[str, str]] = []
         for item, above, kind, note in _defects(self._items, self._classes):
             reached = {id(a): max(a.lo, 1) for a in above}
@@ -924,145 +930,145 @@ class Shape:
                 seen[text] = note
         return tuple(seen.items())
 
-    def language(self) -> ShapeLanguage:
-        """The text language of the shape's members."""
-        return shape_language(self)
+    def language(self) -> PatternLanguage:
+        """The text language of the pattern's members."""
+        return text_pattern_language(self)
 
     def __get_pydantic_core_schema__(self, source: Any, handler: Any) -> Any:
-        """The field's own validation, then this shape: a pydantic
-        model refuses text the shape does not admit."""
+        """The field's own validation, then this pattern: a pydantic
+        model refuses text the pattern does not admit."""
         from pydantic_core import core_schema
 
         def check(value: Any) -> Any:
             if isinstance(value, str) and not self.matches(value):
-                raise ValueError(f"text of the shape {self.arguments} over {self.base}")
+                raise ValueError(f"text of the pattern {self.arguments} over {self.base}")
             return value
         return core_schema.no_info_after_validator_function(check, handler(source))
 
 
 @dataclass(frozen=True)
-class ShapeLanguage(TextLanguage):
-    """The members of a shape, as a text language. Draws are written
-    from the shape directly; `outside` is a near miss."""
-    shape: Shape | None = None
-    pattern: str = ""
+class PatternLanguage(TextLanguage):
+    """The members of a pattern, as a text language. Draws are written
+    from the pattern directly; `outside` is a near miss."""
+    pattern: Pattern | None = None
+    regex: str = ""
 
     def sample(self, rng: random.Random) -> str:
-        assert self.shape is not None
-        return self.shape.draw(rng)
+        assert self.pattern is not None
+        return self.pattern.draw(rng)
 
     def outside(self, rng: random.Random) -> Any:
-        assert self.shape is not None
-        near = self.shape.near_misses(rng)
+        assert self.pattern is not None
+        near = self.pattern.near_misses(rng)
         return rng.choice(near)[0] if near else None
 
-    def definition(self) -> dict[str, Any]:
-        """The regular-language term of the shape's members, exact."""
-        assert self.shape is not None
-        return self.shape.term()
+    def term(self) -> dict[str, Any]:
+        """The regular-language term of the pattern's members, exact."""
+        assert self.pattern is not None
+        return self.pattern.term()
 
     def to_json(self) -> dict[str, Any]:
-        assert self.shape is not None
-        return {**super().to_json(), "shape": shape_json(self.shape), "definition": self.definition()}
+        assert self.pattern is not None
+        return {**super().to_json(), "pattern": pattern_json(self.pattern), "term": self.term()}
 
 
-def shape_json(shape: Shape) -> dict[str, Any]:
+def pattern_json(pattern: Pattern) -> dict[str, Any]:
     """Intent:
-        A shape as plain data: its base, its canonical picture, and its bindings, each symbol
+        A pattern as plain data: its base, its canonical picture, and its bindings, each symbol
         with the canonical text of its alphabet.
     """
-    return {"base": shape.base, "shape": shape.shape,
-            "bindings": {symbol: found.text for symbol, found in shape.bindings}}
+    return {"base": pattern.base, "pattern": pattern.canonical,
+            "bindings": {symbol: found.text for symbol, found in pattern.bindings}}
 
 
-def shape_language(shape: Shape | str, base: str = "unicode",
-                   bindings: Mapping[str, Any] | None = None) -> ShapeLanguage:
-    """The text language of a shape's members, over `ascii` or
-    `unicode`: membership by the shape's own reading, draws written
+def text_pattern_language(pattern: Pattern | str, base: str = "unicode",
+                   bindings: Mapping[str, Any] | None = None) -> PatternLanguage:
+    """The text language of a pattern's members, over `ascii` or
+    `unicode`: membership by the pattern's own reading, draws written
     directly from it, hazards its boundary members, `outside` a near
-    miss, and the exact term under `definition` in its persisted form.
+    miss, and the exact term under `term` in its persisted form.
 
     Raises:
-        ShapeError: the shape does not read.
+        PatternError: the pattern does not read.
         ValueError: the base is not one of `BASES`, or a binding is not an alphabet.
     """
-    found = shape if isinstance(shape, Shape) else Shape(shape, base, bindings)
+    found = pattern if isinstance(pattern, Pattern) else Pattern(pattern, base, bindings)
     under = ASCII if found.base == "ascii" else UNICODE
-    return ShapeLanguage(
-        f"{found.base}, shape ({found.arguments})", level="regular", accepts=found.matches,
-        generate=found.draw, pool=under.pool, simplest="a", shape=found,
-        pattern=found.pattern,
-        extra_hazards=tuple(HazardValue("text", m, "a member at a boundary of the shape")
+    return PatternLanguage(
+        f"{found.base}, pattern ({found.arguments})", level="regular", accepts=found.matches,
+        generate=found.draw, pool=under.pool, simplest="a", pattern=found,
+        regex=found.regex,
+        extra_hazards=tuple(HazardValue("text", m, "a member at a boundary of the pattern")
                             for m in found.members()))
 
 
 # -- the readings as functions of text ---------------------------------------------
 
-def _reads(shape: str, base: str, text: str) -> bool:
+def _reads(pattern: str, base: str, text: str) -> bool:
     """Intent:
-        Whether `text` is a member of the shape over the base, by the shape's own reading.
+        Whether `text` is a member of the pattern over the base, by the pattern's own reading.
 
     Claims:
         any_text_is_any_number_of_any_character: for text in L[unicode], f("X{0+}", "unicode", text) == True
         digits_are_any_number_of_digits: for text in L[digit], f("9{0+}", "ascii", text) == True
         ascii_text_is_any_number_of_ascii_characters: for text in L[ascii], f("X{0+}", "ascii", text) == True
         ascii_letters_are_any_number_of_letters: for text in L[alpha], f("A{0+}", "ascii", text) == True
-        a_drawn_postcode_is_a_member: for text in L[mathema_language.text.shape._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
-        a_near_miss_of_a_postcode_is_not: for text in L[mathema_language.text.shape._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
-        a_postcode_is_also_seven_or_eight_of_anything: for text in L[mathema_language.text.shape._POSTCODES], f("X{7,8}", "ascii", text) == True
+        a_drawn_postcode_is_a_member: for text in L[mathema_language.text.pattern._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
+        a_near_miss_of_a_postcode_is_not: for text in L[mathema_language.text.pattern._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
+        a_postcode_is_also_seven_or_eight_of_anything: for text in L[mathema_language.text.pattern._POSTCODES], f("X{7,8}", "ascii", text) == True
         a_postcode_is_a_member: f("AA99[ ]9AA", "ascii", "SW19 3AB") == True
         a_trailing_newline_is_not: f("AA99[ ]9AA", "ascii", "SW19 3AB\\n") == False
 
     Raises:
-        ShapeError: the shape does not read.
+        PatternError: the pattern does not read.
         ValueError: the base is not one of `BASES`.
     """
-    return _shape(shape, base).matches(text)
+    return _cached_pattern(pattern, base).matches(text)
 
 
-def _pattern_reads(shape: str, base: str, text: str) -> bool:
+def _regex_reads(pattern: str, base: str, text: str) -> bool:
     """Intent:
-        Whether `text` is a member of the shape over the base, by the shape's regular
+        Whether `text` is a member of the pattern over the base, by the pattern's regular
         expression read in full.
 
     Claims:
-        the_pattern_admits_every_drawn_member: for text in L[mathema_language.text.shape._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
-        the_pattern_refuses_every_near_miss: for text in L[mathema_language.text.shape._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
-        the_pattern_admits_every_drawn_member_of_a_counted_shape: for text in L[mathema_language.text.shape._COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == True
-        the_pattern_refuses_every_near_miss_of_a_counted_shape: for text in L[mathema_language.text.shape._NEAR_COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == False
-        the_pattern_agrees_on_digits_either_side_of_a_count: let reads = mathema_language.text.shape._reads, for text in L[digit, len <= 6], f("9{2,4}", "unicode", text) == reads("9{2,4}", "unicode", text)
-        the_pattern_agrees_on_any_text: let reads = mathema_language.text.shape._reads, for text in L[unicode], f("A{0+}9{0+}X{0,2}", "unicode", text) == reads("A{0+}9{0+}X{0,2}", "unicode", text)
+        the_regex_admits_every_drawn_member: for text in L[mathema_language.text.pattern._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
+        the_regex_refuses_every_near_miss: for text in L[mathema_language.text.pattern._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
+        the_regex_admits_every_drawn_member_of_a_counted_shape: for text in L[mathema_language.text.pattern._COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == True
+        the_regex_refuses_every_near_miss_of_a_counted_shape: for text in L[mathema_language.text.pattern._NEAR_COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == False
+        the_regex_agrees_on_digits_either_side_of_a_count: let reads = mathema_language.text.pattern._reads, for text in L[digit, len <= 6], f("9{2,4}", "unicode", text) == reads("9{2,4}", "unicode", text)
+        the_regex_agrees_on_any_text: let reads = mathema_language.text.pattern._reads, for text in L[unicode], f("A{0+}9{0+}X{0,2}", "unicode", text) == reads("A{0+}9{0+}X{0,2}", "unicode", text)
 
     Raises:
-        ShapeError: the shape does not read.
+        PatternError: the pattern does not read.
         ValueError: the base is not one of `BASES`.
     """
-    return re.fullmatch(_shape(shape, base).pattern, text) is not None
+    return re.fullmatch(_cached_pattern(pattern, base).regex, text) is not None
 
 
-def _term_reads(shape: str, base: str, text: str) -> bool:
+def _term_reads(pattern: str, base: str, text: str) -> bool:
     """Intent:
-        Whether `text` is in the shape's regular-language term.
+        Whether `text` is in the pattern's regular-language term.
 
     Claims:
-        the_term_admits_every_drawn_member: for text in L[mathema_language.text.shape._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
-        the_term_refuses_every_near_miss: for text in L[mathema_language.text.shape._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
-        the_term_admits_every_drawn_member_of_a_counted_shape: for text in L[mathema_language.text.shape._COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == True
-        the_term_refuses_every_near_miss_of_a_counted_shape: for text in L[mathema_language.text.shape._NEAR_COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == False
-        the_term_agrees_on_digits_either_side_of_a_count: let reads = mathema_language.text.shape._reads, for text in L[digit, len <= 6], f("9{2,4}", "unicode", text) == reads("9{2,4}", "unicode", text)
-        the_term_agrees_on_alphanumerics: let reads = mathema_language.text.shape._reads, for text in L[unicode_alnum], f("A{0+}9{0+}", "unicode", text) == reads("A{0+}9{0+}", "unicode", text)
+        the_term_admits_every_drawn_member: for text in L[mathema_language.text.pattern._POSTCODES], f("AA99[ ]9AA", "ascii", text) == True
+        the_term_refuses_every_near_miss: for text in L[mathema_language.text.pattern._NEAR_POSTCODES], f("AA99[ ]9AA", "ascii", text) == False
+        the_term_admits_every_drawn_member_of_a_counted_shape: for text in L[mathema_language.text.pattern._COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == True
+        the_term_refuses_every_near_miss_of_a_counted_shape: for text in L[mathema_language.text.pattern._NEAR_COUNTED], f("a{2,3}[ 9{1,2}]'b'", "ascii", text) == False
+        the_term_agrees_on_digits_either_side_of_a_count: let reads = mathema_language.text.pattern._reads, for text in L[digit, len <= 6], f("9{2,4}", "unicode", text) == reads("9{2,4}", "unicode", text)
+        the_term_agrees_on_alphanumerics: let reads = mathema_language.text.pattern._reads, for text in L[unicode_alnum], f("A{0+}9{0+}", "unicode", text) == reads("A{0+}9{0+}", "unicode", text)
 
     Raises:
-        ShapeError: the shape does not read.
+        PatternError: the pattern does not read.
         ValueError: the base is not one of `BASES`.
     """
-    found = _shape(shape, base)
+    found = _cached_pattern(pattern, base)
     return _algebra.holds(_expression(found._items, found._classes), text)
 
 
-def _canonical(shape: str) -> str:
+def _canonical(pattern: str) -> str:
     """Intent:
-        The canonical text of a shape.
+        The canonical text of a pattern.
 
     Claims:
         a_canonical_shape_is_its_own_canonical_text: f(f("A{2,2}\\-[9]{0,1}9{1}\\K'-'")) == f("A{2,2}\\-[9]{0,1}9{1}\\K'-'")
@@ -1070,47 +1076,47 @@ def _canonical(shape: str) -> str:
         a_plain_shape_is_unchanged: f("AA99[ ]9AA") == "AA99[ ]9AA"
 
     Raises:
-        ShapeError: the shape does not read.
+        PatternError: the pattern does not read.
     """
-    return _shape(shape, "unicode").shape
+    return _cached_pattern(pattern, "unicode").canonical
 
 
 @functools.lru_cache(maxsize=256)
-def _shape(shape: str, base: str) -> Shape:
+def _cached_pattern(pattern: str, base: str) -> Pattern:
     """Intent:
-        The shape read from its text over the base.
+        The pattern read from its text over the base.
 
     Raises:
-        ShapeError: the shape does not read.
+        PatternError: the pattern does not read.
         ValueError: the base is not one of `BASES`.
     """
-    return Shape(shape, base)
+    return Pattern(pattern, base)
 
 
-def _near_language(shape: Shape) -> TextLanguage:
+def _near_language(pattern: Pattern) -> TextLanguage:
     """Intent:
-        The text language of a shape's near misses: texts one step outside it, drawn from its
+        The text language of a pattern's near misses: texts one step outside it, drawn from its
         own `near_misses`.
     """
     def draw(rng: random.Random) -> str:
-        return rng.choice(shape.near_misses(rng))[0]
+        return rng.choice(pattern.near_misses(rng))[0]
 
-    return TextLanguage(f"near misses of shape ({shape.arguments})", level="predicate",
-                        accepts=lambda text: not shape.matches(text), generate=draw)
+    return TextLanguage(f"near misses of pattern ({pattern.arguments})", level="predicate",
+                        accepts=lambda text: not pattern.matches(text), generate=draw)
 
 
 #: languages the claims on this module quantify over, each named by its dotted path
-_POSTCODES = shape_language("AA99[ ]9AA", "ascii")
-_NEAR_POSTCODES = _near_language(Shape("AA99[ ]9AA", "ascii"))
-_COUNTED = shape_language("a{2,3}[ 9{1,2}]'b'", "ascii")
-_NEAR_COUNTED = _near_language(Shape("a{2,3}[ 9{1,2}]'b'", "ascii"))
+_POSTCODES = text_pattern_language("AA99[ ]9AA", "ascii")
+_NEAR_POSTCODES = _near_language(Pattern("AA99[ ]9AA", "ascii"))
+_COUNTED = text_pattern_language("a{2,3}[ 9{1,2}]'b'", "ascii")
+_NEAR_COUNTED = _near_language(Pattern("a{2,3}[ 9{1,2}]'b'", "ascii"))
 
 
 # -- the word ----------------------------------------------------------------------
 
 @dataclass(frozen=True)
-class ShapeKind:
-    """What `shape` means over one base language: the language's name,
+class PatternKind:
+    """What `pattern` means over one base language: the language's name,
     what the built-in symbols are there, and a complete example
     argument."""
     base: str
@@ -1118,53 +1124,53 @@ class ShapeKind:
     example: tuple[str, ...]
 
 
-#: the base languages `shape` has a meaning for, by name
-SHAPE: dict[str, ShapeKind] = {kind.base: kind for kind in (
-    ShapeKind("ascii", "A is A-Z or a-z, a is a-z, 9 is 0-9, X any ASCII character", ("AA99[ ]9AA",)),
-    ShapeKind("unicode", "A is any Unicode letter, a any lower-case letter, 9 any decimal digit, "
+#: the base languages `pattern` has a meaning for, by name
+PATTERN: dict[str, PatternKind] = {kind.base: kind for kind in (
+    PatternKind("ascii", "A is A-Z or a-z, a is a-z, 9 is 0-9, X any ASCII character", ("AA99[ ]9AA",)),
+    PatternKind("unicode", "A is any Unicode letter, a any lower-case letter, 9 any decimal digit, "
                          "X any character", ("AA-9{4}",)),
 )}
 
 
-def claim_text(base: str, word: str, arguments: tuple[str, ...],
+def pattern_claim_text(base: str, word: str, arguments: tuple[str, ...],
                bindings: Mapping[str, str] | None = None) -> str:
     """Intent:
         The complete domain text of `base` refined by a predicate word applied to quoted
         arguments and then bindings, sorted by symbol, as a claim writes it:
-        `L[ascii, shape ("AW{0+}", W = alnum + "_")]`.
+        `L[ascii, pattern ("AW{0+}", W = alnum + "_")]`.
     """
     bound = "".join(f", {symbol} = {expression}" for symbol, expression in sorted((bindings or {}).items()))
     return f"L[{base}, {word} (" + ", ".join(_quoted(a) for a in arguments) + bound + ")]"
 
 
-def shape_examples() -> dict[str, str]:
+def pattern_examples() -> dict[str, str]:
     """Intent:
         One complete example of the word for each base language it has a meaning for, by the
         language's name.
     """
-    return {kind.base: claim_text(kind.base, "shape", kind.example) for kind in SHAPE.values()}
+    return {kind.base: pattern_claim_text(kind.base, "pattern", kind.example) for kind in PATTERN.values()}
 
 
-def shape_refusal(base: str, arguments: tuple[str, ...],
+def pattern_refusal(base: str, arguments: tuple[str, ...],
                   bindings: Mapping[str, str] | None = None) -> str | None:
     """Intent:
-        Why `shape` with `arguments` and `bindings` is refused on the language named `base`,
+        Why `pattern` with `arguments` and `bindings` is refused on the language named `base`,
         or None when it is not: the word has no meaning for that language, it takes one
         argument, or the picture or a binding does not read, with what was expected and
         where, and for an unknown letter or digit both ways to mend it.
     """
-    if base not in SHAPE:
-        return (f"'shape' has no meaning for L[{base}]: it pictures text in "
-                + " or ".join(f"L[{name}]" for name in SHAPE))
+    if base not in PATTERN:
+        return (f"'pattern' has no meaning for L[{base}]: it pictures text in "
+                + " or ".join(f"L[{name}]" for name in PATTERN))
     if len(arguments) != 1 or not isinstance(arguments[0], str):
-        return (f"shape on L[{base}] takes one argument, the picture, not {len(arguments)}: "
-                f"{claim_text(base, 'shape', SHAPE[base].example)}")
+        return (f"pattern on L[{base}] takes one argument, the picture, not {len(arguments)}: "
+                f"{pattern_claim_text(base, 'pattern', PATTERN[base].example)}")
     try:
-        Shape(arguments[0], base, bindings)
+        Pattern(arguments[0], base, bindings)
     except UnknownSymbol as e:
         return str(e)
     except ValueError as e:
-        return f"shape ({_quoted(arguments[0])}) does not read on L[{base}]: {e}"
+        return f"pattern ({_quoted(arguments[0])}) does not read on L[{base}]: {e}"
     return None
 
 
@@ -1182,26 +1188,26 @@ def _compiles(pattern: str) -> bool:
 def _mended(base: str, picture: str, bindings: Mapping[str, str] | None) -> tuple[str, dict[str, str]] | None:
     """Intent:
         The picture with its unknown letters and digits quoted as literal text, and the
-        bindings in canonical text, when that is all that keeps the shape from reading on
+        bindings in canonical text, when that is all that keeps the pattern from reading on
         `base`; else None.
     """
     try:
-        Shape(picture, base, bindings)
+        Pattern(picture, base, bindings)
     except UnknownSymbol as e:
         try:
-            mended = Shape(e.quoted, base, bindings)
+            mended = Pattern(e.quoted, base, bindings)
         except ValueError:
             return None
-        return mended.shape, {symbol: found.text for symbol, found in mended.bindings}
+        return mended.canonical, {symbol: found.text for symbol, found in mended.bindings}
     except ValueError:
         return None
     return None
 
 
-def suggest_shape(base: str, arguments: tuple[str, ...],
+def suggest_pattern(base: str, arguments: tuple[str, ...],
                   bindings: Mapping[str, str] | None = None) -> tuple[str, ...]:
     """Intent:
-        The complete domain texts a claim that wrote `shape` with `arguments` and `bindings`
+        The complete domain texts a claim that wrote `pattern` with `arguments` and `bindings`
         on the language named `base` most likely meant, best first, when that use is refused;
         empty when it is not refused.
 
@@ -1213,28 +1219,28 @@ def suggest_shape(base: str, arguments: tuple[str, ...],
         a Python regular expression is suggested as `matches (re(r"...", python))`.
         Otherwise the base's own example is suggested, or `ascii`'s.
     """
-    if shape_refusal(base, arguments, bindings) is None:
+    if pattern_refusal(base, arguments, bindings) is None:
         return ()
     out: list[str] = []
     one = arguments[0] if len(arguments) == 1 and isinstance(arguments[0], str) else None
     if one is not None:
-        for name in ([base, *(n for n in SHAPE if n != base)] if base in SHAPE else list(SHAPE)):
+        for name in ([base, *(n for n in PATTERN if n != base)] if base in PATTERN else list(PATTERN)):
             mended = _mended(name, one, bindings)
             if mended is not None:
-                out.append(claim_text(name, "shape", (mended[0],), mended[1]))
+                out.append(pattern_claim_text(name, "pattern", (mended[0],), mended[1]))
                 if name == base:
                     break
         if not out:
-            out += [claim_text(name, "shape", (one,), bindings) for name in SHAPE
-                    if name != base and shape_refusal(name, (one,), bindings) is None]
-        if not out and base in SHAPE and not bindings and _compiles(one):
+            out += [pattern_claim_text(name, "pattern", (one,), bindings) for name in PATTERN
+                    if name != base and pattern_refusal(name, (one,), bindings) is None]
+        if not out and base in PATTERN and not bindings and _compiles(one):
             out.append(f'L[{base}, matches (re(r{_quoted(one)}, python))]')
     if not out:
-        out.append(claim_text(base if base in SHAPE else "ascii", "shape",
-                              SHAPE[base if base in SHAPE else "ascii"].example))
+        out.append(pattern_claim_text(base if base in PATTERN else "ascii", "pattern",
+                              PATTERN[base if base in PATTERN else "ascii"].example))
     return tuple(out)
 
 
-__all__ = ["BASES", "SHAPE", "SYMBOLS", "Shape", "ShapeError", "ShapeKind", "ShapeLanguage",
-           "UnknownSymbol", "claim_text", "class_ranges", "shape_examples", "shape_json",
-           "shape_language", "shape_refusal", "suggest_shape"]
+__all__ = ["BASES", "PATTERN", "SYMBOLS", "Pattern", "PatternError", "PatternKind", "PatternLanguage",
+           "UnknownSymbol", "pattern_claim_text", "class_ranges", "pattern_examples", "pattern_json",
+           "text_pattern_language", "pattern_refusal", "suggest_pattern"]

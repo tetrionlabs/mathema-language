@@ -27,7 +27,7 @@ Several regions are their union. Membership is the standard library's
 reading (`ipaddress`, `datetime`, `urllib.parse`); beside it each
 language but the datetimes states `pattern`, a regular expression that,
 read in full, admits exactly the members, and every language carries a
-regular-language term of it under `definition` in its persisted form.
+regular-language term of it under `term` in its persisted form.
 The datetime interval's term is a pair of bounds: `at_most` holds the
 members written as `datetime.isoformat` writes them, at the offset of
 the first bound; `at_least` holds any text that starts with a date, in
@@ -88,7 +88,7 @@ class WithinLanguage(TextLanguage):
             return rng.choice(near)
         return None if self.base is None else self.base.outside(rng)
 
-    def definition(self) -> dict[str, Any]:
+    def term(self) -> dict[str, Any]:
         """The regular-language term of this language: exact where it
         states a pattern, else a pair of bounds, `at_least` holding
         every member and `at_most` only members."""
@@ -97,7 +97,7 @@ class WithinLanguage(TextLanguage):
     def to_json(self) -> dict[str, Any]:
         base = getattr(self.base, "name", None)
         return {**super().to_json(), "within": {"base": base, "regions": list(self.regions)},
-                "definition": self.definition()}
+                "term": self.term()}
 
 
 @functools.lru_cache(maxsize=256)
@@ -924,7 +924,7 @@ WITHIN: dict[str, BoundaryKind] = {kind.base: kind for kind in (
 )}
 
 
-def claim_text(base: str, word: str, arguments: tuple[str, ...]) -> str:
+def within_claim_text(base: str, word: str, arguments: tuple[str, ...]) -> str:
     """Intent:
         The complete domain text of `base` refined by a predicate word applied to quoted
         arguments, as a claim writes it: `L[path, within ("/workspace")]`.
@@ -937,7 +937,7 @@ def within_examples() -> dict[str, str]:
         One complete example of the word for each base language it has a meaning for and a
         claim can name, by the language's name.
     """
-    return {kind.base: claim_text(kind.base, "within", kind.example)
+    return {kind.base: within_claim_text(kind.base, "within", kind.example)
             for kind in WITHIN.values() if kind.registered}
 
 
@@ -953,9 +953,9 @@ def within_refusal(base: str, arguments: tuple[str, ...]) -> str | None:
             [k.noun for k in WITHIN.values() if k.registered])
     if kind.count is not None and len(arguments) != kind.count:
         return (f"within on L[{base}] takes {kind.count} arguments, {kind.bounds}, not "
-                f"{len(arguments)}: {claim_text(base, 'within', kind.example)}")
+                f"{len(arguments)}: {within_claim_text(base, 'within', kind.example)}")
     if not arguments:
-        return f"within on L[{base}] takes at least one argument: {claim_text(base, 'within', kind.example)}"
+        return f"within on L[{base}] takes at least one argument: {within_claim_text(base, 'within', kind.example)}"
     for argument in arguments:
         if not isinstance(argument, str) or not kind.fits(argument):
             return (f"within ({_quoted(str(argument))}) is not {kind.bounds} for L[{base}]: it expects "
@@ -993,12 +993,12 @@ def suggest_within(base: str, arguments: tuple[str, ...]) -> tuple[str, ...]:
     out: list[str] = []
     for kind in WITHIN.values():
         if kind.registered and kind.base != base and within_refusal(kind.base, arguments) is None:
-            out.append(claim_text(kind.base, "within", arguments))
+            out.append(within_claim_text(kind.base, "within", arguments))
     if base in WITHIN:
         if WITHIN[base].registered:
-            out.append(claim_text(base, "within", WITHIN[base].example))
+            out.append(within_claim_text(base, "within", WITHIN[base].example))
     elif len(arguments) == 1 and isinstance(arguments[0], str):
-        out.append(claim_text(base, "starts with", arguments))
+        out.append(within_claim_text(base, "starts with", arguments))
     return tuple(out)
 
 
@@ -1155,7 +1155,7 @@ def _in_term(base: str, text: str, *regions: str) -> bool:
     Raises:
         ValueError: `within` has no meaning for `base`, or a region has not the form it takes.
     """
-    return _algebra.member(_built(base, regions).definition(), text, "at_least")
+    return _algebra.member(_built(base, regions).term(), text, "at_least")
 
 
 def _certain(text: str, first: str, last: str) -> bool:
@@ -1173,7 +1173,7 @@ def _certain(text: str, first: str, last: str) -> bool:
     Raises:
         ValueError: a bound is not a datetime, or the bounds are not in order.
     """
-    return _algebra.member(_built("iso_datetime", (first, last)).definition(), text, "at_most")
+    return _algebra.member(_built("iso_datetime", (first, last)).term(), text, "at_most")
 
 
 def within(language: Any, *regions: Any) -> Any:
@@ -1195,7 +1195,7 @@ def within(language: Any, *regions: Any) -> Any:
     raise ValueError(within_refusal(str(name), tuple(map(str, regions))))
 
 
-__all__ = ["WITHIN", "WITHIN_KEYWORD", "within_arguments", "BoundaryKind", "WithinLanguage", "claim_text", "ipv4_within", "ipv6_within",
+__all__ = ["WITHIN", "WITHIN_KEYWORD", "within_arguments", "BoundaryKind", "WithinLanguage", "within_claim_text", "ipv4_within", "ipv6_within",
            "iso_date_within", "iso_datetime_within", "suggest_within", "url_within", "within",
            "within_examples", "within_refusal"]
 

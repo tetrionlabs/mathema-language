@@ -162,14 +162,14 @@ class UrlLanguage(TextLanguage):
     """`L[url]`, defined by `pattern`, read in full, and by `urlsplit`."""
     pattern: str = URL_PATTERN
 
-    def definition(self) -> dict[str, Any]:
+    def term(self) -> dict[str, Any]:
         """The regular-language term of this language: its pattern,
         read in full."""
         from . import _regular
         return _regular.term(self.pattern, 0, "matches")
 
     def to_json(self) -> dict[str, Any]:
-        return {**super().to_json(), "definition": self.definition()}
+        return {**super().to_json(), "term": self.term()}
 
     def outside(self, rng: random.Random) -> Any:
         return rng.choice([text for text in _OUTSIDE if not self.contains(text)])

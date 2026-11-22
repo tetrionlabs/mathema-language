@@ -38,8 +38,9 @@ def constraints_of(markers: tuple[Any, ...]) -> Constraints:
             value = getattr(marker, attr, None)
             if value is not None:
                 found[key] = value
-        if isinstance(getattr(marker, "shape", None), str) and callable(getattr(marker, "term", None)):
-            found["shape"] = marker
+        if isinstance(getattr(marker, "canonical", None), str) and isinstance(getattr(marker, "regex", None), str) \
+                and callable(getattr(marker, "term", None)):
+            found["pattern"], found["regex"] = marker, marker.regex
         if isinstance(marker, (list, tuple, set, frozenset)) and marker:
             found["enum"] = tuple(marker)
     return Constraints(**found)

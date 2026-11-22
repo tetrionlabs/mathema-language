@@ -11,11 +11,11 @@ Pattern words, over any text language:
 
 `P`, the one argument, is a quoted string, read as that literal text; a
 call `re(r"...", python, ignore case)`, a Python regular expression with
-its dialect and flags; a call `shape("AA99", A = upper)`, a shape; or a
+its dialect and flags; a call `pattern("AA99", A = upper)`, a pattern; or a
 dotted name, resolved when the language is, of a compiled pattern or a
-`Shape`. Each reads as one Python regular expression under the
+`Pattern`. Each reads as one Python regular expression under the
 predicate, and the refined language is the base met with
-`pattern_language` of it: membership is the base's and `re`'s, and the
+`regex_language` of it: membership is the base's and `re`'s, and the
 term, where the base states one, is the intersection of the two terms
 (with a complement under `not`).
 
@@ -24,22 +24,21 @@ where it can be one, then the dialect, always, then the flags sorted:
 `re(r"[a-z]+")` is `re(r"[a-z]+", python)`. Flags are the words `ascii
 only`, `dot all`, `ignore case`, `multi line`, `verbose`, in any casing
 and spacing; inline flags at the very start of the pattern (`(?i)`) are
-read as their words. Only `python` (or `py`) is a dialect for now:
-`javascript` is refused as not available yet, and the other dialect
-words are reserved.
+read as their words. Only `python` is a dialect for now: `javascript`
+is refused as not available yet, and the other dialect words are
+reserved; each dialect has one word.
 
-Operators read as words: `^= "a"` is `starts with ("a")`, `$=` `ends
-with`, `*=` `contains`; `== "a"` is `matches ("a")`, a literal only;
-`in P` is `matches (P)`, a pattern or an object only.
+Two operators read as words: `^= "a"` is `starts with ("a")`, and
+`$=` is `ends with`.
 
 `within (...)` bounds a path, an IP address or a date
 (`mathema_language.text.within`), and is also read in its keyword
-spelling, `within "/root"`. `shape (...)` pictures text over `ascii` or
-`unicode` (`mathema_language.text.shape`).
+spelling, `within "/root"`. `pattern (...)` pictures text over `ascii` or
+`unicode` (`mathema_language.text.pattern`).
 
 `ALPHABET` builds the language an alphabet expression heads,
 `L[lower + digit + "_"]`, every string over the alphabet
-(`mathema_language.text.alphabet`).
+(`mathema_language.text.alphabets`).
 
 A word read where it has no meaning is refused by mathema with the
 word's `kinds`, an example, and the language its `suggest` function
@@ -62,25 +61,29 @@ from typing import Any
 from ._surface import AlphabetConstructor, PredicateWord
 from .text import _algebra, _regular
 from .text._kit import TextLanguage
-from .text.alphabet import NAMES, Alphabet, alphabet_language, parse_alphabet
-from .text.shape import SHAPE, Shape, shape_examples, shape_language, suggest_shape
+from .text.alphabets import NAMES, Alphabet, alphabet_language, parse_alphabet
+from .text.pattern import (
+    PATTERN,
+    Pattern,
+    pattern_examples,
+    suggest_pattern,
+    text_pattern_language,
+)
 from .text.within import WITHIN, suggest_within, within_examples, within_refusal
 
 #: the pattern words and the `re` call each one is of a compiled pattern
-PATTERN_WORDS = {"matches": "fullmatch", "contains": "search", "starts with": "match",
+_REGEX_METHODS = {"matches": "fullmatch", "contains": "search", "starts with": "match",
                  "ends with": None}
 
 #: the flag words `re(...)` takes, each with its `re` flag
-FLAGS = {word: flag for flag, word in _regular.FLAG_WORDS.items()}
+_FLAGS = {word: flag for flag, word in _regular.FLAG_WORDS.items()}
 
 #: the dialect words: the one that is read, the one refused as not yet available, and the
 #: reserved ones, each spelling mapped to its canonical word
-DIALECTS = {"python": "python", "py": "python"}
-UNAVAILABLE = {"javascript": "javascript", "js": "javascript", "ecma": "javascript"}
-RESERVED = {"rust": "rust", "cpp": "cpp", "c++": "cpp", "go": "go", "re2": "go", "java": "java",
-            "dotnet": "dotnet", "csharp": "dotnet", ".net": "dotnet", "ruby": "ruby", "pcre": "pcre",
-            "perl": "pcre", "php": "pcre", "posix": "posix", "ere": "posix",
-            "posix basic": "posix basic", "bre": "posix basic"}
+_DIALECTS = {"python": "python"}
+_UNAVAILABLE = {"javascript": "javascript"}
+_RESERVED = {word: word for word in ("rust", "cpp", "go", "java", "dotnet", "ruby", "pcre", "posix",
+                                       "posix basic")}
 
 _INLINE = {"a": "ascii only", "i": "ignore case", "m": "multi line", "s": "dot all", "x": "verbose"}
 _CALL = re.compile(r"^(?P<name>[A-Za-z_][A-Za-z_ ]*?)\s*\((?P<inside>.*)\)$", re.DOTALL)
@@ -157,16 +160,15 @@ def _raw(pattern: str) -> str:
     return 'r"' + pattern + '"'
 
 
-def version_pin(word: str) -> str:
+def _version_pin(word: str) -> str:
     """Intent:
-        The Python version a pin after the dialect names: `python 3.13` (or `py 3.13`) is
-        `3.13`.
+        The Python version a pin after the dialect names: `python 3.13` is `3.13`.
 
     Raises:
         ValueError: the pin is not `python` and a major and minor number, or the version is
             not one the package covers.
     """
-    found = re.fullmatch(r"(?:python|py) ?([0-9]+\.[0-9]+)", word)
+    found = re.fullmatch(r"python ?([0-9]+\.[0-9]+)", word)
     if found is None:
         raise ValueError(f"a version is written python 3.13, not {word!r}")
     versions = _regular.versions_data()["versions"]
@@ -176,7 +178,7 @@ def version_pin(word: str) -> str:
     return found.group(1)
 
 
-def re_text(pattern: str, flags: int = 0, version: str | None = None) -> str:
+def _re_text(pattern: str, flags: int = 0, version: str | None = None) -> str:
     """Intent:
         The canonical text of a Python pattern as an argument: `re(r"...", python)`, with the
         version after the dialect when one is pinned (`python 3.13`), then the words of
@@ -186,16 +188,16 @@ def re_text(pattern: str, flags: int = 0, version: str | None = None) -> str:
         ValueError: `flags` holds a flag with no word (LOCALE, DEBUG).
     """
     known = 0
-    for flag in FLAGS.values():
+    for flag in _FLAGS.values():
         known |= int(flag)
     if int(flags) & ~known & ~int(re.UNICODE):
-        raise ValueError(f"a flag of {flags!r} has no word; the flags are {', '.join(sorted(FLAGS))}")
-    words = sorted(word for word, flag in FLAGS.items() if int(flags) & int(flag))
+        raise ValueError(f"a flag of {flags!r} has no word; the flags are {', '.join(sorted(_FLAGS))}")
+    words = sorted(word for word, flag in _FLAGS.items() if int(flags) & int(flag))
     dialect = "python" if version is None else f"python {version}"
     return "re(" + ", ".join([_raw(pattern), dialect, *words]) + ")"
 
 
-def read_re(text: str) -> tuple[str, int] | None:
+def _read_re(text: str) -> tuple[str, int] | None:
     """Intent:
         The pattern and flags an argument written `re(...)` states, or None when `text` is not
         a call of `re`. Every inline flag group at the very start of the pattern, `(?i)(?m)`,
@@ -208,7 +210,7 @@ def read_re(text: str) -> tuple[str, int] | None:
             does not compile; or it uses a construct the Pythons it is about (the pinned one,
             or every supported one) read differently from this one.
     """
-    found = _read_re(text)
+    found = _read_re_call(text)
     return None if found is None else found[:2]
 
 
@@ -218,13 +220,13 @@ def _re_version(text: str) -> str | None:
         it pins none or `text` is not a call of `re`.
 
     Raises:
-        ValueError: as `read_re`.
+        ValueError: as `_read_re`.
     """
-    found = _read_re(text)
+    found = _read_re_call(text)
     return None if found is None else found[2]
 
 
-def _read_re(text: str) -> tuple[str, int, str | None] | None:
+def _read_re_call(text: str) -> tuple[str, int, str | None] | None:
     """Intent:
         The pattern, flags and pinned version of an argument written `re(...)`, or None.
     """
@@ -241,30 +243,30 @@ def _read_re(text: str) -> tuple[str, int, str | None] | None:
     if lead is not None:
         pattern = pattern[lead.end():]
         for letter in re.sub(r"[(?)]", "", lead.group(0)):
-            flags |= int(FLAGS[_INLINE[letter]])
-    flag_keys = {_key(word): word for word in FLAGS}
+            flags |= int(_FLAGS[_INLINE[letter]])
+    flag_keys = {_key(word): word for word in _FLAGS}
     refused = ""
     for part in parts[1:]:
         word = re.sub(r"\s+", " ", part.strip().lower())
         key = _key(part)
         if key in flag_keys:
-            flags |= int(FLAGS[flag_keys[key]])
-        elif word in DIALECTS:
-            dialects.append(DIALECTS[word])
-        elif word in UNAVAILABLE:
+            flags |= int(_FLAGS[flag_keys[key]])
+        elif word in _DIALECTS:
+            dialects.append(_DIALECTS[word])
+        elif word in _UNAVAILABLE:
             refused = refused or "the javascript dialect is not available yet"
-        elif word in RESERVED:
-            refused = refused or f"the {RESERVED[word]} dialect is reserved, not available yet"
+        elif word in _RESERVED:
+            refused = refused or f"the {_RESERVED[word]} dialect is reserved, not available yet"
         elif re.match(r"(?:python|py)?\s*[0-9]", word):
-            version = version_pin(word)
+            version = _version_pin(word)
             dialects.append("python")
         else:
-            near = difflib.get_close_matches(word, [*FLAGS, *DIALECTS], n=1)
+            near = difflib.get_close_matches(word, [*_FLAGS, *_DIALECTS], n=1)
             raise ValueError(f"{part!r} is neither a dialect nor a flag of re; the flags are "
-                             f"{', '.join(sorted(FLAGS))}"
+                             f"{', '.join(sorted(_FLAGS))}"
                              + (f". Did you mean {near[0]}?" if near else ""))
     if refused:
-        raise ValueError(f"{refused}. Did you mean {re_text(pattern, flags)}?")
+        raise ValueError(f"{refused}. Did you mean {_re_text(pattern, flags)}?")
     if len(dialects) > 1:
         raise ValueError("re names one dialect")
     try:
@@ -298,67 +300,61 @@ def _bindings(parts: list[str]) -> dict[str, str]:
     return out
 
 
-def shape_text(shape: Shape, call: bool = True) -> str:
+def _pattern_text(pattern: Pattern, call: bool = True) -> str:
     """Intent:
-        The canonical text of a shape as an argument: `shape("AA99", A = upper)` as a call
+        The canonical text of a pattern as an argument: `pattern("AA99", A = upper)` as a call
         inside another word's brackets, or its arguments alone.
     """
-    return f"shape({shape.arguments})" if call else shape.arguments
+    return f"pattern({pattern.arguments})" if call else pattern.arguments
 
 
-def read_shape(parts: list[str], base: str = "unicode") -> Shape:
+def _read_pattern(parts: list[str], base: str = "unicode") -> Pattern:
     """Intent:
-        The shape a picture and its bindings state over the base: the first part a quoted
+        The pattern a picture and its bindings state over the base: the first part a quoted
         picture, the rest bindings.
 
     Raises:
         ValueError: the first part is not a quoted picture, a binding does not read, or the
-            shape does not read (a `ShapeError` says what was expected and where).
+            pattern does not read (a `PatternError` says what was expected and where).
     """
     picture = _string(parts[0]) if parts and parts[0] else None
     if picture is None:
-        raise ValueError('shape takes a quoted picture first: shape ("AA99[ ]9AA")')
-    return Shape(picture, base, _bindings(parts[1:]))
+        raise ValueError('pattern takes a quoted picture first: pattern ("AA99[ ]9AA")')
+    return Pattern(picture, base, _bindings(parts[1:]))
 
 
-def _shape_call(text: str) -> list[str] | None:
+def _pattern_call(text: str) -> list[str] | None:
     """Intent:
-        The parts of an argument written `shape(...)`, or None when `text` is not a call of
-        `shape`.
+        The parts of an argument written `pattern(...)`, or None when `text` is not a call of
+        `pattern`.
     """
     call = _CALL.match(text.strip())
-    if call is None or _key(call.group("name")) != "shape":
+    if call is None or _key(call.group("name")) != "pattern":
         return None
     return _split(call.group("inside"))
 
 
-def canonical_pattern_argument(text: str, sugar: str | None = None) -> str:
+def _canonical_pattern_argument(text: str, sugar: str | None = None) -> str:
     """Intent:
         One argument of a pattern word in canonical text: a literal in double quotes,
-        `re(r"...", python, flags)`, `shape("...", bindings)`, or a dotted name as written.
+        `re(r"...", python, flags)`, `pattern("...", bindings)`, or a dotted name as written.
 
     Raises:
-        ValueError: the argument is none of those, does not read, or is not the kind the
-            operator `sugar` takes (`==` a literal, `in` a pattern or an object).
+        ValueError: the argument is none of those, or does not read.
     """
     literal = _string(text)
-    pattern = None if literal is not None else read_re(text)
-    parts = None if literal is not None or pattern is not None else _shape_call(text)
-    if sugar == "==" and literal is None:
-        raise ValueError(f"a string is not equal to a pattern: == takes a quoted literal; "
-                         f"write matches ({text.strip()})")
-    if sugar == "in" and literal is not None:
-        raise ValueError(f"in takes a pattern or an object; for the literal text write == {_quoted(literal)}")
+    pattern = None if literal is not None else _read_re(text)
+    parts = None if literal is not None or pattern is not None else _pattern_call(text)
     if literal is not None:
         return _quoted(literal)
     if pattern is not None:
-        return re_text(*pattern, _re_version(text))
+        return _re_text(*pattern, _re_version(text))
     if parts is not None:
-        return shape_text(read_shape(parts))
+        return _pattern_text(_read_pattern(parts))
     if _DOTTED.match(text.strip()):
         return text.strip()
     raise ValueError(f'{text.strip()!r} is not a pattern: write a quoted literal, re(r"...", python), '
-                     f'shape("...") or the dotted name of a compiled pattern')
+                     f'pattern("...") or the dotted name of a compiled pattern')
 
 
 def _object(name: str) -> Any:
@@ -383,12 +379,12 @@ def _object(name: str) -> Any:
     raise ValueError(f"nothing is named {name}")
 
 
-def _pattern_of(argument: str, base: str) -> tuple[str, int]:
+def _regex_of(argument: str, base: str) -> tuple[str, int]:
     """Intent:
         The Python regular expression and flags a canonical argument states, to be read under
-        the word's predicate: a literal escaped, a `re(...)` call's own, a shape's equivalent
+        the word's predicate: a literal escaped, a `re(...)` call's own, a pattern's equivalent
         expression over the base (`ascii` or, for any other base, `unicode`), or those of the
-        compiled pattern or `Shape` a dotted name names.
+        compiled pattern or `Pattern` a dotted name names.
 
     Raises:
         ValueError: the argument does not read, or the name is of neither kind of object.
@@ -396,19 +392,19 @@ def _pattern_of(argument: str, base: str) -> tuple[str, int]:
     literal = _string(argument)
     if literal is not None:
         return re.escape(literal), 0
-    pattern = read_re(argument)
+    pattern = _read_re(argument)
     if pattern is not None:
         return pattern
-    over = base if base in SHAPE else "unicode"
-    parts = _shape_call(argument)
+    over = base if base in PATTERN else "unicode"
+    parts = _pattern_call(argument)
     if parts is not None:
-        return read_shape(parts, over).pattern, 0
+        return _read_pattern(parts, over).regex, 0
     found = _object(argument)
     if isinstance(found, re.Pattern) and isinstance(found.pattern, str):
         return found.pattern, int(found.flags) & ~int(re.UNICODE)
-    if isinstance(found, Shape):
-        return found.pattern, 0
-    raise ValueError(f"{argument} names {type(found).__name__}, not a compiled pattern or a Shape")
+    if isinstance(found, Pattern):
+        return found.regex, 0
+    raise ValueError(f"{argument} names {type(found).__name__}, not a compiled pattern or a Pattern")
 
 
 def _star_set(doc: dict[str, Any]) -> Any:
@@ -490,13 +486,13 @@ def _inter(a: dict[str, Any], b: dict[str, Any], negate: bool) -> dict[str, Any]
     return doc
 
 
-def narrowed(base: Any, inner: Any, said: str, negated: bool) -> TextLanguage:
+def _narrowed(base: Any, inner: Any, said: str, negated: bool) -> TextLanguage:
     """Intent:
         The members of the text language `base` that are in `inner` (or, with `negated`, are
         not), named `base, said`. Membership is both languages' own; draws are `inner`'s kept
         where `base` admits them, then `base`'s kept where the predicate holds; hazards are
         those of either that are members; `outside` is a member of `base` on the other side
-        of the predicate. Where both state a `definition`, so does the result: the terms met.
+        of the predicate. Where both state a `term`, so does the result: the terms met.
     """
     def accepts(text: str) -> bool:
         return bool(base.contains(text)) and bool(inner.contains(text)) != negated
@@ -527,9 +523,9 @@ def narrowed(base: Any, inner: Any, said: str, negated: bool) -> TextLanguage:
         return base.outside(rng)
 
     schema: dict[str, Any] = {}
-    ours, theirs = base.to_json().get("definition"), inner.to_json().get("definition")
+    ours, theirs = base.to_json().get("term"), inner.to_json().get("term")
     if isinstance(ours, dict) and isinstance(theirs, dict):
-        schema["definition"] = _inter(ours, theirs, negated)
+        schema["term"] = _inter(ours, theirs, negated)
     hazards = tuple(h for h in (*inner.hazards(), *getattr(base, "extra_hazards", ()))
                     if isinstance(h.value, str))
     return _Narrowed(f"{base.name}, {said}", level="predicate", accepts=accepts, generate=draw,
@@ -564,39 +560,39 @@ def _is_text(language: Any) -> bool:
     return getattr(language, "kind", None) == "string"
 
 
-def _pattern_language_of(argument: str, word: str, base: str) -> Any:
+def _regex_language_of(argument: str, word: str, base: str) -> Any:
     """Intent:
         The language of the strings a pattern word holds of, for one canonical argument read
         over the base: the pattern's own, for every supported Python or, where the argument
-        pins a version (`re(r"...", python 3.13)`), for that Python alone. A shape's language
-        states the shape's own term under the word's predicate, the same on every supported
+        pins a version (`re(r"...", python 3.13)`), for that Python alone. A pattern's language
+        states the pattern's own term under the word's predicate, the same on every supported
         Python: bounds where its classes differ between versions.
 
     Raises:
         ValueError: the argument does not read.
     """
-    pattern, flags = _pattern_of(argument, base)
-    found = _regular.pattern_language(pattern, word, flags, version=_re_version(argument))
-    shape = _shape_of(argument, base)
-    if shape is None:
+    pattern, flags = _regex_of(argument, base)
+    found = _regular.regex_language(pattern, word, flags, version=_re_version(argument))
+    picture = _text_pattern_of(argument, base)
+    if picture is None:
         return found
     return dataclasses.replace(found, schema={
-        **found.schema, "definition": _regular.under_predicate(shape.term(), word)})
+        **found.schema, "term": _regular.under_predicate(picture.term(), word)})
 
 
-def _shape_of(argument: str, base: str) -> Shape | None:
+def _text_pattern_of(argument: str, base: str) -> Pattern | None:
     """Intent:
-        The shape a canonical argument states, `shape("A9")` read over the base (`ascii` or,
-        for any other base, `unicode`) or a `Shape` a dotted name names, or None when it
+        The pattern a canonical argument states, `pattern("A9")` read over the base (`ascii` or,
+        for any other base, `unicode`) or a `Pattern` a dotted name names, or None when it
         states a literal, a `re(...)` call or a compiled pattern.
     """
-    if _string(argument) is not None or read_re(argument) is not None:
+    if _string(argument) is not None or _read_re(argument) is not None:
         return None
-    parts = _shape_call(argument)
+    parts = _pattern_call(argument)
     if parts is not None:
-        return read_shape(parts, base if base in SHAPE else "unicode")
+        return _read_pattern(parts, base if base in PATTERN else "unicode")
     found = _object(argument)
-    return found if isinstance(found, Shape) else None
+    return found if isinstance(found, Pattern) else None
 
 
 def _said(word: str, arguments: tuple[str, ...], negated: bool) -> str:
@@ -616,7 +612,7 @@ def _reads_call(word: str, callee: Any) -> tuple[str, ...] | None:
         text, any other argument, or flags beside a compiled pattern (which `re` refuses) is
         not read.
     """
-    method = PATTERN_WORDS[word]
+    method = _REGEX_METHODS[word]
     owner, name = getattr(callee, "__self__", None), getattr(callee, "__name__", None)
     pattern: Any = None
     flags = 0
@@ -637,23 +633,23 @@ def _reads_call(word: str, callee: Any) -> tuple[str, ...] | None:
     if not isinstance(pattern, str):
         return None
     try:
-        return (re_text(pattern, flags),)
+        return (_re_text(pattern, flags),)
     except ValueError:
         return None
 
 
-def _pattern_word(word: str, sugar: tuple[str, ...]) -> Any:
+def _regex_word(word: str, sugar: tuple[str, ...]) -> Any:
     """Intent:
         The registry record of one pattern word, or None on a mathema with no word registry.
     """
     def arguments(given: tuple[str, ...], operator: str | None) -> tuple[str, ...]:
         if len(given) != 1:
             raise ValueError(f'{word} takes one argument, a pattern: {word} (re(r"[a-z]+", python))')
-        return (canonical_pattern_argument(given[0], operator),)
+        return (_canonical_pattern_argument(given[0], operator),)
 
     def refine(language: Any, given: tuple[str, ...], negated: bool = False) -> Any:
-        found = _pattern_language_of(given[0], word, str(getattr(_root(language), "name", "")))
-        return narrowed(language, found, _said(word, tuple(given), negated), negated)
+        found = _regex_language_of(given[0], word, str(getattr(_root(language), "name", "")))
+        return _narrowed(language, found, _said(word, tuple(given), negated), negated)
 
     def suggest(base: str | None, given: tuple[str, ...]) -> str | None:
         try:
@@ -723,7 +719,7 @@ def _within_word() -> Any:
             raise ValueError(refusal + (f". Did you mean {meant[0]}?" if meant else ""))
         inside = WITHIN[base].build(*regions)
         if negated or _root(language) is not language:
-            return narrowed(language, inside, _said("within", tuple(given), negated), negated)
+            return _narrowed(language, inside, _said("within", tuple(given), negated), negated)
         return inside
 
     def suggest(base: str | None, given: tuple[str, ...]) -> str | None:
@@ -743,21 +739,21 @@ def _within_word() -> Any:
         examples=examples, suggest=suggest)
 
 
-def _shape_word() -> Any:
+def _pattern_word() -> Any:
     """Intent:
-        The registry record of `shape`, or None on a mathema with no word registry.
+        The registry record of `pattern`, or None on a mathema with no word registry.
     """
     def arguments(given: tuple[str, ...], operator: str | None) -> tuple[str, ...]:
-        shape = read_shape(list(given))
-        return (_quoted(shape.shape), *(f"{symbol} = {found.text}" for symbol, found in shape.bindings))
+        pattern = _read_pattern(list(given))
+        return (_quoted(pattern.canonical), *(f"{symbol} = {found.text}" for symbol, found in pattern.bindings))
 
     def applies(language: Any) -> bool:
-        return str(getattr(_root(language), "name", "")) in SHAPE
+        return str(getattr(_root(language), "name", "")) in PATTERN
 
     def refine(language: Any, given: tuple[str, ...], negated: bool = False) -> Any:
-        inside = shape_language(read_shape(list(given), str(_root(language).name)))
+        inside = text_pattern_language(_read_pattern(list(given), str(_root(language).name)))
         if negated or _root(language) is not language:
-            return narrowed(language, inside, _said("shape", tuple(given), negated), negated)
+            return _narrowed(language, inside, _said("pattern", tuple(given), negated), negated)
         return inside
 
     def suggest(base: str | None, given: tuple[str, ...]) -> str | None:
@@ -768,15 +764,15 @@ def _shape_word() -> Any:
             bound = _bindings(list(given[1:]))
         except ValueError:
             return None
-        meant = suggest_shape(base or "unicode", (picture,), bound)
+        meant = suggest_pattern(base or "unicode", (picture,), bound)
         return meant[0] if meant else None
 
     if PredicateWord is None:
         return None
     return PredicateWord(  # type: ignore[operator]
-        "shape", refine, arguments=arguments, applies=applies,
-        kinds=tuple(f"text in L[{base}]" for base in SHAPE),
-        examples={f"text in L[{base}]": text for base, text in shape_examples().items()},
+        "pattern", refine, arguments=arguments, applies=applies,
+        kinds=tuple(f"text in L[{base}]" for base in PATTERN),
+        examples={f"text in L[{base}]": text for base, text in pattern_examples().items()},
         suggest=suggest)
 
 
@@ -803,7 +799,7 @@ def _alphabet_of(pieces: Any) -> Alphabet:
     return Alphabet(tuple(names), tuple(characters))
 
 
-def build_alphabet(pieces: Any) -> Any:
+def _build_alphabet(pieces: Any) -> Any:
     """Intent:
         The language an alphabet expression heads: every string over the union of its named
         alphabets and characters.
@@ -815,7 +811,7 @@ def build_alphabet(pieces: Any) -> Any:
     return alphabet_language(_alphabet_of(pieces))
 
 
-def order_alphabet(pieces: Any) -> tuple[tuple[str, str], ...]:
+def _order_alphabet(pieces: Any) -> tuple[tuple[str, str], ...]:
     """Intent:
         The pieces in the order canonical text writes them: named alphabets in the order of
         `NAMES` (a name that is not one after them, as written), then characters by code
@@ -829,22 +825,22 @@ def order_alphabet(pieces: Any) -> tuple[tuple[str, str], ...]:
     return (*known, *unknown, *characters)
 
 
-MATCHES = _pattern_word("matches", ("in", "=="))
-CONTAINS = _pattern_word("contains", ("*=",))
-STARTS_WITH = _pattern_word("starts with", ("^=",))
-ENDS_WITH = _pattern_word("ends with", ("$=",))
+MATCHES = _regex_word("matches", ())
+CONTAINS = _regex_word("contains", ())
+STARTS_WITH = _regex_word("starts with", ("^=",))
+ENDS_WITH = _regex_word("ends with", ("$=",))
 WITHIN_WORD = _within_word()
-SHAPE_WORD = _shape_word()
+PATTERN_WORD = _pattern_word()
 ALPHABET = None if AlphabetConstructor is None else AlphabetConstructor(  # type: ignore[operator]
-    build=build_alphabet, order=order_alphabet)
+    build=_build_alphabet, order=_order_alphabet)
 
 #: every word record this package registers, by its word
-WORDS = {record.word: record for record in (MATCHES, CONTAINS, STARTS_WITH, ENDS_WITH, WITHIN_WORD,
-                                            SHAPE_WORD) if record is not None}
+_WORDS = {record.word: record for record in (MATCHES, CONTAINS, STARTS_WITH, ENDS_WITH, WITHIN_WORD,
+                                            PATTERN_WORD) if record is not None}
 
 #: one worked claim for each language, predicate word and constructor the package registers
 #: beside its lexicon, by entry-point key, in canonical text
-DRAFT_ROWS: dict[str, str] = {
+_DRAFT_ROWS: dict[str, str] = {
     "lower": "for s in L[lower], f(s) = s",
     "upper": "for s in L[upper], f(s) = s",
     "matches": 'for s in L[unicode, matches (re(r"[a-z0-9]+(?:-[a-z0-9]+)*", python))], f(s) = s',
@@ -852,11 +848,8 @@ DRAFT_ROWS: dict[str, str] = {
     "starts_with": 'for s in L[unicode, starts with ("http://")], f(s) = s',
     "ends_with": 'for s in L[unicode, ends with (".json")], f(s) = s',
     "within": 'for p in L[path, within ("/workspace")], f(p) = p',
-    "shape": 'for s in L[ascii, shape ("AA99[ ]9AA")], f(s) = s',
+    "pattern": 'for s in L[ascii, pattern ("AA99[ ]9AA")], f(s) = s',
     "alphabet": 'for s in L[lower + digit + "_"], f(s) = s',
 }
 
-__all__ = ["ALPHABET", "CONTAINS", "DIALECTS", "ENDS_WITH", "FLAGS", "MATCHES", "PATTERN_WORDS",
-           "RESERVED", "SHAPE_WORD", "STARTS_WITH", "UNAVAILABLE", "WITHIN_WORD", "WORDS",
-           "build_alphabet", "canonical_pattern_argument", "narrowed", "order_alphabet", "re_text",
-           "read_re", "read_shape", "shape_text", "version_pin"]
+__all__ = ["ALPHABET", "CONTAINS", "ENDS_WITH", "MATCHES", "PATTERN_WORD", "STARTS_WITH", "WITHIN_WORD"]

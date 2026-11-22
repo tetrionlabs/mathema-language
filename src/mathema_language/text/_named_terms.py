@@ -18,7 +18,7 @@ by the same compiler that reads any `re` pattern. Three kinds of answer:
   spellings follow the running Python's `fromisoformat`; `uuid`, whose
   parser also reads spellings `int(text, 16)` allows);
 - none: the language is not regular, and the reason is stated under
-  `no_definition` in the definition's place (`json`, `yaml`, `toml`:
+  `no_term` in the term's place (`json`, `yaml`, `toml`:
   brackets nest to any depth).
 
 `stated(language)` returns the keys a language adds to its persisted
@@ -245,19 +245,19 @@ def _name_of(test: Any) -> str:
 
 def stated(language: Any) -> dict[str, Any]:
     """Intent:
-        The keys a format language adds to its persisted form: `definition`, the term of the
-        strings its membership test accepts; or `no_definition`, the reason it has none; or
+        The keys a format language adds to its persisted form: `term`, the term of the
+        strings its membership test accepts; or `no_term`, the reason it has none; or
         nothing, for a test this module has no reading of.
     """
     name = _name_of(getattr(language, "accepts", None))
     if name in _NOT_REGULAR:
-        return {"no_definition": _NOT_REGULAR[name]}
+        return {"no_term": _NOT_REGULAR[name]}
     if name not in _DEFINITIONS:
         return {}
     if name not in _BUILT:
         _BUILT[name] = _DEFINITIONS[name]()
     import copy
-    return {"definition": copy.deepcopy(_BUILT[name])}
+    return {"term": copy.deepcopy(_BUILT[name])}
 
 
 __all__ = ["stated"]

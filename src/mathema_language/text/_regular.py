@@ -1244,11 +1244,11 @@ def every_string_over_class(name: str) -> Node:
 _METHODS = {"fullmatch": "matches", "search": "contains", "match": "starts with"}
 
 
-def pattern_language(source: Any, predicate: str | None = None, flags: int = 0,
+def regex_language(source: Any, predicate: str | None = None, flags: int = 0,
                      version: str | None = None) -> Any:
     """Intent:
         Returns the text language of the strings a predicate holds of a Python pattern:
-        membership by `re` itself, the term as its stated `definition`, draws from the
+        membership by `re` itself, the term as its stated `term`, draws from the
         pattern's parse tree or, failing that, a shortest member of the term. `source` is a
         compiled pattern, a pattern's text (with `flags`), or a compiled pattern's bound
         method `fullmatch`, `search` or `match`, which names its own predicate; the predicate
@@ -1305,7 +1305,7 @@ def pattern_language(source: Any, predicate: str | None = None, flags: int = 0,
 
     if elsewhere:
         return PinnedLanguage(name, level="predicate", accepts=accepts, generate=draw,
-                              schema={"definition": doc},
+                              schema={"term": doc},
                               elsewhere=f"this claim is about python {version}; this is python {RUNNING}")
     return TextLanguage(name, level="predicate", accepts=accepts, generate=draw,
-                        schema={"definition": doc})
+                        schema={"term": doc})
