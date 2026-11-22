@@ -1,0 +1,215 @@
+{
+ "dialect": "python",
+ "versions": [
+  "3.10",
+  "3.11",
+  "3.12",
+  "3.13",
+  "3.14"
+ ],
+ "read_alike": [
+  "literal",
+  "any character",
+  "character set",
+  "alternation",
+  "group",
+  "greedy repeat",
+  "lazy repeat",
+  "start of line",
+  "end of line",
+  "start of text",
+  "end of text",
+  "word boundary",
+  "backreference",
+  "conditional",
+  "lookahead",
+  "lookbehind",
+  "inline flags at the start",
+  "scoped flags",
+  "ignore case",
+  "multi line",
+  "dot all",
+  "ascii only",
+  "verbose"
+ ],
+ "rows": [
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "none",
+   "digest": "53974fa6c92f9a31"
+  },
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "24a4740767324ac3"
+  },
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "all",
+   "digest": "24a4740767324ac3"
+  },
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "all",
+   "digest": "24a4740767324ac3"
+  },
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "24a4740767324ac3"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "0a5736094c5d60a7"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "all",
+   "digest": "0a5736094c5d60a7"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "all",
+   "digest": "0a5736094c5d60a7"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "0a5736094c5d60a7"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "679bf7add2cc0cdb"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "all",
+   "digest": "cbdd4f5213bf7aab"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "cbdd4f5213bf7aab"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "all",
+   "digest": "cbdd4f5213bf7aab"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "all",
+   "digest": "cbdd4f5213bf7aab"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "dc9e39f359caf9e3"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "all",
+   "digest": "ba8aeb7d05336f6d"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  }
+ ],
+ "translated": {
+  "not a word boundary": "not_boundary_in_empty"
+ }
+}

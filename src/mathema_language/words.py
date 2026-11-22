@@ -50,6 +50,7 @@ its `match` `starts with`.
 from __future__ import annotations
 
 import ast
+import dataclasses
 import difflib
 import functools
 import importlib
@@ -197,14 +198,15 @@ def re_text(pattern: str, flags: int = 0, version: str | None = None) -> str:
 def read_re(text: str) -> tuple[str, int] | None:
     """Intent:
         The pattern and flags an argument written `re(...)` states, or None when `text` is not
-        a call of `re`. Inline flags at the very start of the pattern are taken out of it and
-        read as flags.
+        a call of `re`. Every inline flag group at the very start of the pattern, `(?i)(?m)`,
+        is taken out of it and read as flags.
 
     Raises:
         ValueError: the first argument is not a quoted pattern; a word is a dialect that is
             not available or is reserved, a version that does not read, or neither a dialect
-            nor a flag (the nearest word is offered); two dialects are named; or the pattern
-            does not compile.
+            nor a flag (the nearest word is offered); two dialects are named; the pattern
+            does not compile; or it uses a construct the Pythons it is about (the pinned one,
+            or every supported one) read differently from this one.
     """
     found = _read_re(text)
     return None if found is None else found[:2]
@@ -235,10 +237,10 @@ def _read_re(text: str) -> tuple[str, int, str | None] | None:
     if pattern is None:
         raise ValueError('re takes a quoted pattern first: re(r"[a-z]+", python)')
     flags, dialects = 0, []
-    lead = re.match(r"\(\?([aimsx]+)\)", pattern)
+    lead = re.match(r"(?:\(\?[aimsx]+\))+", pattern)
     if lead is not None:
         pattern = pattern[lead.end():]
-        for letter in lead.group(1):
+        for letter in re.sub(r"[(?)]", "", lead.group(0)):
             flags |= int(FLAGS[_INLINE[letter]])
     flag_keys = {_key(word): word for word in FLAGS}
     refused = ""
@@ -269,6 +271,10 @@ def _read_re(text: str) -> tuple[str, int, str | None] | None:
         re.compile(pattern, flags)
     except (re.error, RecursionError, OverflowError) as e:
         raise ValueError(f"the pattern {_raw(pattern)} does not compile: {e}") from e
+    covered = _regular.versions_data()["versions"] if version is None else [version]
+    problem = _regular.other_version_problem(pattern, flags, covered)
+    if problem is not None:
+        raise ValueError(problem)
     return pattern, flags, version
 
 
@@ -562,13 +568,35 @@ def _pattern_language_of(argument: str, word: str, base: str) -> Any:
     """Intent:
         The language of the strings a pattern word holds of, for one canonical argument read
         over the base: the pattern's own, for every supported Python or, where the argument
-        pins a version (`re(r"...", python 3.13)`), for that Python alone.
+        pins a version (`re(r"...", python 3.13)`), for that Python alone. A shape's language
+        states the shape's own term under the word's predicate, the same on every supported
+        Python: bounds where its classes differ between versions.
 
     Raises:
         ValueError: the argument does not read.
     """
     pattern, flags = _pattern_of(argument, base)
-    return _regular.pattern_language(pattern, word, flags, version=_re_version(argument))
+    found = _regular.pattern_language(pattern, word, flags, version=_re_version(argument))
+    shape = _shape_of(argument, base)
+    if shape is None:
+        return found
+    return dataclasses.replace(found, schema={
+        **found.schema, "definition": _regular.under_predicate(shape.term(), word)})
+
+
+def _shape_of(argument: str, base: str) -> Shape | None:
+    """Intent:
+        The shape a canonical argument states, `shape("A9")` read over the base (`ascii` or,
+        for any other base, `unicode`) or a `Shape` a dotted name names, or None when it
+        states a literal, a `re(...)` call or a compiled pattern.
+    """
+    if _string(argument) is not None or read_re(argument) is not None:
+        return None
+    parts = _shape_call(argument)
+    if parts is not None:
+        return read_shape(parts, base if base in SHAPE else "unicode")
+    found = _object(argument)
+    return found if isinstance(found, Shape) else None
 
 
 def _said(word: str, arguments: tuple[str, ...], negated: bool) -> str:
@@ -576,6 +604,42 @@ def _said(word: str, arguments: tuple[str, ...], negated: bool) -> str:
         A predicate as text: `word (arguments)`, with `not` in front when negated.
     """
     return ("not " if negated else "") + f"{word} ({', '.join(arguments)})"
+
+
+def _reads_call(word: str, callee: Any) -> tuple[str, ...] | None:
+    """Intent:
+        The canonical argument under which the pattern word holds of a text exactly when a
+        call of `callee` on that text succeeds, or None when the word does not read the call:
+        the compiled pattern's bound method the word names (`PAT.fullmatch` for `matches`), or
+        `functools.partial` of the `re` function it names with the pattern as its one
+        positional argument and at most `flags`, an int, by keyword. A partial that binds the
+        text, any other argument, or flags beside a compiled pattern (which `re` refuses) is
+        not read.
+    """
+    method = PATTERN_WORDS[word]
+    owner, name = getattr(callee, "__self__", None), getattr(callee, "__name__", None)
+    pattern: Any = None
+    flags = 0
+    if isinstance(owner, re.Pattern) and name == method:
+        pattern, flags = owner.pattern, int(owner.flags) & ~int(re.UNICODE)
+    elif isinstance(callee, functools.partial) and method is not None \
+            and callee.func is getattr(re, method) and len(callee.args) == 1 \
+            and set(callee.keywords) <= {"flags"}:
+        first, given = callee.args[0], callee.keywords.get("flags", 0)
+        if not isinstance(given, int) or isinstance(given, bool):
+            return None
+        if isinstance(first, re.Pattern):
+            if given:
+                return None
+            pattern, flags = first.pattern, int(first.flags) & ~int(re.UNICODE)
+        else:
+            pattern, flags = first, int(given)
+    if not isinstance(pattern, str):
+        return None
+    try:
+        return (re_text(pattern, flags),)
+    except ValueError:
+        return None
 
 
 def _pattern_word(word: str, sugar: tuple[str, ...]) -> Any:
@@ -599,26 +663,7 @@ def _pattern_word(word: str, sugar: tuple[str, ...]) -> Any:
         return f"L[unicode, {_said(word, said, False)}]"
 
     def reads_call(callee: Any) -> tuple[str, ...] | None:
-        method = PATTERN_WORDS[word]
-        owner, name = getattr(callee, "__self__", None), getattr(callee, "__name__", None)
-        pattern: Any = None
-        flags = 0
-        if isinstance(owner, re.Pattern) and name == method:
-            pattern, flags = owner.pattern, int(owner.flags) & ~int(re.UNICODE)
-        elif isinstance(callee, functools.partial) and method is not None \
-                and callee.func is getattr(re, method) and callee.args:
-            first = callee.args[0]
-            if isinstance(first, re.Pattern):
-                pattern, flags = first.pattern, int(first.flags) & ~int(re.UNICODE)
-            else:
-                pattern = first
-                flags = int(callee.keywords.get("flags", callee.args[1] if len(callee.args) > 1 else 0))
-        if not isinstance(pattern, str):
-            return None
-        try:
-            return (re_text(pattern, flags),)
-        except ValueError:
-            return None
+        return _reads_call(word, callee)
 
     if PredicateWord is None:
         return None
