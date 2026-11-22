@@ -36,14 +36,14 @@ release onward.
   of a compiled pattern, a pattern text, or a bound `PAT.fullmatch`,
   `PAT.search` or `PAT.match`.
 - A text language states what it is as a regular-language term under
-  `definition` in its persisted form (`to_json`): the alphabet
+  `term` in its persisted form (`to_json`): the alphabet
   languages, `L[path]`, and the format languages `L[slug]`, `L[hex]`,
   `L[base64]`, `L[ipv4]`, `L[ipv6]` and `L[shell_safe]` exactly;
   `L[identifier]`, `L[uuid]`, `L[iso_date]` and `L[iso_datetime]` as a
   pair of bounds that hold on every supported Python. `L[json]`,
   `L[yaml]` and `L[toml]` are not regular and say so under
-  `no_definition`. A length bound on a language with a definition
-  states the bounded definition.
+  `no_term`. A length bound on a language with a term states the
+  bounded term.
 - A regular-language term whose document is malformed (a version or an
   exact flag of the wrong type, a flag that contradicts the keys
   present, a missing key) is refused with `ValueError`, and a text with
