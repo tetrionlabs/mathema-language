@@ -1,6 +1,6 @@
 {
   "implementation": 87,
-  "intent": 70,
+  "intent": 71,
   "clarity": 16,
   "overall": 29,
   "clarity_algo": "entropy-dimensions@1.4",
@@ -1877,8 +1877,8 @@
     },
     "mathema_language.smt.MembershipEncoding.var": {
       "implementation": 100,
-      "intent": 44,
-      "clarity": 15
+      "intent": 53,
+      "clarity": 10
     },
     "mathema_language.smt.MembershipEncoding.const": {
       "implementation": 85,
@@ -1897,8 +1897,8 @@
     },
     "mathema_language.smt.MembershipEncoding._decimal_digits": {
       "implementation": 100,
-      "intent": 57,
-      "clarity": 30
+      "intent": 61,
+      "clarity": 24
     },
     "mathema_language.smt.MembershipEncoding._bounds": {
       "implementation": 89,
@@ -1911,9 +1911,9 @@
       "clarity": 20
     },
     "mathema_language.smt.MembershipEncoding.member": {
-      "implementation": 87,
-      "intent": 46,
-      "clarity": 11
+      "implementation": 89,
+      "intent": 44,
+      "clarity": 10
     },
     "mathema_language.smt.MembershipEncoding.present": {
       "implementation": 100,
@@ -1942,13 +1942,13 @@
     },
     "mathema_language.smt.MembershipEncoding.language": {
       "implementation": 100,
-      "intent": 52,
-      "clarity": 19
+      "intent": 55,
+      "clarity": 16
     },
     "mathema_language.smt.MembershipEncoding.row": {
       "implementation": 92,
-      "intent": 38,
-      "clarity": 21
+      "intent": 46,
+      "clarity": 17
     },
     "mathema_language.smt._cs_side": {
       "implementation": 100,
@@ -2055,20 +2055,45 @@
       "intent": 85,
       "clarity": 13
     },
+    "mathema_language.smt._schema_paths": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 22
+    },
+    "mathema_language.smt._paths": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 11
+    },
+    "mathema_language.smt._spell": {
+      "implementation": 100,
+      "intent": 90,
+      "clarity": 24
+    },
+    "mathema_language.smt._parse": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 15
+    },
+    "mathema_language.smt._label": {
+      "implementation": 100,
+      "intent": 88,
+      "clarity": 20
+    },
     "mathema_language.smt.field_names": {
       "implementation": 100,
-      "intent": 52,
-      "clarity": 13
+      "intent": 57,
+      "clarity": 11
     },
     "mathema_language.smt._field_at": {
       "implementation": 100,
       "intent": 85,
-      "clarity": 18
+      "clarity": 15
     },
     "mathema_language.smt._nest": {
       "implementation": 100,
-      "intent": 85,
-      "clarity": 16
+      "intent": 88,
+      "clarity": 12
     },
     "mathema_language.smt.untranslated": {
       "implementation": 94,
@@ -2131,12 +2156,12 @@
       "clarity": 18
     },
     "mathema_language.smt._float_line": {
-      "implementation": 89,
+      "implementation": 95,
       "intent": 85,
-      "clarity": 14
+      "clarity": 10
     },
     "mathema_language.smt._schema_inclusion": {
-      "implementation": 94,
+      "implementation": 96,
       "intent": 64,
       "clarity": 6
     },
@@ -2183,12 +2208,12 @@
     "mathema_language.smt._received": {
       "implementation": 73,
       "intent": 85,
-      "clarity": 18
+      "clarity": 16
     },
     "mathema_language.smt._a_member": {
       "implementation": 92,
       "intent": 85,
-      "clarity": 8
+      "clarity": 7
     },
     "mathema_language.spark.holes.HoleOutcome.sentence": {
       "implementation": 67,
@@ -3155,5 +3180,13 @@
       "intent": 52,
       "clarity": 16
     }
-  }
+  },
+  "capped": [
+    [
+      "mathema_language.smt._decides",
+      [
+        "implementation"
+      ]
+    ]
+  ]
 }
