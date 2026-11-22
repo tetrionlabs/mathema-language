@@ -44,11 +44,12 @@ letter category (`L*`, what `str.isalpha` accepts of one character),
 newline included. Over `ascii` a bound alphabet holds ASCII characters
 only.
 
-A pattern states itself four ways that agree: `matches`, its own reading
-of the picture; `regex`, an equivalent Python regular expression to be
-read in full, made of literals, character classes, `(?:...)` groups and
-counts only; `term`, the regular-language term, always exact; and its
-canonical text, `canonical`. The canonical picture is the picture as written with
+A pattern states itself three ways that agree: `term`, its
+regular-language term, whose own matcher decides membership on the
+running Python's reading of the classes; `regex`, an equivalent Python
+regular expression to be read in full, made of literals, character
+classes, `(?:...)` groups and counts only; and `canonical`, its
+canonical text. The canonical picture is the picture as written with
 these changes: a backslash before a character that needs none is
 dropped; `{n,n}` is written `{n}`; a count that changes nothing (`{1}`,
 or `{0,1}` after a group) is dropped; quoted text with no letter or
@@ -617,35 +618,6 @@ def _expression(items: tuple[_Item, ...], classes: _Classes, bound: int | None =
     return _algebra._cat(*parts)
 
 
-def _ends(items: tuple[_Item, ...], classes: _Classes, text: str, starts: set[int]) -> set[int]:
-    """Intent:
-        The positions of `text` at which the items can end, having started at one of `starts`.
-    """
-    def once(item: _Item, at: set[int]) -> set[int]:
-        atom = item.atom
-        if isinstance(atom, _Group):
-            return _ends(atom.items, classes, text, at)
-        if isinstance(atom, _Class):
-            return {p + 1 for p in at if p < len(text) and classes.has(atom.symbol, text[p])}
-        literal = atom.text if isinstance(atom, _Run) else atom.char
-        return {p + len(literal) for p in at if text.startswith(literal, p)}
-
-    for item in items:
-        now = starts
-        for _ in range(item.lo):
-            now = once(item, now)
-        reached = set(now)
-        taken = item.lo
-        while now and (item.hi is None or taken < item.hi):
-            now = once(item, now) - reached
-            reached |= now
-            taken += 1
-        starts = reached
-        if not starts:
-            break
-    return starts
-
-
 # -- direct draws ----------------------------------------------------------------
 
 @dataclass
@@ -842,10 +814,18 @@ class Pattern:
         `(?:...)` groups and counts only."""
         return _regex(self._items, self._classes)
 
-    def matches(self, text: object) -> bool:
-        """Whether `text` is a member, by reading the picture against
-        it one character at a time."""
-        return isinstance(text, str) and len(text) in _ends(self._items, self._classes, text, {0})
+    def _reading(self) -> _algebra.Expr:
+        """The term of the pattern's members as the running Python reads
+        its classes, in the term module's own form, built once."""
+        found = self.__dict__.get("_here")
+        if found is None:
+            found = self.__dict__["_here"] = _expression(self._items, self._classes)
+        return found
+
+    def _holds(self, text: object) -> bool:
+        """Whether `text` is a member, by the term's own matcher on the
+        running Python's reading of the pattern."""
+        return isinstance(text, str) and _algebra.holds(self._reading(), text)
 
     def term(self, version: str | None = None) -> dict[str, Any]:
         """The regular-language term of the pattern's members, the same on
@@ -926,7 +906,7 @@ class Pattern:
                     (" " + member, "a member after a space")]
         seen: dict[str, str] = {}
         for text, note in out:
-            if text not in seen and not self.matches(text):
+            if text not in seen and not self._holds(text):
                 seen[text] = note
         return tuple(seen.items())
 
@@ -940,7 +920,7 @@ class Pattern:
         from pydantic_core import core_schema
 
         def check(value: Any) -> Any:
-            if isinstance(value, str) and not self.matches(value):
+            if isinstance(value, str) and not self._holds(value):
                 raise ValueError(f"text of the pattern {self.arguments} over {self.base}")
             return value
         return core_schema.no_info_after_validator_function(check, handler(source))
@@ -995,7 +975,7 @@ def text_pattern_language(pattern: Pattern | str, base: str = "unicode",
     found = pattern if isinstance(pattern, Pattern) else Pattern(pattern, base, bindings)
     under = ASCII if found.base == "ascii" else UNICODE
     return PatternLanguage(
-        f"{found.base}, pattern ({found.arguments})", level="regular", accepts=found.matches,
+        f"{found.base}, pattern ({found.arguments})", level="regular", accepts=found._holds,
         generate=found.draw, pool=under.pool, simplest="a", pattern=found,
         regex=found.regex,
         extra_hazards=tuple(HazardValue("text", m, "a member at a boundary of the pattern")
@@ -1006,7 +986,8 @@ def text_pattern_language(pattern: Pattern | str, base: str = "unicode",
 
 def _reads(pattern: str, base: str, text: str) -> bool:
     """Intent:
-        Whether `text` is a member of the pattern over the base, by the pattern's own reading.
+        Whether `text` is a member of the pattern over the base, by the term's own matcher on
+        the running Python's reading of the pattern.
 
     Claims:
         any_text_is_any_number_of_any_character: for text in L[unicode], f("X{0+}", "unicode", text) == True
@@ -1023,7 +1004,7 @@ def _reads(pattern: str, base: str, text: str) -> bool:
         PatternError: the pattern does not read.
         ValueError: the base is not one of `BASES`.
     """
-    return _cached_pattern(pattern, base).matches(text)
+    return _cached_pattern(pattern, base)._holds(text)
 
 
 def _regex_reads(pattern: str, base: str, text: str) -> bool:
@@ -1102,7 +1083,7 @@ def _near_language(pattern: Pattern) -> TextLanguage:
         return rng.choice(pattern.near_misses(rng))[0]
 
     return TextLanguage(f"near misses of pattern ({pattern.arguments})", level="predicate",
-                        accepts=lambda text: not pattern.matches(text), generate=draw)
+                        accepts=lambda text: not pattern._holds(text), generate=draw)
 
 
 #: languages the claims on this module quantify over, each named by its dotted path

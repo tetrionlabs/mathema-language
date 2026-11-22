@@ -29,7 +29,7 @@ def test_the_canonical_picture_has_the_same_members_and_reads_back_to_itself(pic
     texts = set(shape.members()) | set(again.members())
     texts |= {"abcdcd", "ab'cdab'cd", "abcd", "ab'cd", "a-cdcd", "-acdcd", "ab9cdcd", "a'b'b", "a'bb"}
     for text in texts:
-        assert shape.matches(text) == again.matches(text), (picture, shape.canonical, text)
+        assert shape.language().contains(text) == again.language().contains(text), (picture, shape.canonical, text)
 
 
 def _picture(rng, depth=0):
@@ -66,8 +66,8 @@ def test_on_generated_pictures_the_canonical_text_keeps_the_language():
         texts |= {"".join(rng.choice(pool) for _ in range(rng.randint(0, 8))) for _ in range(30)}
         term = again.term()
         for text in texts:
-            want = shape.matches(text)
-            assert again.matches(text) == want, (picture, shape.canonical, text)
+            want = shape.language().contains(text)
+            assert again.language().contains(text) == want, (picture, shape.canonical, text)
             assert (re.fullmatch(again.regex, text) is not None) == want, (picture, text)
             key = "language" if term["exact"] else "at_least"
             if term["exact"]:

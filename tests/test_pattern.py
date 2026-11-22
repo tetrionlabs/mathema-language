@@ -42,7 +42,7 @@ POSTCODE = Pattern("AA99[ ]9AA", "ascii")
     "SW١9 3AB": False,
 }.items(), ids=repr)
 def test_a_postcode_pattern_admits_two_letters_two_digits_an_optional_space_a_digit_two_letters(text, inside):
-    assert POSTCODE.matches(text) == inside
+    assert POSTCODE.language().contains(text) == inside
     assert (re.fullmatch(POSTCODE.regex, text) is not None) == inside
     assert _regular.member(POSTCODE.term(), text) == inside
 
@@ -55,8 +55,8 @@ def test_a_letter_and_a_digit_follow_the_base_language():
             ("Ab1!", True, True), ("Éé٣\n", False, True), ("ab1\x7f", True, True), ("AB1x", False, False),
             ("中é1😀", False, True), ("Ab1é", False, True), ("²b1x", False, False), ("Aǅ1x", False, False),
             ("Ab²x", False, False), ("_b1x", False, False)]:
-        assert ascii_.matches(text) == in_ascii, text
-        assert unicode_.matches(text) == in_unicode, text
+        assert ascii_.language().contains(text) == in_ascii, text
+        assert unicode_.language().contains(text) == in_unicode, text
     assert class_ranges("A", "ascii") == ((65, 90), (97, 122))
     assert class_ranges("9", "unicode") == _regular._class_chars(r"\d")
     letters = class_ranges("A", "unicode")
@@ -108,7 +108,7 @@ def test_a_pattern_over_ascii_holds_no_character_outside_it_and_a_base_is_one_of
     with pytest.raises(PatternError) as caught:
         Pattern("A-é", "ascii")
     assert caught.value.position == 2
-    assert Pattern("A-'é'").matches("x-é")
+    assert Pattern("A-'é'").language().contains("x-é")
     with pytest.raises(ValueError):
         Pattern("A", "latin-1")
 
@@ -145,7 +145,7 @@ def test_the_reading_the_pattern_and_the_term_agree_on_every_short_text(base, al
         compiled, expression = re.compile(shape.regex), _regular.from_node(pinned["language"])
         assert Pattern(shape.canonical, base).canonical == shape.canonical
         for text in texts:
-            own = shape.matches(text)
+            own = shape.language().contains(text)
             admitted += own
             assert (compiled.fullmatch(text) is not None) == own, (written, text)
             assert _regular.holds(expression, text) == own, (written, text)
@@ -182,12 +182,12 @@ def test_every_member_written_from_a_pattern_is_a_member_and_every_near_miss_is_
     members = list(shape.members()) + [shape.draw(rng) for _ in range(200)]
     assert len(set(members)) >= 2 or written == "\\A\\9"
     for text in members:
-        assert shape.matches(text) and compiled.fullmatch(text) and _regular.member(doc, text), text
+        assert shape.language().contains(text) and compiled.fullmatch(text) and _regular.member(doc, text), text
     near = list(shape.near_misses()) + [m for seed in range(20) for m in shape.near_misses(random.Random(seed))]
     assert near or written == "X{0+}"
     for text, note in near:
         assert note
-        assert not shape.matches(text) and not compiled.fullmatch(text), (text, note)
+        assert not shape.language().contains(text) and not compiled.fullmatch(text), (text, note)
         assert not _regular.member(doc, text), (text, note)
 
 
@@ -298,7 +298,7 @@ def test_a_dataclass_field_two_records_deep_holds_its_pattern():
     rng = random.Random(25)
     drawn = [language.sample(rng) for _ in range(60)]
     assert all(language.contains(row) for row in drawn)
-    assert all(POSTCODE.matches(row.customer.address.postcode) for row in drawn)
+    assert all(POSTCODE.language().contains(row.customer.address.postcode) for row in drawn)
     assert len({row.customer.address.postcode for row in drawn}) > 30
     field = _field_json(language.to_json(), "customer", "address", "postcode")
     assert field["pattern"] == POSTCODE.regex
@@ -314,7 +314,7 @@ def test_a_typeddict_key_two_records_deep_holds_its_pattern():
     assert not language.contains({"customer": {"address": {"postcode": "SW193A"}}})
     rng = random.Random(26)
     drawn = [language.sample(rng) for _ in range(40)]
-    assert all(language.contains(row) and POSTCODE.matches(row["customer"]["address"]["postcode"])
+    assert all(language.contains(row) and POSTCODE.language().contains(row["customer"]["address"]["postcode"])
                for row in drawn)
     field = _field_json(language.to_json(), "customer", "address", "postcode")
     assert field["x-mathema"]["term"] == POSTCODE.term()
@@ -347,7 +347,7 @@ def test_a_pydantic_field_two_models_deep_holds_its_pattern_and_the_model_valida
     rng = random.Random(27)
     drawn = [language.sample(rng) for _ in range(40)]
     assert all(language.contains(row) for row in drawn)
-    assert all(POSTCODE.matches(row.customer.address.postcode) for row in drawn)
+    assert all(POSTCODE.language().contains(row.customer.address.postcode) for row in drawn)
     field = _field_json(language.to_json(), "customer", "address", "postcode")
     assert field["x-mathema"]["term"] == POSTCODE.term()
 
@@ -471,12 +471,12 @@ def test_a_symbol_is_bound_to_an_alphabet_after_the_picture():
 
     word = Pattern("AW{0+}", "ascii", W='alnum + "_"')
     assert word.arguments == '"AW{0+}", W = alnum + "_"'
-    assert word.matches("a_1") and word.matches("Z") and not word.matches("_a") and not word.matches("a-")
+    assert word.language().contains("a_1") and word.language().contains("Z") and not word.language().contains("_a") and not word.language().contains("a-")
     hexes = Pattern("HH:HH:HH", "ascii", H="hexdigit")
-    assert hexes.matches("0a:FF:9c") and not hexes.matches("0g:FF:9c")
+    assert hexes.language().contains("0a:FF:9c") and not hexes.language().contains("0g:FF:9c")
     key = Pattern("'KEY-'U{3}9{4}", "ascii", U="upper")
     assert key.arguments == "\"'KEY-'U{3}9{4}\", U = upper"
-    assert key.matches("KEY-ABC1234") and not key.matches("KEY-abc1234")
+    assert key.language().contains("KEY-ABC1234") and not key.language().contains("KEY-abc1234")
     assert Pattern("AW{0+}", "ascii", W=alphabet("alnum") + "_") == word
     other = Pattern("AW{0+}", "ascii", bindings={"W": '"_" + alnum'})
     assert other == word and hash(word) == hash(other)
@@ -492,14 +492,14 @@ def test_a_symbol_is_bound_to_an_alphabet_after_the_picture():
 def test_a_binding_may_give_a_built_in_symbol_another_alphabet_and_is_written_after_the_picture():
     upper = Pattern("AA99", "ascii", A="upper")
     assert upper.arguments == '"AA99", A = upper'
-    assert upper.matches("AB12") and not upper.matches("ab12") and Pattern("AA99", "ascii").matches("ab12")
+    assert upper.language().contains("AB12") and not upper.language().contains("ab12") and Pattern("AA99", "ascii").language().contains("ab12")
     clock = Pattern("99:99", "ascii", bindings={"9": "hexdigit"})
     assert clock.arguments == '"99:99", 9 = hexdigit'
-    assert clock.matches("ff:0A") and not Pattern("99:99", "ascii").matches("ff:0A")
+    assert clock.language().contains("ff:0A") and not Pattern("99:99", "ascii").language().contains("ff:0A")
     assert eval(repr(clock), {"Pattern": Pattern}) == clock
     both = Pattern("ZA9", "ascii", bindings={"9": "hexdigit", "Z": "upper", "A": 'lower + "_"'})
     assert both.arguments == '"ZA9", 9 = hexdigit, A = lower + "_", Z = upper'
-    assert both.matches("Q_f") and not both.matches("q_f")
+    assert both.language().contains("Q_f") and not both.language().contains("q_f")
 
 
 @pytest.mark.running_unicode
@@ -516,7 +516,7 @@ def test_a_binding_that_is_unused_or_does_not_read_is_refused(build, error, said
     with pytest.raises(error) as caught:
         build()
     assert said in str(caught.value)
-    assert Pattern("AW", "unicode", W="unicode_alpha").matches("xé")
+    assert Pattern("AW", "unicode", W="unicode_alpha").language().contains("xé")
 
 
 BOUND = [("AW{0+}", {"W": 'alnum + "_"'}), ("HH[:HH]{0,2}", {"H": "hexdigit"}), ("'KEY-'U{3}9{4}", {"U": "upper"}),
@@ -533,15 +533,15 @@ def test_a_bound_pattern_agrees_three_ways_and_writes_members_and_near_misses(wr
     members = list(shape.members()) + [shape.draw(rng) for _ in range(200)]
     assert len(set(members)) > 5
     for text in members:
-        assert shape.matches(text) and compiled.fullmatch(text) and _regular.member(doc, text), text
+        assert shape.language().contains(text) and compiled.fullmatch(text) and _regular.member(doc, text), text
     near = list(shape.near_misses()) + [m for seed in range(20) for m in shape.near_misses(random.Random(seed))]
     assert any("another class" in note for _, note in near)
     for text, _note in near:
-        assert not shape.matches(text) and not compiled.fullmatch(text) and not _regular.member(doc, text), text
+        assert not shape.language().contains(text) and not compiled.fullmatch(text) and not _regular.member(doc, text), text
     for n in range(4):
         for letters in itertools.product("aB1-_:.fGK", repeat=n):
             text = "".join(letters)
-            assert shape.matches(text) == (compiled.fullmatch(text) is not None), text
+            assert shape.language().contains(text) == (compiled.fullmatch(text) is not None), text
 
 
 def test_the_reading_of_a_pattern_names_a_bound_symbol_by_its_alphabet():
