@@ -1141,29 +1141,78 @@ def _rust_reads_differently(pattern: str) -> str | None:
 #: by marker type; settings that only loosen or only tighten coercion are
 #: read as no constraint, which the encoding's sides already allow for
 _PYDANTIC_MARKERS = {"Gt", "Ge", "Lt", "Le", "MinLen", "MaxLen", "MultipleOf", "Strict"}
-_PYDANTIC_SETTINGS = {"pattern", "max_digits", "decimal_places", "allow_inf_nan", "strict"}
+_PYDANTIC_SETTINGS = {"pattern", "max_digits", "decimal_places", "strict"}
 
 
-def _unread_pydantic(model: Any, schema: RowSchema) -> str | None:
+def _pydantic_models(annotation: Any) -> list[Any]:
+    """Intent:
+        Returns the pydantic models an annotation holds: itself, or those inside an optional,
+        a union, a list or another generic.
+    """
+    import typing
+    try:
+        from pydantic import BaseModel
+    except ImportError:  # pragma: no cover -- a pydantic language needs pydantic
+        return []
+    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
+        return [annotation]
+    return [m for arg in typing.get_args(annotation) for m in _pydantic_models(arg)]
+
+
+def _inner_fields(t: Any) -> Any:
+    """Intent:
+        Returns the fields of the record a neutral type holds, itself or as its items.
+    """
+    for inner in (t, getattr(t, "item", None)):
+        if inner is not None and getattr(inner, "fields", None):
+            return inner.fields
+    return ()
+
+
+def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) -> str | None:
     """Intent:
         Names the first piece of a pydantic model's field metadata the neutral model does not
-        carry, or returns None.
+        carry, or a validator of the model's own, or returns None: the model's fields and those
+        of every model a field holds (nested, optional, in a union or a list), with the neutral
+        fields `schema` holds for them.
+
+    Notes:
+        A decimal with one of its two digit limits, or whose digits are all places (pydantic
+        then refuses zero, which the neutral reading admits), and a setting that admits NaN and
+        the infinities are named; they are read by pydantic otherwise than by the encoding.
     """
-    fields = {f.name: f for f in schema.fields}
+    seen = set() if seen is None else seen
+    if model in seen:
+        return None
+    seen.add(model)
+    if path:
+        decorators = getattr(model, "__pydantic_decorators__", None)
+        if decorators is not None and (decorators.field_validators or decorators.model_validators):
+            return f"a custom validator on {path}"
+    fields = {f.name: f for f in getattr(schema, "fields", schema) or ()}
     for name, info in getattr(model, "model_fields", {}).items():
+        at = f"{path}.{name}"
         for marker in getattr(info, "metadata", ()) or ():
             kind = type(marker).__name__
             if kind == "_PydanticGeneralMetadata":
                 given = {k for k, v in vars(marker).items() if v is not None}
                 odd = given - _PYDANTIC_SETTINGS
                 if odd:
-                    return f"the setting {sorted(odd)[0]!r} on .{name}"
+                    return f"the setting {sorted(odd)[0]!r} on {at}"
                 if given & {"max_digits", "decimal_places"}:
                     t = fields[name].type if name in fields else None
                     if t is None or t.precision is None or t.scale is None:
-                        return f"decimal digits on .{name} the neutral model does not carry"
+                        return f"decimal digits on {at} the neutral model does not carry"
+                    if t.precision == t.scale:
+                        return (f"decimal digits on {at} that are all places, where pydantic "
+                                "refuses zero")
             elif kind not in _PYDANTIC_MARKERS:
-                return f"the {kind} constraint on .{name}"
+                return f"the {kind} constraint on {at}"
+        inner = _inner_fields(fields[name].type) if name in fields else ()
+        for nested in _pydantic_models(getattr(info, "annotation", None)):
+            unread = _unread_pydantic(nested, inner, at, seen)
+            if unread:
+                return unread
     return None
 
 
