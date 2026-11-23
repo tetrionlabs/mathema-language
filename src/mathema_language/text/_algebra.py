@@ -469,14 +469,46 @@ def _derivative(r: Expr, code: int) -> Expr:
 
 def holds(r: Expr, text: str) -> bool:
     """Intent:
-        Returns whether `text` is in the expression `r`: whether reading `r` from the start of
-        `text` can end at its end, by the sets of positions each part can end at from each
-        position it can start at. A repeat is read count by count until its count is reached
-        and no new position is found, so a nested count takes time in the length of the text
-        and the size of the expression, never in the number of ways to divide the text.
+        Returns whether `text` is in the expression `r`. An expression with a repeat whose
+        derivatives can multiply (`_counted`) is read by position sets: whether reading `r`
+        from the start of `text` can end at its end, by the sets of positions each part can
+        end at from each position it can start at, a repeat read count by count until its
+        count is reached and no new position is found, so a nested count takes time in the
+        length of the text and the size of the expression, never in the number of ways to
+        divide the text. Any other expression is read by derivatives, one character at a
+        time.
     """
+    if not _counted(r):
+        for c in text:
+            r = _derivative(r, ord(c))
+            if r == _EMPTY_RE:
+                return False
+        return _nullable(r)
     codes = [ord(c) for c in text]
     return len(codes) in _ends_from(r, 0, codes, {})
+
+
+#: the largest upper count a repeat may have and still be read by derivatives
+_COUNTED = 64
+
+
+def _counted(r: Expr, inside: bool = False) -> bool:
+    """Intent:
+        Returns whether `r` holds a repeat whose derivatives can multiply: one with an upper
+        count above `_COUNTED`, or one with an upper count inside another repeat. Every
+        other expression is read by derivatives, which take time in the length of the text
+        alone; these are read by position sets.
+    """
+    kind = r[0]
+    if kind == "loop":
+        if r[3] is not None and (r[3] > _COUNTED or inside):
+            return True
+        return _counted(r[1], True)
+    if kind in ("cat", "alt", "inter"):
+        return any(_counted(p, inside) for p in r[1:])
+    if kind == "not":
+        return _counted(r[1], inside)
+    return False
 
 
 def _ends_from(r: Expr, start: int, codes: list[int], memo: dict[tuple[int, int], frozenset[int]]
