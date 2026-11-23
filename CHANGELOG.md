@@ -5,6 +5,14 @@ release onward.
 
 ## Unreleased
 
+- Fixed: from 0.4.0, `mathema_language.text.pattern_language` with a
+  `version` other than the running Python, or with none (every
+  supported Python), read the pattern with the running interpreter's
+  `re`, so where versions differ in what a pattern accepts (`\N{...}`
+  names, loosely written conditional group references, and other
+  constructs in the delta table) the language for the pinned version
+  could be wrong and a claim over it reported proven. A pinned version
+  is now read as that version reads it, or refused.
 - Upgrade note: a path language confined to one root renders
   `L[path, within ("/root")]`, the word followed by its arguments in
   brackets, where it rendered `L[path, within "/root"]`. Text that was
