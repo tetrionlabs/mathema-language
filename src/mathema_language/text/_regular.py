@@ -1280,6 +1280,18 @@ def beside(rng: Any, predicate: str, text: str) -> str:
     return (some() if sides[0] else "") + text + (some() if sides[1] else "")
 
 
+def pattern_language(source: Any, predicate: str | None = None, flags: int = 0,
+                     version: str | None = None) -> Any:
+    """Intent:
+        Returns `regex_language(source, predicate, flags, version)`, under the name 0.4.0
+        gave it, with a `DeprecationWarning` naming `regex_language`. The name goes in 0.5.0.
+    """
+    import warnings
+    warnings.warn("pattern_language is now regex_language; the old name goes in 0.5.0",
+                  DeprecationWarning, stacklevel=2)
+    return regex_language(source, predicate, flags, version)
+
+
 def regex_language(source: Any, predicate: str | None = None, flags: int = 0,
                      version: str | None = None) -> Any:
     """Intent:

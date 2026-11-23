@@ -19,7 +19,8 @@ release onward.
   stored or compared in the old spelling changes; the old spelling is
   still read (`within_arguments` reads both to the same arguments).
 - `mathema_language.text.pattern_language` is now
-  `mathema_language.text.regex_language`.
+  `mathema_language.text.regex_language`. The old name still works in
+  0.4.x, with a `DeprecationWarning`, and goes in 0.5.0.
 
 ## 0.4.0
 
