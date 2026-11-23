@@ -134,6 +134,10 @@ packages = ["src/mathema_language"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# heavy (:draft) marks the full-size seeded property runs: deselected here, run with
+# `MATHEMA_LANGUAGE_HEAVY=1 pytest -m heavy`
+markers = ["heavy: a full-size seeded property run; needs MATHEMA_LANGUAGE_HEAVY=1 (:draft)"]
+addopts = "-m 'not heavy'"
 
 [tool.coverage.run]
 # the low-overhead backend on Python 3.12 and later, so a proof traced
