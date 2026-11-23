@@ -9,14 +9,13 @@ whether it matches in full and where `search` finds it. `merge` joins
 the dumps of every supported Python into the file the package ships.
 A construct every version reads alike has no row and is listed under
 `read_alike`, with the digest every version gives it under
-`alike_digests`; a construct some version reads differently has one row
-per version, keyed by construct, dialect and version, saying whether
-that version reads it and a digest of how. Under `by_unicode`, the
-constructs two Pythons read alike exactly when they share a Unicode
-version. Under `flags`, each flag word maps to the name and inline
-letter each dialect gives it. Unicode class membership and case
-mapping are the version table's (`python_versions.json`), so the
-probes use only characters every version classes alike. It uses the
+`alike_digests`; a construct some version reads differently has one
+row per version, keyed by construct, dialect and version, saying
+whether that version reads it and a digest of how. Under `flags`, each
+flag word maps to the name and inline letter each dialect gives it.
+Unicode class membership and case mapping are the version table's
+(`python_versions.json`), so the probes use only characters every
+version classes alike. It uses the
 standard library only, so any interpreter runs it bare:
 
     for v in 3.10 3.11 3.12 3.13 3.14; do
@@ -85,11 +84,6 @@ FLAG_NAMES = {"python": {
 #: version on its own, by the version table's engine reading named
 TRANSLATED = {"not a word boundary": "not_boundary_in_empty"}
 
-#: constructs whose reading follows the Unicode version alone: two Pythons with one Unicode
-#: version read them alike, and any two Pythons with different ones may not, since a named
-#: character is known only from the Unicode version that names it
-BY_UNICODE = ["named character"]
-
 
 def _reading(pattern, flags):
     """Whether the pattern compiles here, and its full match and search span on each text."""
@@ -137,7 +131,7 @@ def merge(paths):
         assert getattr(re, name) == getattr(re, letter.upper()), word
     out = {"dialect": "python", "versions": versions, "read_alike": alike, "alike_digests": alike_digests,
            "rows": rows,
-           "translated": TRANSLATED, "by_unicode": BY_UNICODE, "flags": FLAG_NAMES}
+           "translated": TRANSLATED, "flags": FLAG_NAMES}
     DATA.write_text(json.dumps(out, indent=1, ensure_ascii=True) + "\n")
     print("versions", versions, "read alike", len(alike), "rows", len(rows),
           sorted({r["construct"] for r in rows}))

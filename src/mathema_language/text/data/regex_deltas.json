@@ -342,9 +342,6 @@
  "translated": {
   "not a word boundary": "not_boundary_in_empty"
  },
- "by_unicode": [
-  "named character"
- ],
  "flags": {
   "python": {
    "ignore case": [

@@ -977,18 +977,23 @@ def other_version_problem(pattern: str, flags: int, versions: list[str]) -> str 
         or None when it can: every one of them is this Python, or every construct the pattern
         uses is shown by the regex delta table to read alike here and on each of them (listed
         as read alike, or with rows of the same reading, or translated for each version on its
-        own, or read by the Unicode version alone and that version the same). A construct the table does not name is not shown to read alike, so it is
-        refused for any other version, as is everything on an interpreter the table does not
-        cover.
+        own). A construct the table does not name is not shown to read alike, so it is refused
+        for any other version, as is everything on an interpreter the table does not cover. A
+        character written by its name (`\\N{...}`) is refused for every version, this one
+        included: patch releases of one Python read different names.
 
     Raises:
         NotRegular: the pattern does not compile here.
     """
+    used = constructs(pattern, flags)
+    if "named character" in used:
+        return (f"the pattern {pattern!r} writes a character by its name, which patch releases of "
+                f"one Python read differently, so it is read only by this interpreter's own re, "
+                f"never for a stated version or for every supported Python")
     others = [v for v in versions if v != RUNNING]
     if not others:
         return None
     table = regex_deltas()
-    used = constructs(pattern, flags)
     if RUNNING not in table["versions"]:
         return (f"the pattern {pattern!r} is read here by python {RUNNING}, which the regex delta "
                 f"table does not cover, so it cannot be read for python {', '.join(others)}")
@@ -999,14 +1004,6 @@ def other_version_problem(pattern: str, flags: int, versions: list[str]) -> str 
             return (f"the pattern {pattern!r} uses {construct}, which the regex delta table "
                     f"does not show read alike on python {', '.join(others)}")
         if construct in table["read_alike"] or construct in table["translated"]:
-            continue
-        if construct in table.get("by_unicode", ()):
-            unicode = versions_data()["unicode"]
-            differ = [v for v in others if unicode[v] != unicode[RUNNING]]
-            if differ:
-                return (f"the pattern {pattern!r} uses {construct}, which python {', '.join(differ)} "
-                        f"reads by another Unicode version than python {RUNNING}'s "
-                        f"{unicode[RUNNING]}; state python {RUNNING}")
             continue
         here = rows[(construct, RUNNING)]
         for version in others:
