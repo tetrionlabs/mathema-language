@@ -908,7 +908,8 @@ def _parsed_constructs(tree: Any) -> set[str]:
 def _written_constructs(pattern: str) -> set[str]:
     """Intent:
         Returns the constructs a pattern's text shows that its parse does not: inline flag
-        groups at the start and after it, and the end of text written `\\z`.
+        groups at the start and after it, the end of text written `\\z`, a character written
+        by its name `\\N{...}`, and a conditional group referred to by a non-ASCII digit.
     """
     out: set[str] = set()
     lead = re.match(r"(?:\(\?[aiLmsux]+\))+", pattern)
@@ -923,6 +924,8 @@ def _written_constructs(pattern: str) -> set[str]:
         if ch == "\\":
             if not inside and pattern[at + 1:at + 2] == "z":
                 out.add("end of text, written \\z")
+            if pattern[at + 1:at + 3] == "N{":
+                out.add("named character")
             at += 2
             continue
         if inside:
@@ -937,6 +940,10 @@ def _written_constructs(pattern: str) -> set[str]:
             continue
         elif re.match(r"\(\?[aiLmsux]+\)", pattern[at:]):
             out.add("inline flags after the start")
+        elif pattern.startswith("(?(", at):
+            reference = pattern[at + 3:pattern.find(")", at + 3)]
+            if any(c.isdigit() and not c.isascii() for c in reference):
+                out.add("group reference by a non-ASCII digit")
         at += 1
     return out
 
@@ -967,7 +974,7 @@ def other_version_problem(pattern: str, flags: int, versions: list[str]) -> str 
         or None when it can: every one of them is this Python, or every construct the pattern
         uses is shown by the regex delta table to read alike here and on each of them (listed
         as read alike, or with rows of the same reading, or translated for each version on its
-        own). A construct the table does not name is not shown to read alike, so it is
+        own, or read by the Unicode version alone and that version the same). A construct the table does not name is not shown to read alike, so it is
         refused for any other version, as is everything on an interpreter the table does not
         cover.
 
@@ -989,6 +996,14 @@ def other_version_problem(pattern: str, flags: int, versions: list[str]) -> str 
             return (f"the pattern {pattern!r} uses {construct}, which the regex delta table "
                     f"does not show read alike on python {', '.join(others)}")
         if construct in table["read_alike"] or construct in table["translated"]:
+            continue
+        if construct in table.get("by_unicode", ()):
+            unicode = versions_data()["unicode"]
+            differ = [v for v in others if unicode[v] != unicode[RUNNING]]
+            if differ:
+                return (f"the pattern {pattern!r} uses {construct}, which python {', '.join(differ)} "
+                        f"reads by another Unicode version than python {RUNNING}'s "
+                        f"{unicode[RUNNING]}; state python {RUNNING}")
             continue
         here = rows[(construct, RUNNING)]
         for version in others:

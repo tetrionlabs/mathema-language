@@ -207,11 +207,84 @@
    "version": "3.14",
    "reads": "none",
    "digest": "7865270070c88050"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "some",
+   "digest": "c86c7b7cc449ed32"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "some",
+   "digest": "c86c7b7cc449ed32"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "some",
+   "digest": "cb1869ebdc024cd1"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "all",
+   "digest": "252ac1306456115c"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "252ac1306456115c"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "all",
+   "digest": "6243030abc2d4abf"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "6243030abc2d4abf"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "none",
+   "digest": "53d521229ecad355"
   }
  ],
  "translated": {
   "not a word boundary": "not_boundary_in_empty"
  },
+ "by_unicode": [
+  "named character"
+ ],
  "flags": {
   "python": {
    "ignore case": [
