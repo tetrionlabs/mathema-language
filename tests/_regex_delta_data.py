@@ -8,7 +8,8 @@ construct: whether the pattern compiles, and for each probe text
 whether it matches in full and where `search` finds it. `merge` joins
 the dumps of every supported Python into the file the package ships.
 A construct every version reads alike has no row and is listed under
-`read_alike`; a construct some version reads differently has one row
+`read_alike`, with the digest every version gives it under
+`alike_digests`; a construct some version reads differently has one row
 per version, keyed by construct, dialect and version, saying whether
 that version reads it and a digest of how. Under `by_unicode`, the
 constructs two Pythons read alike exactly when they share a Unicode
@@ -120,11 +121,12 @@ def merge(paths):
     dumps = sorted((json.loads(Path(p).read_text()) for p in paths),
                    key=lambda d: tuple(int(x) for x in d["python"].split(".")))
     versions = [d["python"] for d in dumps]
-    alike, rows = [], []
+    alike, rows, alike_digests = [], [], {}
     for construct in PROBES:
         seen = {d["python"]: d["readings"][construct] for d in dumps}
         if len({json.dumps(r, sort_keys=True) for r in seen.values()}) == 1:
             alike.append(construct)
+            alike_digests[construct] = next(iter(seen.values()))["digest"]
             continue
         for version, r in seen.items():
             rows.append({"construct": construct, "dialect": "python", "version": version,
@@ -132,7 +134,8 @@ def merge(paths):
                          "digest": r["digest"]})
     for word, (name, letter) in FLAG_NAMES["python"].items():
         assert getattr(re, name) == getattr(re, letter.upper()), word
-    out = {"dialect": "python", "versions": versions, "read_alike": alike, "rows": rows,
+    out = {"dialect": "python", "versions": versions, "read_alike": alike, "alike_digests": alike_digests,
+           "rows": rows,
            "translated": TRANSLATED, "by_unicode": BY_UNICODE, "flags": FLAG_NAMES}
     DATA.write_text(json.dumps(out, indent=1, ensure_ascii=True) + "\n")
     print("versions", versions, "read alike", len(alike), "rows", len(rows),

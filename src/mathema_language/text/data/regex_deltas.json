@@ -32,6 +32,31 @@
   "ascii only",
   "verbose"
  ],
+ "alike_digests": {
+  "literal": "dbf54450d08d2910",
+  "any character": "c8bd19c0d6bcafb3",
+  "character set": "f9282578944564be",
+  "alternation": "4dfb56bf4cacc371",
+  "group": "4991b22c80fdb5e7",
+  "greedy repeat": "d26b7e19ddaf268f",
+  "lazy repeat": "59d7edcbe740ed1b",
+  "start of line": "fd61b323285e3365",
+  "end of line": "660485a061f13293",
+  "start of text": "a30f54739170b419",
+  "end of text": "679bf7add2cc0cdb",
+  "word boundary": "39f2f573f09e41c5",
+  "backreference": "1fe33b1f5519a952",
+  "conditional": "6243030abc2d4abf",
+  "lookahead": "e5ae3829d5e55236",
+  "lookbehind": "9b41c2385a04e0e0",
+  "inline flags at the start": "037e583f492ecf85",
+  "scoped flags": "5638fdd206094591",
+  "ignore case": "387b62c0b8c92e61",
+  "multi line": "1ac596d1f63a9dde",
+  "dot all": "d8d84ca592aceb24",
+  "ascii only": "7e80a8018aa4a086",
+  "verbose": "97784e30550cb91b"
+ },
  "rows": [
   {
    "construct": "possessive repeat",
