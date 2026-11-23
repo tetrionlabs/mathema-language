@@ -580,7 +580,8 @@ def _picture_language(picture: Pattern, word: str) -> Any:
     """Intent:
         The language of the strings a pattern word holds of for a picture pattern: membership by
         the term's own matcher on the running Python's reading of the picture, with any text
-        before it, after it or on both sides as the word says; draws written from the picture;
+        before it, after it or on both sides as the word says; draws written from the picture,
+        with text beside them half the time where the word allows it;
         and the picture's own term under the word's predicate as the stated term.
     """
     from .text import _algebra
@@ -591,7 +592,7 @@ def _picture_language(picture: Pattern, word: str) -> Any:
     reading = _algebra.from_node(here["language"])
     return TextLanguage(f"{word} (pattern({picture.arguments}))", level="predicate",
                         accepts=lambda text: isinstance(text, str) and _algebra.holds(reading, text),
-                        generate=picture.draw,
+                        generate=lambda rng: _regular.beside(rng, word, picture.draw(rng)),
                         schema={"term": _regular.under_predicate(picture.term(), word)})
 
 

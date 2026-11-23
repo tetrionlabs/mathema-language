@@ -1259,12 +1259,33 @@ def every_string_over_class(name: str) -> Node:
 _METHODS = {"fullmatch": "matches", "search": "contains", "match": "starts with"}
 
 
+#: the characters drawn beside a match
+_BESIDE = "xyz XYZ019-_.é\n"
+
+
+def beside(rng: Any, predicate: str, text: str) -> str:
+    """Intent:
+        Returns `text` with text drawn beside it where the predicate allows it, half the time:
+        before and after it for `contains`, after it for `starts with`, before it for `ends with`,
+        never for `matches`. The text beside is up to four characters of a small pool.
+    """
+    if predicate == "matches" or rng.random() < 0.5:
+        return text
+
+    def some() -> str:
+        return "".join(rng.choice(_BESIDE) for _ in range(rng.randint(1, 4)))
+    before = some() if predicate in ("contains", "ends with") else ""
+    after = some() if predicate in ("contains", "starts with") else ""
+    return before + text + after
+
+
 def regex_language(source: Any, predicate: str | None = None, flags: int = 0,
                      version: str | None = None) -> Any:
     """Intent:
         Returns the text language of the strings a predicate holds of a Python pattern:
         membership by `re` itself, the term as its stated `term`, draws from the
-        pattern's parse tree or, failing that, a shortest member of the term. `source` is a
+        pattern's parse tree, with text beside the match half the time where the predicate
+        allows it (`beside`), or, failing that, a shortest member of the term. `source` is a
         compiled pattern, a pattern's text (with `flags`), or a compiled pattern's bound
         method `fullmatch`, `search` or `match`, which names its own predicate; the predicate
         is `matches` when none is given or named. Without a `version` the language is about
@@ -1309,7 +1330,7 @@ def regex_language(source: Any, predicate: str | None = None, flags: int = 0,
     def draw(rng: _random.Random) -> str:
         for _ in range(40):
             try:
-                text = _emit(rng, tree, {})
+                text = beside(rng, predicate, _emit(rng, tree, {}))
             except Unsupported:
                 break
             if accepts(text):
