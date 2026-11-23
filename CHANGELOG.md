@@ -5,6 +5,18 @@ release onward.
 
 ## Unreleased
 
+- Upgrade note: a path language confined to one root renders
+  `L[path, within ("/root")]`, the word followed by its arguments in
+  brackets, where it rendered `L[path, within "/root"]`. Text that was
+  stored or compared in the old spelling changes; the old spelling is
+  still read (`within_arguments` reads both to the same arguments).
+- `mathema_language.text.pattern_language` is now
+  `mathema_language.text.regex_language`.
+
+## 0.4.0
+
+For mathema 0.6.6.1 (`mathema>=0.6.6.1,<0.7`).
+
 - Fixed: an inclusion between two record languages could be reported
   proven when it does not hold over a decimal field the encoding read
   otherwise than its validation. From 0.2.1: a decimal with a precision
@@ -47,27 +59,22 @@ release onward.
   encoding does not read (a possessive repeat, a back-reference, a
   look-around) gives `unknown` with the reason where it could give a
   wrong answer before.
-- `mathema_language.text.regex_language(source)` is the text language
+- `mathema_language.text.pattern_language(source)` is the text language
   of a compiled pattern, a pattern text, or a bound `PAT.fullmatch`,
   `PAT.search` or `PAT.match`.
 - A text language states what it is as a regular-language term under
-  `definition` in its persisted form (`to_json`): the alphabet
+  `term` in its persisted form (`to_json`): the alphabet
   languages, `L[path]`, and the format languages `L[slug]`, `L[hex]`,
   `L[base64]`, `L[ipv4]`, `L[ipv6]` and `L[shell_safe]` exactly;
   `L[identifier]`, `L[uuid]`, `L[iso_date]` and `L[iso_datetime]` as a
   pair of bounds that hold on every supported Python. `L[json]`,
   `L[yaml]` and `L[toml]` are not regular and say so under
-  `no_definition`. A length bound on a language with a definition
-  states the bounded definition.
+  `no_term`. A length bound on a language with a term states the
+  bounded term.
 - A regular-language term whose document is malformed (a version or an
   exact flag of the wrong type, a flag that contradicts the keys
   present, a missing key) is refused with `ValueError`, and a text with
   a character outside a term's alphabet is not a member of it.
-- Upgrade note for 0.4: a path language confined to one root renders
-  `L[path, within ("/root")]`, the word followed by its arguments in
-  brackets, where it rendered `L[path, within "/root"]`. Text that was
-  stored or compared in the old spelling changes; the old spelling is
-  still read (`within_arguments` reads both to the same arguments).
 
 ## 0.3.0
 
