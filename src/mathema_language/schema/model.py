@@ -11,7 +11,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Annotated, Any, Literal, get_args
 
-
 #: the base types a `NeutralType` can have
 Base = Literal["bool", "int", "float", "decimal", "string", "binary", "date", "time",
                "datetime", "duration", "categorical", "list", "struct", "map", "ref", "any"]
