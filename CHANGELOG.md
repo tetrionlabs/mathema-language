@@ -3,7 +3,9 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
-## Unreleased
+## 0.4.0
+
+For mathema 0.6.6.1 (`mathema>=0.6.6.1,<0.7`).
 
 - Fixed: an inclusion between two record languages could be reported
   proven when it does not hold over a decimal field the encoding read
