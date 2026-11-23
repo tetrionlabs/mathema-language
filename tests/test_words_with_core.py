@@ -169,7 +169,6 @@ REFUSED = [
     ('L[ascii, == "a"]', "no registered predicate reads `==`", None),
     ('L[ascii, != "a"]', "no registered predicate reads `!=`", None),
     ('L[ascii, in re(r"a+")]', "no registered predicate reads `in`", None),
-    ('L[ascii, shape ("AA99")]', "shape", None),
     ('L[unicode, matches ("a", "b")]', "matches takes one argument, a pattern", None),
     ('L[unicode, matches (re(r"[a-z]+", javascript))]', "the javascript dialect is not available yet.",
      're(r"[a-z]+", python)'),
@@ -228,6 +227,12 @@ def test_a_word_with_no_meaning_over_the_base_is_refused_with_the_language_that_
     for text in (caught.value.suggestion, caught.value.example):
         assert _canonical(text) == text
         assert languages.language_problems(_resolve(text)) == []
+
+
+def test_the_word_shape_is_refused_when_the_language_is_resolved_and_pattern_is_named():
+    with pytest.raises(InvalidDomain) as caught:
+        _resolve('L[ascii, shape ("AA99")]')
+    assert "shape" in str(caught.value) and "pattern" in str(caught.value)
 
 
 def test_an_argument_of_the_wrong_form_for_the_base_is_refused_with_the_form_and_the_language_meant():
