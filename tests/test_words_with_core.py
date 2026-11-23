@@ -238,7 +238,7 @@ def test_the_word_shape_is_refused_when_the_language_is_resolved_and_pattern_is_
 def test_an_argument_of_the_wrong_form_for_the_base_is_refused_with_the_form_and_the_language_meant():
     with pytest.raises(ValueError) as caught:
         _resolve('L[ipv4, within ("/root")]')
-    assert str(caught.value) == ('within ("/root") is not an address block for L[ipv4]: it expects a CIDR '
+    assert str(caught.value) == ('L[ipv4, within ("/root")]: within ("/root") is not an address block for L[ipv4]: it expects a CIDR '
                                  'block such as "10.0.0.0/8". Did you mean L[path, within ("/root")]?')
     assert _canonical('L[path, within ("/root")]') == 'L[path, within ("/root")]'
     with pytest.raises(ValueError) as caught:
