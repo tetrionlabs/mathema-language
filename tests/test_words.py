@@ -112,8 +112,7 @@ def test_an_argument_that_is_no_pattern_or_not_the_kind_an_operator_takes_is_ref
     ("tests.test_words.SLUG", "unicode", "A-b", True), ("tests.test_words.POSTCODE", "unicode", "SW19 3AB", True),
 ])
 def test_each_kind_of_argument_reads_as_one_python_pattern(argument, base, text, held):
-    pattern, flags = words._regex_of(argument, base)
-    assert (re.fullmatch(pattern, text, flags) is not None) == held
+    assert words._regex_language_of(argument, "matches", base).contains(text) == held
 
 
 @pytest.mark.parametrize("name, said", [

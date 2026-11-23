@@ -14,7 +14,6 @@ import dataclasses
 import itertools
 import json
 import random
-import re
 import typing
 
 import mathema.languages as languages
@@ -32,6 +31,7 @@ from mathema_language.text.pattern import (
     suggest_pattern,
     text_pattern_language,
 )
+from tests import _pattern_oracle as oracle
 
 POSTCODE = Pattern("AA99[ ]9AA", "ascii")
 
@@ -43,7 +43,7 @@ POSTCODE = Pattern("AA99[ ]9AA", "ascii")
 }.items(), ids=repr)
 def test_a_postcode_pattern_admits_two_letters_two_digits_an_optional_space_a_digit_two_letters(text, inside):
     assert POSTCODE.language().contains(text) == inside
-    assert (re.fullmatch(POSTCODE.regex, text) is not None) == inside
+    assert oracle.reads(POSTCODE, text) == inside
     assert _regular.member(POSTCODE.term(), text) == inside
 
 
@@ -73,7 +73,7 @@ def test_the_canonical_text_is_the_pattern_as_written_with_needless_marks_droppe
     shape = Pattern(written, "ascii")
     assert shape.canonical == canonical
     again = Pattern(canonical, "ascii")
-    assert again.canonical == canonical and again.regex == shape.regex
+    assert again.canonical == canonical and again.term() == shape.term()
     assert _regular.term_hash(again.term()) == _regular.term_hash(shape.term())
 
 
@@ -142,12 +142,12 @@ def test_the_reading_the_pattern_and_the_term_agree_on_every_short_text(base, al
     for written in shapes:
         shape = Pattern(written, base)
         pinned = shape.term(version=_regular.RUNNING)
-        compiled, expression = re.compile(shape.regex), _regular.from_node(pinned["language"])
+        expression = _regular.from_node(pinned["language"])
         assert Pattern(shape.canonical, base).canonical == shape.canonical
         for text in texts:
             own = shape.language().contains(text)
             admitted += own
-            assert (compiled.fullmatch(text) is not None) == own, (written, text)
+            assert oracle.reads(shape, text) == own, (written, text)
             assert _regular.holds(expression, text) == own, (written, text)
     assert admitted > 500
 
@@ -165,7 +165,7 @@ def test_the_term_is_exact_plain_data_and_is_the_term_of_the_pattern():
             shape = Pattern(written, base)
             here = _regular.RUNNING
             assert (_regular.term_hash(shape.term(version=here))
-                    == _regular.term_hash(_regular.term(shape.regex, 0, "matches", version=here))), written
+                    == _regular.term_hash(Pattern(shape.canonical, base).term(version=here))), written
 
 
 SHAPES = ["AA99[ ]9AA", "9{0+}", "a{1+}", "X{2}", "[a[9]]{2}", "'ID-'9{4,6}", "A[-A]{0,2}", "9{3}-9{4}",
@@ -177,17 +177,17 @@ SHAPES = ["AA99[ ]9AA", "9{0+}", "a{1+}", "X{2}", "[a[9]]{2}", "'ID-'9{4,6}", "A
 @pytest.mark.parametrize("written", SHAPES)
 def test_every_member_written_from_a_pattern_is_a_member_and_every_near_miss_is_not(written, base):
     shape = Pattern(written, base)
-    compiled, doc = re.compile(shape.regex), shape.term(version=_regular.RUNNING)
+    doc = shape.term(version=_regular.RUNNING)
     rng = random.Random(23)
     members = list(shape.members()) + [shape.draw(rng) for _ in range(200)]
     assert len(set(members)) >= 2 or written == "\\A\\9"
     for text in members:
-        assert shape.language().contains(text) and compiled.fullmatch(text) and _regular.member(doc, text), text
+        assert shape.language().contains(text) and oracle.reads(shape, text) and _regular.member(doc, text), text
     near = list(shape.near_misses()) + [m for seed in range(20) for m in shape.near_misses(random.Random(seed))]
     assert near or written == "X{0+}"
     for text, note in near:
         assert note
-        assert not shape.language().contains(text) and not compiled.fullmatch(text), (text, note)
+        assert not shape.language().contains(text) and not oracle.reads(shape, text), (text, note)
         assert not _regular.member(doc, text), (text, note)
 
 
@@ -227,7 +227,7 @@ def test_a_pattern_is_a_text_language_whose_draws_are_written_directly():
     assert language.name == 'ascii, pattern ("AA99[ ]9AA")'
     assert languages.language_problems(language) == []
     assert languages.language_problems(text_pattern_language("A{1+}-9{2}")) == []
-    assert language.regex == POSTCODE.regex
+    assert language.pattern == POSTCODE
     rng = random.Random(24)
     assert all(language.contains(language.sample(rng)) for _ in range(200))
     assert len({language.sample(rng) for _ in range(200)}) > 150
@@ -301,7 +301,7 @@ def test_a_dataclass_field_two_records_deep_holds_its_pattern():
     assert all(POSTCODE.language().contains(row.customer.address.postcode) for row in drawn)
     assert len({row.customer.address.postcode for row in drawn}) > 30
     field = _field_json(language.to_json(), "customer", "address", "postcode")
-    assert field["pattern"] == POSTCODE.regex
+    assert "pattern" not in field
     assert field["x-mathema"]["pattern"] == {"base": "ascii", "pattern": "AA99[ ]9AA", "bindings": {}}
     assert field["x-mathema"]["term"] == POSTCODE.term()
 
@@ -460,8 +460,8 @@ def test_literal_text_is_quoted_and_the_canonical_picture_quotes_only_letters_an
     shape = Pattern(written, "ascii")
     assert shape.canonical == canonical
     again = Pattern(canonical, "ascii")
-    assert again.canonical == canonical and again.regex == shape.regex
-    for reading in (shape.matches, lambda t: re.fullmatch(shape.regex, t) is not None,
+    assert again.canonical == canonical and again.term() == shape.term()
+    for reading in (shape.language().contains, lambda t: oracle.reads(shape, t),
                     lambda t: _regular.member(shape.term(), t)):
         assert reading(member) and not reading(not_member)
 
@@ -527,21 +527,21 @@ BOUND = [("AW{0+}", {"W": 'alnum + "_"'}), ("HH[:HH]{0,2}", {"H": "hexdigit"}), 
 @pytest.mark.parametrize("written, bindings", BOUND, ids=[b[0] for b in BOUND])
 def test_a_bound_pattern_agrees_three_ways_and_writes_members_and_near_misses(written, bindings):
     shape = Pattern(written, "ascii", bindings)
-    compiled, doc = re.compile(shape.regex), shape.term()
-    assert _regular.term_hash(doc) == _regular.term_hash(_regular.term(shape.regex, 0, "matches"))
+    doc = shape.term()
+    assert _regular.term_hash(doc) == _regular.term_hash(Pattern(shape.canonical, "ascii", bindings).term())
     rng = random.Random(28)
     members = list(shape.members()) + [shape.draw(rng) for _ in range(200)]
     assert len(set(members)) > 5
     for text in members:
-        assert shape.language().contains(text) and compiled.fullmatch(text) and _regular.member(doc, text), text
+        assert shape.language().contains(text) and oracle.reads(shape, text) and _regular.member(doc, text), text
     near = list(shape.near_misses()) + [m for seed in range(20) for m in shape.near_misses(random.Random(seed))]
     assert any("another class" in note for _, note in near)
     for text, _note in near:
-        assert not shape.language().contains(text) and not compiled.fullmatch(text) and not _regular.member(doc, text), text
+        assert not shape.language().contains(text) and not oracle.reads(shape, text) and not _regular.member(doc, text), text
     for n in range(4):
         for letters in itertools.product("aB1-_:.fGK", repeat=n):
             text = "".join(letters)
-            assert shape.language().contains(text) == (compiled.fullmatch(text) is not None), text
+            assert shape.language().contains(text) == oracle.reads(shape, text), text
 
 
 def test_the_reading_of_a_pattern_names_a_bound_symbol_by_its_alphabet():

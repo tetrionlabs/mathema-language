@@ -6,7 +6,6 @@ by side never merge into one, whatever counts they carry. A count is
 bounded, so a pattern's members, draws, pattern and term are written in
 bounded time, and a picture past the bound is refused by name."""
 import random
-import re
 
 import pytest
 
@@ -17,6 +16,7 @@ from mathema_language.text.pattern import (
     pattern_refusal,
     text_pattern_language,
 )
+from tests import _pattern_oracle as oracle
 
 
 @pytest.mark.parametrize("picture", ["'ab'{1}'cd'{2}", "'ab''cd'{2}", "'ab'\\K'cd'{2}",
@@ -68,7 +68,7 @@ def test_on_generated_pictures_the_canonical_text_keeps_the_language():
         for text in texts:
             want = shape.language().contains(text)
             assert again.language().contains(text) == want, (picture, shape.canonical, text)
-            assert (re.fullmatch(again.regex, text) is not None) == want, (picture, text)
+            assert oracle.reads(again, text) == want, (picture, text)
             key = "language" if term["exact"] else "at_least"
             if term["exact"]:
                 assert _algebra.member(term, text, key) == want, (picture, text)
@@ -89,4 +89,4 @@ def test_a_pattern_at_the_bound_is_written_in_full():
     shape = Pattern("9{1000}")
     assert len(shape.draw(random.Random(0))) == 1000
     assert all(len(m) == 1000 for m in shape.members())
-    assert re.fullmatch(shape.regex, "1" * 1000)
+    assert shape.language().contains("1" * 1000)

@@ -131,7 +131,7 @@ def test_a_pattern_reads_in_plain_words(name, pattern, flags, predicate, reading
 
 @pytest.mark.running_unicode
 @pytest.mark.parametrize("shape, base, reading", SHAPES, ids=[s[0] for s in SHAPES])
-def test_a_pattern_reads_in_plain_words(shape, base, reading):
+def test_a_picture_reads_in_plain_words(shape, base, reading):
     assert explain(Pattern(shape, base).term(version=_regular.RUNNING)) == reading.format(**SIZES)
 
 
