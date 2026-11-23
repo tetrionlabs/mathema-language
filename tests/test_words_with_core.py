@@ -112,7 +112,7 @@ CANONICAL = [
     ('L[path, WITHIN("/a",  "/b")]', 'L[path, within ("/a", "/b")]'),
     ('L[iso_date, within ("2026-01-01", "2026-12-31")]', 'L[iso_date, within ("2026-01-01", "2026-12-31")]'),
     ('L[ascii, pattern ("AW{0+}", W = "_" + alnum)]', 'L[ascii, pattern ("AW{0+}", W = alnum + "_")]'),
-    ('L[ascii, pattern("ZA9", Z = upper, A = lower, 9 = hexdigit)]', 'L[ascii, pattern ("ZA9", 9 = hex, A = lower, Z = upper)]'),
+    ('L[ascii, pattern("ZA9", Z = upper, A = lower, 9 = hexdigit)]', 'L[ascii, pattern ("ZA9", 9 = hexdigit, A = lower, Z = upper)]'),
     ('L[unicode, matches (pattern ("AA99", A = upper))]', 'L[unicode, matches (pattern("AA99", A = upper))]'),
     ('L["_" + digit + lower, len <= 8]', 'L[lower + digit + "_", len <= 8]'),
     ('L[lower + "ba" + "a"]', 'L[lower + "a" + "b"]'),
