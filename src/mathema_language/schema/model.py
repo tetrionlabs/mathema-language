@@ -11,7 +11,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Annotated, Any, Literal, get_args
 
-from ..text.pattern import Pattern
 
 #: the base types a `NeutralType` can have
 Base = Literal["bool", "int", "float", "decimal", "string", "binary", "date", "time",
@@ -144,7 +143,7 @@ class Constraints:
     min_len: Count | None = None
     max_len: Count | None = None
     regex: str | None = None
-    pattern: Pattern | None = None
+    pattern: Any = None
     enum: tuple[Any, ...] | None = None
     const: Any = NO_DEFAULT
     multiple_of: Any = None
@@ -152,6 +151,7 @@ class Constraints:
     def __post_init__(self) -> None:
         _in_range("min_len", self.min_len, 0, None)
         _in_range("max_len", self.max_len, 0, None)
+        from ..text.pattern import Pattern
         if self.pattern is not None and not isinstance(self.pattern, Pattern):
             raise TypeError(f"a pattern constraint is a Pattern, not {self.pattern!r}")
 
