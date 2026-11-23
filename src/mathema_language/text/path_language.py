@@ -113,13 +113,15 @@ SYSTEM_DIRECTORIES = frozenset({
 def _safe_beside(path: str) -> bool:
     """Intent:
         Whether an absolute path may be offered as a value outside a path language: none of
-        its segments is `.` or `..`, and it is not at or under a system directory.
+        its segments is `.` or `..`, and it is not at or under a system directory however many
+        slashes lead it (`//etc` is `/etc` on Linux and macOS).
     """
     segments = path.split("/")[1:]
-    return not any(s in (".", "..") for s in segments) and segments[0] not in SYSTEM_DIRECTORIES
+    named = [s for s in segments if s]
+    return not any(s in (".", "..") for s in segments) and not (named and named[0] in SYSTEM_DIRECTORIES)
 
 
-def _near(roots: tuple[str, ...]) -> tuple[str, ...]:
+def _near(roots: tuple[str, ...]) -> tuple[HazardValue, ...]:
     """Intent:
         Absolute paths just beside each root: a sibling whose name starts with the root's
         (`/workspace2` for `/workspace`) and the root's name cut short. None climbs through
@@ -133,7 +135,8 @@ def _near(roots: tuple[str, ...]) -> tuple[str, ...]:
         out += [root + "2", root + "x"]
         if len(posixpath.basename(root)) > 1:
             out.append(root[:-1])
-    return tuple(p for p in dict.fromkeys(out) if _safe_beside(p))
+    return tuple(HazardValue("text", p, "a path just beside a root") for p in dict.fromkeys(out)
+                 if _safe_beside(p))
 
 
 @dataclass(frozen=True)
@@ -142,7 +145,7 @@ class PathLanguage(TextLanguage):
     paths beside its boundary, offered as values outside it where the
     pattern refuses them."""
     pattern: str = PATH_PATTERN
-    near: tuple[str, ...] = ()
+    near: tuple[HazardValue, ...] = ()
 
     def contains(self, value: Any) -> bool:
         return isinstance(value, str) and re.fullmatch(self.pattern, value) is not None
@@ -166,7 +169,7 @@ class PathLanguage(TextLanguage):
         return {**super().to_json(), "term": self.term()}
 
     def outside(self, rng: random.Random) -> Any:
-        order = [text for text, _ in _HAZARDS] + ["", "a\x00b", *self.near]
+        order = [text for text, _ in _HAZARDS] + ["", "a\x00b", *(h.value for h in self.near)]
         rng.shuffle(order)
         for text in order:
             if not self.contains(text):
