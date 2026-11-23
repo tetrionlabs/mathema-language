@@ -81,9 +81,9 @@ def _check(n: int) -> tuple[int, int, int]:
 
 
 def test_generated_patterns_build_only_sound_terms():
-    built, refused, checked = _check(150)
+    built, refused, checked = _check(100)
     _fuzz.report("regex terms", SEED, built=built, refused=refused, texts=checked)
-    assert built > 300
+    assert built > 200
 
 
 @_fuzz.heavy

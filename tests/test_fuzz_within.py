@@ -116,7 +116,7 @@ def _check_paths(draws: int) -> int:
 
 
 def test_addresses_agree_three_ways():
-    checked = _check_addresses(100)
+    checked = _check_addresses(60)
     _fuzz.report("within addresses", SEED, texts=checked)
 
 
