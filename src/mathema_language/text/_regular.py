@@ -909,7 +909,8 @@ def _written_constructs(pattern: str) -> set[str]:
     """Intent:
         Returns the constructs a pattern's text shows that its parse does not: inline flag
         groups at the start and after it, the end of text written `\\z`, a character written
-        by its name `\\N{...}`, and a conditional group referred to by a non-ASCII digit.
+        by its name `\\N{...}`, and a conditional group referred to by a non-ASCII digit or by
+        a reference that is neither ASCII digits nor a name (`(?(+1)...)`, `(?( 1)...)`).
     """
     out: set[str] = set()
     lead = re.match(r"(?:\(\?[aiLmsux]+\))+", pattern)
@@ -944,6 +945,8 @@ def _written_constructs(pattern: str) -> set[str]:
             reference = pattern[at + 3:pattern.find(")", at + 3)]
             if any(c.isdigit() and not c.isascii() for c in reference):
                 out.add("group reference by a non-ASCII digit")
+            elif not (reference.isascii() and reference.isdigit()) and not reference.isidentifier():
+                out.add("group reference written loosely")
         at += 1
     return out
 
@@ -1266,17 +1269,18 @@ _BESIDE = "xyz XYZ019-_.é\n"
 def beside(rng: Any, predicate: str, text: str) -> str:
     """Intent:
         Returns `text` with text drawn beside it where the predicate allows it, half the time:
-        before and after it for `contains`, after it for `starts with`, before it for `ends with`,
-        never for `matches`. The text beside is up to four characters of a small pool.
+        for `contains` before it, after it or both, so a match anchored at one end still gets
+        text on its open side; after it for `starts with`; before it for `ends with`; never for
+        `matches`. The text beside is up to four characters of a small pool.
     """
     if predicate == "matches" or rng.random() < 0.5:
         return text
 
     def some() -> str:
         return "".join(rng.choice(_BESIDE) for _ in range(rng.randint(1, 4)))
-    before = some() if predicate in ("contains", "ends with") else ""
-    after = some() if predicate in ("contains", "starts with") else ""
-    return before + text + after
+    sides = {"contains": rng.choice([(True, True), (True, False), (False, True)]),
+             "starts with": (False, True), "ends with": (True, False)}[predicate]
+    return (some() if sides[0] else "") + text + (some() if sides[1] else "")
 
 
 def regex_language(source: Any, predicate: str | None = None, flags: int = 0,

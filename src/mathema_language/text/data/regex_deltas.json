@@ -302,6 +302,41 @@
    "version": "3.14",
    "reads": "none",
    "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "all",
+   "digest": "1988bf87660f0339"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "1988bf87660f0339"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "none",
+   "digest": "1a980f0f1d00d4a2"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "none",
+   "digest": "1a980f0f1d00d4a2"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "none",
+   "digest": "1a980f0f1d00d4a2"
   }
  ],
  "translated": {

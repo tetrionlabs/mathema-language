@@ -70,6 +70,7 @@ PROBES = {
     "named character": [(r"\N{LATIN SMALL LETTER A}", 0), (r"[\N{DIGIT ONE}]", 0), (r"\N{SHAKING FACE}", 0),
                         (r"\N{CJK UNIFIED IDEOGRAPH-2EBF0}", 0)],
     "group reference by a non-ASCII digit": [("(a)?(?(\u0661)b|c)", 0)],
+    "group reference written loosely": [("(a)?(?(+1)b|c)", 0), ("(a)?(?( 1)b|c)", 0), ("(a)?(?(1 )b|c)", 0)],
 }
 
 TEXTS = ["", "a", "aa", "aaa", "b", "ab", "ba", "c", "bc", "abc", "A", "AB", "Ab", "a b", "\n",
