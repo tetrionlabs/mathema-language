@@ -32,7 +32,7 @@ def test_a_compiled_pattern_reads_as_matches():
     lang = pattern_language(SLUG)
     assert lang.contains("a-b1") and not lang.contains("a-") and not lang.contains("a-b\n")
     assert not lang.contains(3) and language_problems(lang) == []
-    assert lang.to_json()["definition"] == rx.term(SLUG, 0, "matches")
+    assert lang.to_json()["term"] == rx.term(SLUG, 0, "matches")
 
 
 @pytest.mark.parametrize("method, predicate, inside, outside", [
@@ -42,7 +42,7 @@ def test_a_compiled_pattern_reads_as_matches():
 def test_a_bound_method_names_its_predicate(method, predicate, inside, outside):
     compiled = re.compile(r"[a-z]+$", re.I)
     lang = pattern_language(getattr(compiled, method))
-    doc = lang.to_json()["definition"]
+    doc = lang.to_json()["term"]
     assert doc["source"]["predicate"] == predicate and doc["source"]["flags"] == ["ignore case"]
     assert lang.contains(inside) and not lang.contains(outside)
     for text in [inside, outside, "", "AB", "ab\n\n"]:
@@ -56,7 +56,7 @@ def test_a_bound_method_names_its_predicate(method, predicate, inside, outside):
 @pytest.mark.parametrize("predicate", list(rx.PREDICATES))
 def test_pattern_text_and_flags_under_each_predicate(predicate):
     lang = pattern_language(r"^b$", predicate, re.M)
-    doc = lang.to_json()["definition"]
+    doc = lang.to_json()["term"]
     assert doc == rx.term(r"^b$", re.M, predicate)
     json.dumps(lang.to_json(), ensure_ascii=True)
     for text in ["b", "a\nb", "b\na", "a\nb\nc", "ab", "", "b\n"]:
@@ -74,7 +74,7 @@ def test_draws_are_members():
 
 def test_a_pattern_that_is_not_regular_states_its_bounds():
     lang = pattern_language(re.compile(r"(a+)\1"))
-    doc = lang.to_json()["definition"]
+    doc = lang.to_json()["term"]
     assert not doc["exact"] and doc["source"]["not_exact"] == ["a backreference"]
     assert lang.contains("aa") and not lang.contains("aaa")
 
@@ -108,7 +108,7 @@ def _star_set(node):
 @pytest.mark.parametrize("name", ALPHABETS)
 def test_an_alphabet_states_every_string_over_its_characters(name):
     lang = LANGUAGES[name]
-    doc = lang.to_json()["definition"]
+    doc = lang.to_json()["term"]
     assert doc["alphabet"] == [[0, 0x10FFFF]] and doc["kind"] == "regular_language"
     here = {c for c in range(0x110000) if lang.contains(chr(c))}
     if name in VERSIONED:
@@ -131,24 +131,24 @@ def test_an_alphabet_states_every_string_over_its_characters(name):
                                           ("alnum", 0, 0), ("unicode_alpha", 1, 2), ("printable", 0, 3)])
 def test_a_length_bound_refines_the_definition(name, lo, hi):
     refined = length(LANGUAGES[name], length_bound(lo, hi))
-    doc = refined.to_json()["definition"]
+    doc = refined.to_json()["term"]
     assert doc["exact"] == (name not in VERSIONED)
     for text in ["", "1", "12", "123", "1234", "a", "ab", "abc", "a1", "\u00e9", "\U0001F600\U0001F600", " "]:
         inside = refined.contains(text)
         assert not inside or rx.member(doc, text, "at_least"), (name, text)
         assert not rx.member(doc, text, "at_most") or inside, (name, text)
-    assert rx.term_hash(doc) != rx.term_hash(LANGUAGES[name].to_json()["definition"])
+    assert rx.term_hash(doc) != rx.term_hash(LANGUAGES[name].to_json()["term"])
 
 
 def test_a_length_bound_over_a_pattern_language_meets_its_term():
     refined = length(pattern_language(r"a+b?"), length_bound(2, 3))
-    doc = refined.to_json()["definition"]
+    doc = refined.to_json()["term"]
     for text in ["a", "aa", "ab", "aab", "aaab", "aaa", "b", ""]:
         assert rx.member(doc, text) == refined.contains(text)
 
 
 def test_unicode_is_every_string():
-    assert UNICODE.to_json()["definition"]["language"] == rx._EVERY_STRING
+    assert UNICODE.to_json()["term"]["language"] == rx._EVERY_STRING
 
 
 # -- one version, or every supported one ----------------------------------------
@@ -156,7 +156,7 @@ def test_unicode_is_every_string():
 def test_a_language_about_another_python_refuses_to_run_here():
     other = next(v for v in rx.versions_data()["versions"] if v != rx.RUNNING)
     lang = pattern_language(r"\w+", "matches", 0, version=other)
-    doc = lang.to_json()["definition"]
+    doc = lang.to_json()["term"]
     assert doc["exact"] and doc["source"]["versions"] == [other]
     assert f"python {other}" in lang.name
     with pytest.raises(rx.OtherVersion, match=f"this claim is about python {other}"):
@@ -167,17 +167,17 @@ def test_a_language_about_another_python_refuses_to_run_here():
 
 def test_a_language_about_this_python_runs_here():
     lang = pattern_language(r"\w+", "matches", 0, version=rx.RUNNING)
-    doc = lang.to_json()["definition"]
+    doc = lang.to_json()["term"]
     assert doc["exact"] and lang.contains("\u00e9a") and rx.member(doc, "\u00e9a")
     assert lang.contains(lang.sample(random.Random(0)))
 
 
 def test_without_a_version_the_definition_brackets_every_supported_python():
     lang = pattern_language(r"\w+")
-    doc = lang.to_json()["definition"]
+    doc = lang.to_json()["term"]
     assert not doc["exact"] and doc["source"]["versions"] == rx.versions_data()["versions"]
     for text in ["a", "\u00e9", "a b", "", "\U00010570"]:
         inside = lang.contains(text)
         assert not inside or rx.member(doc, text, "at_least")
         assert not rx.member(doc, text, "at_most") or inside
-    assert pattern_language(r"[a-z]+\d", "matches", re.A).to_json()["definition"]["exact"]
+    assert pattern_language(r"[a-z]+\d", "matches", re.A).to_json()["term"]["exact"]

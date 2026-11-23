@@ -127,7 +127,7 @@ def _is_non_bmp(c: str) -> bool:
 UNICODE = TextLanguage(
     "unicode", accepts=_every_str, pool=_UNICODE_POOL,
     categories=_EVERY_ASSIGNED, planes=(0, 0, 0, 1, 2, 14, 15, 16),
-    schema={"definition": every_string_over(((0, 0x10FFFF),), "unicode")})
+    schema={"term": every_string_over(((0, 0x10FFFF),), "unicode")})
 
 #: every string over the 128 ascii code points
 ASCII = TextLanguage(
