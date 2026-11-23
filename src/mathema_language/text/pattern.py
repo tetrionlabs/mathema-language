@@ -177,9 +177,13 @@ class _Item:
 def _quoted(text: str) -> str:
     """Intent:
         `text` between double quotes, as an argument is written inside a predicate's brackets:
-        a backslash and a double quote each take a backslash before them.
+        a backslash and a double quote each take a backslash before them, and a character that
+        does not print (a line feed, a carriage return, a NUL, a lone surrogate) is written as
+        its escape, so the text reads back as a string literal.
     """
-    return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    out = text.replace("\\", "\\\\").replace('"', '\\"')
+    return '"' + "".join(c if c.isprintable() else c.encode("unicode_escape").decode("ascii")
+                         for c in out) + '"'
 
 
 def _run_text(text: str) -> str:
