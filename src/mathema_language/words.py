@@ -846,7 +846,7 @@ CONTAINS = _regex_word("contains", ())
 STARTS_WITH = _regex_word("starts with", ("^=",))
 ENDS_WITH = _regex_word("ends with", ("$=",))
 WITHIN_WORD = _within_word()
-DRAFT_WORDS = frozenset({"within"})  # registered words marked :draft
+_DRAFT_WORDS = frozenset({"within"})  # registered words marked :draft
 PATTERN_WORD = _pattern_word()
 ALPHABET = None if AlphabetConstructor is None else AlphabetConstructor(  # type: ignore[operator]
     build=_build_alphabet, order=_order_alphabet)
@@ -869,4 +869,4 @@ _DRAFT_ROWS: dict[str, str] = {
     "alphabet": 'for s in L[lower + digit + "_"], f(s) = s',
 }
 
-__all__ = ["ALPHABET", "CONTAINS", "DRAFT_WORDS", "ENDS_WITH", "MATCHES", "PATTERN_WORD", "STARTS_WITH", "WITHIN_WORD"]
+__all__ = ["ALPHABET", "CONTAINS", "ENDS_WITH", "MATCHES", "PATTERN_WORD", "STARTS_WITH", "WITHIN_WORD"]
