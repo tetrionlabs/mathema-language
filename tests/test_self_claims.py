@@ -45,7 +45,8 @@ CLAIMS = [
     (text.casefold, "for text in L[unicode], is_encoding_safe(text)", "holds", None),
     (text.strip, "for text in L[unicode], is_length_safe(text)", "holds", None),
     # the predicate languages' membership tests
-    (predicates._is_slug, "for s in L[slug], f(s) == True", "holds", None),
+    (predicates._is_slug, "for s in L[slug], f(s) == True", "proven", None),
+    (predicates._is_slug, "for s in L[slug], f(s) == False", "falsified", None),
     (predicates._is_json, "for s in L[json], f(s) == True", "holds", None),
     (predicates._is_json, "for s in L[unicode], is_language_defined(s)", "holds", None),
     (predicates._is_uuid, "for s in L[unicode], is_language_defined(s)", "holds", None),
