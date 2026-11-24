@@ -219,7 +219,6 @@ mathema_language.text.predicates._is_slug:
         mathema.language_memberships:
           L[slug]: "cd:05535531719e"
           "L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]": "cd:58edff6a1ac9"
-        mathema.previous_verdict: "holds"
         mathema.last_supported_commit: "4252a3bc14f794bb96025b5fe1626cb9f9ad191b"
         mathema.transitions:
           - from: "holds"
@@ -325,6 +324,5 @@ mathema_language.text.predicates._is_slug:
       sites: []
       writes: []
     mathema.premise_state: {}
-    mathema.invalidated_by:
-      - "claims"
+    mathema.invalidated_by: []
     mathema.intent_provenance: "declared"
