@@ -12,9 +12,9 @@ mathema_language.schema.generate._deeper:
     tier: 2
     source_available: true
     pure: true
-    claims_fingerprint: "f340751eefe6"
+    claims_fingerprint: "2a80bb284d5e"
     pin: "none"
-    integrity: "v2:914bb21d7a158cae"
+    integrity: "v2:dc037e656962d7b7"
   math: null
   claims:
     - name: "dependencies_current"
@@ -36,16 +36,15 @@ mathema_language.schema.generate._deeper:
       claim: ""
       basis: "no function dependencies, vacuously current"
   lineage:
-    generated_by: "mathema 0.6.5"
+    generated_by: "mathema 0.6.6.2"
     CDD_spec_version: "0.3.0"
-    date: "2026-11-16"
-    commit: "4252a3bc14f794bb96025b5fe1626cb9f9ad191b"
+    date: "2026-11-24"
+    commit: "0efe919d2351598d7b9a0419597f25dbe2108ec7"
   meta:
     mathema.effects:
       line: "no side effects"
       sites: []
       writes: []
     mathema.premise_state: {}
-    mathema.invalidated_by:
-      - "record-format"
+    mathema.invalidated_by: []
     mathema.intent_provenance: "declared"
