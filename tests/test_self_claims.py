@@ -8,11 +8,16 @@ arbitrary text; the table vocabulary's empty cases. A falsified row is
 a real finding about the function, with its witness pinned. What
 mathema could not state about the package is in the task notes, not
 forced here."""
+import importlib.util
+
 import pytest
 
 pytest.importorskip("mathema")
 
 from mathema.conjecture import check_conjectures, claim  # noqa: E402
+
+#: a claim the solver route proves is proven with z3 installed and holds without it
+WITH_SMT = "proven" if importlib.util.find_spec("z3") else "holds"
 
 import mathema_language.text.predicates as predicates  # noqa: E402
 import mathema_language.vocabulary.text as text  # noqa: E402
@@ -45,7 +50,7 @@ CLAIMS = [
     (text.casefold, "for text in L[unicode], is_encoding_safe(text)", "holds", None),
     (text.strip, "for text in L[unicode], is_length_safe(text)", "holds", None),
     # the predicate languages' membership tests
-    (predicates._is_slug, "for s in L[slug], f(s) == True", "proven", None),
+    (predicates._is_slug, "for s in L[slug], f(s) == True", WITH_SMT, None),
     (predicates._is_slug, "for s in L[slug], f(s) == False", "falsified", None),
     (predicates._is_json, "for s in L[json], f(s) == True", "holds", None),
     (predicates._is_json, "for s in L[unicode], is_language_defined(s)", "holds", None),
