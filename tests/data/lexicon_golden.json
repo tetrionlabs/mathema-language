@@ -289,6 +289,46 @@
   "unicode": "∀ s ∈ L[astral] \\ {\"\"}, f(s) = 2*len(s)",
   "ascii": "for s in L[astral] \\ {\"\"}, f(s) = 2*len(s)"
  },
+ "language_lower_slug": {
+  "input": "for s in L[lower], f(s) == s",
+  "unicode": "∀ s ∈ L[lower], f(s) = s",
+  "ascii": "for s in L[lower], f(s) = s"
+ },
+ "language_upper_slug": {
+  "input": "for s in L[upper], f(s) in L[lower]",
+  "unicode": "∀ s ∈ L[upper], f(s) ∈ L[lower]",
+  "ascii": "for s in L[upper], f(s) in L[lower]"
+ },
+ "language_matches_slug": {
+  "input": "for s in L[unicode, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))], f(s) == s",
+  "unicode": "∀ s ∈ L[unicode, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))], f(s) = s",
+  "ascii": "for s in L[unicode, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))], f(s) = s"
+ },
+ "language_contains_escape": {
+  "input": "for s in L[unicode, contains (\"<\")], f(s) != s",
+  "unicode": "∀ s ∈ L[unicode, contains (\"<\")], f(s) ≠ s",
+  "ascii": "for s in L[unicode, contains (\"<\")], f(s) != s"
+ },
+ "language_starts_with_collapse": {
+  "input": "for s in L[unicode, starts with (\" \")], f(s) != s",
+  "unicode": "∀ s ∈ L[unicode, starts with (\" \")], f(s) ≠ s",
+  "ascii": "for s in L[unicode, starts with (\" \")], f(s) != s"
+ },
+ "language_ends_with_collapse": {
+  "input": "for s in L[unicode, ends with (\" \")], f(s) != s",
+  "unicode": "∀ s ∈ L[unicode, ends with (\" \")], f(s) ≠ s",
+  "ascii": "for s in L[unicode, ends with (\" \")], f(s) != s"
+ },
+ "language_pattern_postcode": {
+  "input": "for s in L[ascii, pattern (\"AA99' '9AA\")], f(s) == s",
+  "unicode": "∀ s ∈ L[ascii, pattern (\"AA99 9AA\")], f(s) = s",
+  "ascii": "for s in L[ascii, pattern (\"AA99 9AA\")], f(s) = s"
+ },
+ "language_alphabet_slug": {
+  "input": "for s in L[lower + digit + \"-\"], f(s) in L[lower + digit + \"-\"]",
+  "unicode": "∀ s ∈ L[lower + digit + \"-\"], f(s) ∈ L[lower + digit + \"-\"]",
+  "ascii": "for s in L[lower + digit + \"-\"], f(s) in L[lower + digit + \"-\"]"
+ },
  "family_excluded_outside_domain": {
   "input": "for s in L[uuid], excluded_outside_domain(s)",
   "unicode": "∀ s ∈ L[uuid], s excluded outside domain",

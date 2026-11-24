@@ -44,7 +44,14 @@ def test_every_family_has_a_row(name):
 
 @pytest.mark.parametrize("key", _registered("mathema.language_refinements"))
 def test_every_refinement_key_has_a_row(key):
-    assert any(re.search(rf"L\[[^\]]*,\s*{key}\s*(<=|<|>=|>|in)", row) for row in ROWS), key
+    spelled = re.escape(key).replace("_", "[ _]")
+    loaded = next(ep.load() for ep in md.distribution("mathema-language").entry_points
+                  if ep.group == "mathema.language_refinements" and ep.name == key)
+    if type(loaded).__name__ == "AlphabetConstructor":
+        assert any(re.search(r"L\[\w+(?: \+ (?:\w+|\"[^\"]*\"))+[\],]", row) for row in ROWS), key
+    else:
+        assert any(re.search(rf"L\[[^\]]*,\s*(?:not\s+)?{spelled}\s*(<=|<|>=|>|in|\()", row)
+                   for row in ROWS), key
 
 
 def _adaptors_used():
