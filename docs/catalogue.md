@@ -144,7 +144,8 @@ def is_slug(s: str) -> bool:
 
 | Function | Claim | Verdict | Why |
 |---|---|---|---|
-| `is_slug` | `for s in L[slug], f(s) == True` | holds | Every member of `L[slug]` is accepted. |
+| `is_slug` | `for s in L[slug], f(s) == True` | proven (holds without the smt extra) | Every member of `L[slug]` is accepted. |
+| `is_slug` | `for s in L[slug], f(s) == False` | falsified | A member of `L[slug]` is accepted, so the claim that none is fails. |
 | `is_slug` | `for s in L[slug], is_length_safe(s)` | holds | The pattern is linear in the input, so the long and pathological members return promptly. |
 | `is_slug` | `for s in L[unicode], is_language_defined(s)` | holds | A `fullmatch` never raises on a `str`, whatever it holds. |
 

@@ -3,7 +3,7 @@
 """The language of a Python pattern under a predicate, and the terms the
 alphabet languages state.
 
-`pattern_language` builds the language from a compiled pattern, a
+`regex_language` builds the language from a compiled pattern, a
 pattern's text, or a compiled pattern's `fullmatch`, `search` or `match`
 method: membership is `re` itself, its definition is the term, its
 draws are members. A bare compiled pattern is not a language by itself:
@@ -18,7 +18,7 @@ import pytest
 
 from mathema_language._surface import language_problems
 from mathema_language.refinements import length, length_bound
-from mathema_language.text import LANGUAGES, UNICODE, adapt, pattern_language
+from mathema_language.text import LANGUAGES, UNICODE, adapt, regex_language
 from mathema_language.text import _regular as rx
 
 SLUG = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
@@ -29,7 +29,7 @@ def test_the_text_adaptor_does_not_read_a_bare_pattern():
 
 
 def test_a_compiled_pattern_reads_as_matches():
-    lang = pattern_language(SLUG)
+    lang = regex_language(SLUG)
     assert lang.contains("a-b1") and not lang.contains("a-") and not lang.contains("a-b\n")
     assert not lang.contains(3) and language_problems(lang) == []
     assert lang.to_json()["term"] == rx.term(SLUG, 0, "matches")
@@ -41,21 +41,21 @@ def test_a_compiled_pattern_reads_as_matches():
 ])
 def test_a_bound_method_names_its_predicate(method, predicate, inside, outside):
     compiled = re.compile(r"[a-z]+$", re.I)
-    lang = pattern_language(getattr(compiled, method))
+    lang = regex_language(getattr(compiled, method))
     doc = lang.to_json()["term"]
     assert doc["source"]["predicate"] == predicate and doc["source"]["flags"] == ["ignore case"]
     assert lang.contains(inside) and not lang.contains(outside)
     for text in [inside, outside, "", "AB", "ab\n\n"]:
         assert rx.member(doc, text) == lang.contains(text)
     with pytest.raises(ValueError, match="reads as"):
-        pattern_language(getattr(compiled, method), "ends with")
+        regex_language(getattr(compiled, method), "ends with")
     with pytest.raises(ValueError):
-        pattern_language(compiled.sub)
+        regex_language(compiled.sub)
 
 
 @pytest.mark.parametrize("predicate", list(rx.PREDICATES))
 def test_pattern_text_and_flags_under_each_predicate(predicate):
-    lang = pattern_language(r"^b$", predicate, re.M)
+    lang = regex_language(r"^b$", predicate, re.M)
     doc = lang.to_json()["term"]
     assert doc == rx.term(r"^b$", re.M, predicate)
     json.dumps(lang.to_json(), ensure_ascii=True)
@@ -66,14 +66,14 @@ def test_pattern_text_and_flags_under_each_predicate(predicate):
 def test_draws_are_members():
     for source, predicate in [(SLUG, None), (re.compile(r"\d{3}-\d{4}").search, None),
                               (r"(?i)colou?r", "starts with"), (r"a$", "ends with")]:
-        lang = pattern_language(source, predicate)
+        lang = regex_language(source, predicate)
         rng = random.Random(0)
         for _ in range(20):
             assert lang.contains(lang.sample(rng))
 
 
 def test_a_pattern_that_is_not_regular_states_its_bounds():
-    lang = pattern_language(re.compile(r"(a+)\1"))
+    lang = regex_language(re.compile(r"(a+)\1"))
     doc = lang.to_json()["term"]
     assert not doc["exact"] and doc["source"]["not_exact"] == ["a backreference"]
     assert lang.contains("aa") and not lang.contains("aaa")
@@ -81,7 +81,7 @@ def test_a_pattern_that_is_not_regular_states_its_bounds():
 
 def test_a_bytes_pattern_is_refused():
     with pytest.raises(rx.NotRegular):
-        pattern_language(re.compile(rb"a"))
+        regex_language(re.compile(rb"a"))
 
 
 # -- the alphabet languages ----------------------------------------------------
@@ -141,7 +141,7 @@ def test_a_length_bound_refines_the_definition(name, lo, hi):
 
 
 def test_a_length_bound_over_a_pattern_language_meets_its_term():
-    refined = length(pattern_language(r"a+b?"), length_bound(2, 3))
+    refined = length(regex_language(r"a+b?"), length_bound(2, 3))
     doc = refined.to_json()["term"]
     for text in ["a", "aa", "ab", "aab", "aaab", "aaa", "b", ""]:
         assert rx.member(doc, text) == refined.contains(text)
@@ -155,7 +155,7 @@ def test_unicode_is_every_string():
 
 def test_a_language_about_another_python_refuses_to_run_here():
     other = next(v for v in rx.versions_data()["versions"] if v != rx.RUNNING)
-    lang = pattern_language(r"\w+", "matches", 0, version=other)
+    lang = regex_language(r"\w+", "matches", 0, version=other)
     doc = lang.to_json()["term"]
     assert doc["exact"] and doc["source"]["versions"] == [other]
     assert f"python {other}" in lang.name
@@ -166,18 +166,18 @@ def test_a_language_about_another_python_refuses_to_run_here():
 
 
 def test_a_language_about_this_python_runs_here():
-    lang = pattern_language(r"\w+", "matches", 0, version=rx.RUNNING)
+    lang = regex_language(r"\w+", "matches", 0, version=rx.RUNNING)
     doc = lang.to_json()["term"]
     assert doc["exact"] and lang.contains("\u00e9a") and rx.member(doc, "\u00e9a")
     assert lang.contains(lang.sample(random.Random(0)))
 
 
 def test_without_a_version_the_definition_brackets_every_supported_python():
-    lang = pattern_language(r"\w+")
+    lang = regex_language(r"\w+")
     doc = lang.to_json()["term"]
     assert not doc["exact"] and doc["source"]["versions"] == rx.versions_data()["versions"]
     for text in ["a", "\u00e9", "a b", "", "\U00010570"]:
         inside = lang.contains(text)
         assert not inside or rx.member(doc, text, "at_least")
         assert not rx.member(doc, text, "at_most") or inside
-    assert pattern_language(r"[a-z]+\d", "matches", re.A).to_json()["term"]["exact"]
+    assert regex_language(r"[a-z]+\d", "matches", re.A).to_json()["term"]["exact"]

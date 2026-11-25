@@ -39,6 +39,7 @@ CLASSES = {
     "invisible": lambda c: unicodedata.category(c) == "Cf",
     "combining": lambda c: unicodedata.category(c) in MARKS,
     "compatibility": lambda c: unicodedata.normalize("NFKC", c) != c,
+    "lowercase_letter": lambda c: unicodedata.category(c) == "Ll",
 }
 
 

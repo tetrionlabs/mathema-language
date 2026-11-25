@@ -133,7 +133,8 @@ class Constraints:
     """The value constraints a field carries beyond its type: bounds
     (inclusive `min`/`max`, or the exclusive pair), a length range for
     text, binary and lists, a regular expression the whole text must
-    match, an enumeration, a constant, and a divisor."""
+    match (with `pattern`, the pattern marker it was read from, when it
+    was read from one), an enumeration, a constant, and a divisor."""
     min: Any = None
     max: Any = None
     exclusive_min: Any = None
@@ -141,6 +142,7 @@ class Constraints:
     min_len: Count | None = None
     max_len: Count | None = None
     regex: str | None = None
+    pattern: Any = None
     enum: tuple[Any, ...] | None = None
     const: Any = NO_DEFAULT
     multiple_of: Any = None
@@ -148,11 +150,14 @@ class Constraints:
     def __post_init__(self) -> None:
         _in_range("min_len", self.min_len, 0, None)
         _in_range("max_len", self.max_len, 0, None)
+        from ..text.pattern import Pattern
+        if self.pattern is not None and not isinstance(self.pattern, Pattern):
+            raise TypeError(f"a pattern constraint is a Pattern, not {self.pattern!r}")
 
     def __bool__(self) -> bool:
         return any(v is not None for v in (self.min, self.max, self.exclusive_min,
                                            self.exclusive_max, self.min_len, self.max_len,
-                                           self.regex, self.enum, self.multiple_of)) \
+                                           self.regex, self.pattern, self.enum, self.multiple_of)) \
             or self.const is not NO_DEFAULT
 
     @property
@@ -176,6 +181,8 @@ class Constraints:
             parts.append(f"len in [{self.min_len or 0}, {self.max_len if self.max_len is not None else 'inf'}]")
         if self.regex is not None:
             parts.append(f"matches {self.regex!r}")
+        if self.pattern is not None:
+            parts.append(f"pattern ({self.pattern.arguments})")
         if self.enum is not None:
             parts.append("one of {" + ", ".join(repr(v) for v in self.enum) + "}")
         if self.const is not NO_DEFAULT:

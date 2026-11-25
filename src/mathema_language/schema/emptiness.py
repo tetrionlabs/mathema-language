@@ -188,15 +188,29 @@ def _class_text(items: Any) -> Iterator[str]:
             yield f"{re.escape(chr(arg[0]))}-{re.escape(chr(arg[1]))}"
 
 
+def _algebra_shortest(pattern: Any) -> str | None:
+    """Intent:
+        A shortest member of a pattern's term as the running Python reads its classes, or None
+        when there is none within the search's reach.
+    """
+    from ..text import _algebra
+    return _algebra.shortest(pattern._reading())
+
+
 def _text_candidates(f: Field) -> Iterator[str]:
     """Intent:
         Yields candidate texts for a string field: the empty text, the shortest text of its
-        minimum length, and its pattern's shortest match, padded to that length when shorter.
+        minimum length, the shortest member of its pattern's term, and its regular expression's
+        shortest match, padded to that length when shorter.
     """
     c = f.constraints
     lo = c.min_len if isinstance(c.min_len, int) and c.min_len > 0 else 0
     yield ""
     yield "a" * lo
+    if c.pattern is not None:
+        shortest = _algebra_shortest(c.pattern)
+        if shortest is not None:
+            yield shortest
     if c.regex is not None:
         match = _shortest_match(c.regex)
         if match is not None:

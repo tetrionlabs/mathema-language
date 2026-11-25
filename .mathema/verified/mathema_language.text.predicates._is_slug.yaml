@@ -12,16 +12,16 @@ mathema_language.text.predicates._is_slug:
     tier: 2
     source_available: true
     pure: true
-    claims_fingerprint: "2135f1fa35ac"
+    claims_fingerprint: "98a362e970fa"
     pin: "none"
-    integrity: "v2:f7fdd1e4d33d65fe"
+    integrity: "v2:33e307a5c521d8ef"
   math: null
   claims:
     - name: "accepts_its_members"
       statement: "for s in L[slug], f(s) = True"
       verdict: "holds"
       n: 160
-      note: "s in L[slug] (entry point mathema_language.text:SLUG); derive cannot read s, a string or structured value from a language domain (it decides only a finite language, member by member), so the probe decided it by running the code"
+      note: "s in L[slug] (entry point mathema_language.text:SLUG); derive could not decide it (smt: membership, s in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]: z3 is not installed (the mathema[smt] extra)), so the probe decided it by running the code"
       route: "probe"
       authored:
         surface: "claims-file"
@@ -48,8 +48,8 @@ mathema_language.text.predicates._is_slug:
             wide_domain: 0
             float_extremes: 0
             language: 1
-        mathema.routes_attempted: "routes attempted, derive: underivable (derive cannot read s, a string or structured value from a language domain (it decides only a finite language, member by member)); probe: holds"
-        mathema.derive_status: "unliftable"
+        mathema.routes_attempted: "routes attempted, derive: undecided (smt: membership, s in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]: z3 is not installed (the mathema[smt] extra)); probe: holds"
+        mathema.derive_status: "undecided"
         mathema.language:
           s:
             - name: "slug"
@@ -61,7 +61,84 @@ mathema_language.text.predicates._is_slug:
                 language: "slug"
                 level: "regular"
                 pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                term:
+                  kind: "regular_language"
+                  version: 1
+                  alphabet:
+                    - - 0
+                      - 1114111
+                  exact: true
+                  source:
+                    dialect: "python"
+                    versions:
+                      - "3.10"
+                      - "3.11"
+                      - "3.12"
+                      - "3.13"
+                      - "3.14"
+                    unicode:
+                      - "13.0.0"
+                      - "14.0.0"
+                      - "15.0.0"
+                      - "15.1.0"
+                      - "16.0.0"
+                    pattern: "[a-z0-9]+(?:-[a-z0-9]+)*"
+                    flags: []
+                    predicate: "matches"
+                    decided_by: "re.fullmatch"
+                  language:
+                    op: "concat"
+                    args:
+                      - op: "repeat"
+                        arg:
+                          op: "chars"
+                          ranges:
+                            - - 48
+                              - 57
+                            - - 97
+                              - 122
+                        min: 1
+                        max: null
+                      - op: "repeat"
+                        arg:
+                          op: "concat"
+                          args:
+                            - op: "literal"
+                              codes:
+                                - 45
+                            - op: "repeat"
+                              arg:
+                                op: "chars"
+                                ranges:
+                                  - - 48
+                                    - 57
+                                  - - 97
+                                    - 122
+                              min: 1
+                              max: null
+                        min: 0
+                        max: null
         mathema.surface: "declared"
+        mathema.language_definitions:
+          L[slug]: "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
+          "L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]": "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
+        mathema.last_supported_commit: "0efe919d2351598d7b9a0419597f25dbe2108ec7"
+        mathema.previous_verdict: "proven"
+        mathema.transitions:
+          - from: "holds"
+            to: "proven"
+            kind: "strengthened"
+            cause: "this function changed"
+            at: "2026-11-24"
+            invalidated_by:
+              - "claims"
+          - from: "proven"
+            to: "holds"
+            kind: "weakened"
+            cause: "this function changed"
+            at: "2026-11-25"
+            invalidated_by:
+              - "language-definition"
     - name: "defined_on_any_text"
       statement: "for s in L[unicode], is_language_defined(s)"
       verdict: "holds"
@@ -92,7 +169,28 @@ mathema_language.text.predicates._is_slug:
                 type: "string"
                 language: "unicode"
                 level: "alphabet"
+                term:
+                  kind: "regular_language"
+                  version: 1
+                  alphabet:
+                    - - 0
+                      - 1114111
+                  exact: true
+                  language:
+                    op: "repeat"
+                    arg:
+                      op: "chars"
+                      ranges:
+                        - - 0
+                          - 1114111
+                    min: 0
+                    max: null
+                  source:
+                    alphabet: "unicode"
         mathema.surface: "declared"
+        mathema.language_definitions:
+          L[unicode]: "58dbbd588979e551905e19b2b6530645792ca1bdd4c15c7e572630e90e4f2978"
+          "L[unicode, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]": "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
     - name: "dependencies_current"
       verdict: "proven"
       note: "generated by mathema verify; checked against the verified store"
@@ -122,10 +220,10 @@ mathema_language.text.predicates._is_slug:
       claim: "instantiates: differentiation"
       basis: "deterministic concept tagging"
   lineage:
-    generated_by: "mathema 0.6.5"
+    generated_by: "mathema 0.6.6.2"
     CDD_spec_version: "0.3.0"
-    date: "2026-11-16"
-    commit: "4252a3bc14f794bb96025b5fe1626cb9f9ad191b"
+    date: "2026-11-25"
+    commit: "bb6ae1b1d1e96286b3b292d8707aac5fcb2b18c4"
   meta:
     mathema.concept_sources:
       mechanism:
@@ -138,5 +236,5 @@ mathema_language.text.predicates._is_slug:
       writes: []
     mathema.premise_state: {}
     mathema.invalidated_by:
-      - "record-format"
+      - "language-definition"
     mathema.intent_provenance: "declared"
