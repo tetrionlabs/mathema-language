@@ -1,8 +1,8 @@
 {
-  "implementation": 87,
-  "intent": 71,
+  "implementation": 89,
+  "intent": 72,
   "clarity": 16,
-  "overall": 29,
+  "overall": 30,
   "clarity_algo": "entropy-dimensions@1.4",
   "per_function": {
     "mathema_language._lexicon_models.admin.build_parser": {
@@ -14,6 +14,11 @@
       "implementation": 100,
       "intent": 32,
       "clarity": 7
+    },
+    "mathema_language._surface._later": {
+      "implementation": 83,
+      "intent": 80,
+      "clarity": 14
     },
     "mathema_language.adaptor_priority.priority": {
       "implementation": 100,
@@ -226,7 +231,7 @@
       "clarity": 39
     },
     "mathema_language.families._string_params": {
-      "implementation": 0,
+      "implementation": 100,
       "intent": 93,
       "clarity": 25
     },
@@ -801,9 +806,9 @@
       "clarity": 12
     },
     "mathema_language.schema.adaptors._hints.constraints_of": {
-      "implementation": 89,
+      "implementation": 91,
       "intent": 44,
-      "clarity": 12
+      "clarity": 11
     },
     "mathema_language.schema.adaptors._hints._decimal_digits": {
       "implementation": 100,
@@ -1470,10 +1475,15 @@
       "intent": 92,
       "clarity": 19
     },
-    "mathema_language.schema.emptiness._text_candidates": {
-      "implementation": 100,
-      "intent": 84,
+    "mathema_language.schema.emptiness._algebra_shortest": {
+      "implementation": 0,
+      "intent": 92,
       "clarity": 16
+    },
+    "mathema_language.schema.emptiness._text_candidates": {
+      "implementation": 79,
+      "intent": 88,
+      "clarity": 12
     },
     "mathema_language.schema.emptiness._candidates": {
       "implementation": 57,
@@ -1561,9 +1571,9 @@
       "clarity": 22
     },
     "mathema_language.schema.generate._draw_string": {
-      "implementation": 100,
+      "implementation": 95,
       "intent": 80,
-      "clarity": 14
+      "clarity": 13
     },
     "mathema_language.schema.generate.draw_raw": {
       "implementation": 82,
@@ -1771,7 +1781,7 @@
       "clarity": 7
     },
     "mathema_language.schema.model.Constraints.render": {
-      "implementation": 88,
+      "implementation": 83,
       "intent": 21,
       "clarity": 5
     },
@@ -1911,7 +1921,7 @@
       "clarity": 20
     },
     "mathema_language.smt.MembershipEncoding.member": {
-      "implementation": 89,
+      "implementation": 90,
       "intent": 44,
       "clarity": 10
     },
@@ -2131,7 +2141,7 @@
       "clarity": 16
     },
     "mathema_language.smt._unread_pydantic": {
-      "implementation": 89,
+      "implementation": 91,
       "intent": 85,
       "clarity": 16
     },
@@ -2151,7 +2161,7 @@
       "clarity": 23
     },
     "mathema_language.smt._scalar": {
-      "implementation": 88,
+      "implementation": 92,
       "intent": 92,
       "clarity": 27
     },
@@ -2396,7 +2406,7 @@
       "clarity": 24
     },
     "mathema_language.text._algebra._loop": {
-      "implementation": 86,
+      "implementation": 100,
       "intent": 36,
       "clarity": 25
     },
@@ -2467,8 +2477,23 @@
     },
     "mathema_language.text._algebra.holds": {
       "implementation": 100,
-      "intent": 87,
-      "clarity": 17
+      "intent": 76,
+      "clarity": 12
+    },
+    "mathema_language.text._algebra._counted": {
+      "implementation": 100,
+      "intent": 90,
+      "clarity": 22
+    },
+    "mathema_language.text._algebra._ends_from": {
+      "implementation": 96,
+      "intent": 62,
+      "clarity": 19
+    },
+    "mathema_language.text._algebra._repeat_ends": {
+      "implementation": 100,
+      "intent": 61,
+      "clarity": 28
     },
     "mathema_language.text._algebra.member": {
       "implementation": 93,
@@ -2499,6 +2524,26 @@
       "implementation": 100,
       "intent": 69,
       "clarity": 19
+    },
+    "mathema_language.text._finite._class": {
+      "implementation": 93,
+      "intent": 95,
+      "clarity": 18
+    },
+    "mathema_language.text._finite._heads": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 22
+    },
+    "mathema_language.text._finite.finite_pattern": {
+      "implementation": 100,
+      "intent": 87,
+      "clarity": 13
+    },
+    "mathema_language.text._finite.finite_complement": {
+      "implementation": 84,
+      "intent": 88,
+      "clarity": 16
     },
     "mathema_language.text._kit.TextLanguage.to_json": {
       "implementation": 100,
@@ -2661,7 +2706,7 @@
       "clarity": 12
     },
     "mathema_language.text._regular.class_bounds": {
-      "implementation": 86,
+      "implementation": 100,
       "intent": 84,
       "clarity": 13
     },
@@ -2711,7 +2756,7 @@
       "clarity": 20
     },
     "mathema_language.text._regular._Regex._item": {
-      "implementation": 98,
+      "implementation": 96,
       "intent": 69,
       "clarity": 10
     },
@@ -2735,10 +2780,35 @@
       "intent": 81,
       "clarity": 3
     },
+    "mathema_language.text._regular._parsed_constructs": {
+      "implementation": 97,
+      "intent": 93,
+      "clarity": 8
+    },
+    "mathema_language.text._regular._written_constructs": {
+      "implementation": 86,
+      "intent": 88,
+      "clarity": 12
+    },
+    "mathema_language.text._regular.constructs": {
+      "implementation": 100,
+      "intent": 71,
+      "clarity": 12
+    },
+    "mathema_language.text._regular.other_version_problem": {
+      "implementation": 81,
+      "intent": 55,
+      "clarity": 16
+    },
     "mathema_language.text._regular.term": {
-      "implementation": 96,
+      "implementation": 97,
       "intent": 82,
-      "clarity": 15
+      "clarity": 12
+    },
+    "mathema_language.text._regular.under_predicate": {
+      "implementation": 80,
+      "intent": 85,
+      "clarity": 8
     },
     "mathema_language.text._regular.runs": {
       "implementation": 90,
@@ -2770,9 +2840,19 @@
       "intent": 86,
       "clarity": 11
     },
+    "mathema_language.text._regular.beside": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 27
+    },
     "mathema_language.text._regular.pattern_language": {
+      "implementation": 100,
+      "intent": 62,
+      "clarity": 28
+    },
+    "mathema_language.text._regular.regex_language": {
       "implementation": 89,
-      "intent": 65,
+      "intent": 66,
       "clarity": 10
     },
     "mathema_language.text.alphabets._every_str": {
@@ -2840,6 +2920,176 @@
       "intent": 93,
       "clarity": 25
     },
+    "mathema_language.text.alphabets._named_bounds": {
+      "implementation": 100,
+      "intent": 90,
+      "clarity": 16
+    },
+    "mathema_language.text.alphabets._quoted_character": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 15
+    },
+    "mathema_language.text.alphabets.Alphabet.bounds_on": {
+      "implementation": 100,
+      "intent": 51,
+      "clarity": 12
+    },
+    "mathema_language.text.alphabets.Alphabet.has": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 21
+    },
+    "mathema_language.text.alphabets.parse_alphabet": {
+      "implementation": 93,
+      "intent": 92,
+      "clarity": 7
+    },
+    "mathema_language.text.alphabets.alphabet": {
+      "implementation": 100,
+      "intent": 67,
+      "clarity": 12
+    },
+    "mathema_language.text.alphabets._pool": {
+      "implementation": 100,
+      "intent": 67,
+      "clarity": 26
+    },
+    "mathema_language.text.alphabets.outside_characters": {
+      "implementation": 100,
+      "intent": 91,
+      "clarity": 24
+    },
+    "mathema_language.text.alphabets.plain_character": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 23
+    },
+    "mathema_language.text.alphabets.AlphabetLanguage.sample": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 18
+    },
+    "mathema_language.text.alphabets.AlphabetLanguage.outside": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 20
+    },
+    "mathema_language.text.alphabets.AlphabetLanguage.term": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 8
+    },
+    "mathema_language.text.alphabets.AlphabetLanguage.to_json": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.text.alphabets.alphabet_language": {
+      "implementation": 100,
+      "intent": 53,
+      "clarity": 10
+    },
+    "mathema_language.text.alphabets.alphabet_refusal": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 14
+    },
+    "mathema_language.text.explain._size": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 25
+    },
+    "mathema_language.text.explain._one": {
+      "implementation": 100,
+      "intent": 66,
+      "clarity": 12
+    },
+    "mathema_language.text.explain._listed": {
+      "implementation": 100,
+      "intent": 86,
+      "clarity": 13
+    },
+    "mathema_language.text.explain._minus": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 17
+    },
+    "mathema_language.text.explain._contained": {
+      "implementation": 91,
+      "intent": 89,
+      "clarity": 8
+    },
+    "mathema_language.text.explain.describe_characters": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 9
+    },
+    "mathema_language.text.explain._count": {
+      "implementation": 100,
+      "intent": 67,
+      "clarity": 19
+    },
+    "mathema_language.text.explain._is_final_newline": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 16
+    },
+    "mathema_language.text.explain._runs": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 14
+    },
+    "mathema_language.text.explain._whole": {
+      "implementation": 88,
+      "intent": 93,
+      "clarity": 16
+    },
+    "mathema_language.text.explain._simple": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 26
+    },
+    "mathema_language.text.explain._read": {
+      "implementation": 90,
+      "intent": 57,
+      "clarity": 10
+    },
+    "mathema_language.text.explain._inner": {
+      "implementation": 100,
+      "intent": 63,
+      "clarity": 17
+    },
+    "mathema_language.text.explain._bracketed": {
+      "implementation": 100,
+      "intent": 65,
+      "clarity": 12
+    },
+    "mathema_language.text.explain.explain_node": {
+      "implementation": 100,
+      "intent": 78,
+      "clarity": 12
+    },
+    "mathema_language.text.explain.explain": {
+      "implementation": 100,
+      "intent": 91,
+      "clarity": 20
+    },
+    "mathema_language.text.explain._explain": {
+      "implementation": 100,
+      "intent": 88,
+      "clarity": 6
+    },
+    "mathema_language.text.explain._reading": {
+      "implementation": 100,
+      "intent": 94,
+      "clarity": 19
+    },
+    "mathema_language.text.explain._and": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 20
+    },
     "mathema_language.text.generate.draw_char": {
       "implementation": 100,
       "intent": 50,
@@ -2865,40 +3115,335 @@
       "intent": 95,
       "clarity": 10
     },
+    "mathema_language.text.path_language._normal_roots": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 22
+    },
+    "mathema_language.text.path_language._absolute": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 20
+    },
     "mathema_language.text.path_language.within_pattern": {
       "implementation": 100,
       "intent": 52,
       "clarity": 15
+    },
+    "mathema_language.text.path_language._safe_beside": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 18
+    },
+    "mathema_language.text.path_language._near": {
+      "implementation": 100,
+      "intent": 81,
+      "clarity": 13
     },
     "mathema_language.text.path_language.PathLanguage.contains": {
       "implementation": 100,
       "intent": 50,
       "clarity": 21
     },
-    "mathema_language.text.path_language.PathLanguage.to_json": {
-      "implementation": 100,
-      "intent": 21,
-      "clarity": 4
-    },
     "mathema_language.text.path_language.PathLanguage.hazards": {
       "implementation": 100,
       "intent": 32,
       "clarity": 14
     },
+    "mathema_language.text.path_language.PathLanguage.term": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.text.path_language.PathLanguage.to_json": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
     "mathema_language.text.path_language.PathLanguage.outside": {
       "implementation": 83,
       "intent": 50,
-      "clarity": 21
+      "clarity": 22
     },
     "mathema_language.text.path_language._generate": {
-      "implementation": 91,
+      "implementation": 92,
       "intent": 93,
-      "clarity": 20
+      "clarity": 23
+    },
+    "mathema_language.text.path_language._quoted": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 21
     },
     "mathema_language.text.path_language.path_within": {
       "implementation": 100,
-      "intent": 45,
+      "intent": 46,
+      "clarity": 10
+    },
+    "mathema_language.text.pattern._and": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 20
+    },
+    "mathema_language.text.pattern._quoted": {
+      "implementation": 100,
+      "intent": 88,
+      "clarity": 21
+    },
+    "mathema_language.text.pattern._run_text": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 23
+    },
+    "mathema_language.text.pattern._count": {
+      "implementation": 100,
+      "intent": 74,
+      "clarity": 15
+    },
+    "mathema_language.text.pattern._quoted_run": {
+      "implementation": 100,
+      "intent": 74,
+      "clarity": 17
+    },
+    "mathema_language.text.pattern._parse": {
+      "implementation": 97,
+      "intent": 69,
+      "clarity": 10
+    },
+    "mathema_language.text.pattern._longest": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 18
+    },
+    "mathema_language.text.pattern._suffix": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 28
+    },
+    "mathema_language.text.pattern._bare": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 21
+    },
+    "mathema_language.text.pattern._text": {
+      "implementation": 100,
+      "intent": 87,
+      "clarity": 12
+    },
+    "mathema_language.text.pattern._class_bounds": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 19
+    },
+    "mathema_language.text.pattern._Classes.of": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.pattern._Classes.ranges": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 14
+    },
+    "mathema_language.text.pattern._Classes.bounds": {
+      "implementation": 100,
+      "intent": 52,
+      "clarity": 19
+    },
+    "mathema_language.text.pattern._Classes.varying": {
+      "implementation": 100,
+      "intent": 52,
+      "clarity": 13
+    },
+    "mathema_language.text.pattern._Classes.has": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 24
+    },
+    "mathema_language.text.pattern._Classes.noun": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.text.pattern._Classes.plain": {
+      "implementation": 100,
+      "intent": 52,
+      "clarity": 14
+    },
+    "mathema_language.text.pattern._Classes.edges": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.text.pattern._Classes.wrong": {
+      "implementation": 100,
+      "intent": 58,
+      "clarity": 16
+    },
+    "mathema_language.text.pattern._Classes.pick": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.text.pattern._symbols": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 16
+    },
+    "mathema_language.text.pattern._expression": {
+      "implementation": 100,
+      "intent": 67,
+      "clarity": 20
+    },
+    "mathema_language.text.pattern._Draw.count": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 20
+    },
+    "mathema_language.text.pattern._Draw.one": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.text.pattern._Draw.write": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 12
+    },
+    "mathema_language.text.pattern._walk": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 24
+    },
+    "mathema_language.text.pattern._defects": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 14
+    },
+    "mathema_language.text.pattern.Pattern._bound_text": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.text.pattern.Pattern._reading": {
+      "implementation": 100,
+      "intent": 47,
+      "clarity": 2
+    },
+    "mathema_language.text.pattern.Pattern._holds": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 15
+    },
+    "mathema_language.text.pattern.Pattern.term": {
+      "implementation": 100,
+      "intent": 55,
       "clarity": 8
+    },
+    "mathema_language.text.pattern.Pattern.explain": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.text.pattern.Pattern.draw": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 16
+    },
+    "mathema_language.text.pattern.Pattern.members": {
+      "implementation": 100,
+      "intent": 40,
+      "clarity": 9
+    },
+    "mathema_language.text.pattern.Pattern.near_misses": {
+      "implementation": 100,
+      "intent": 52,
+      "clarity": 13
+    },
+    "mathema_language.text.pattern.Pattern.language": {
+      "implementation": 100,
+      "intent": 37,
+      "clarity": 4
+    },
+    "mathema_language.text.pattern.PatternLanguage.sample": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 23
+    },
+    "mathema_language.text.pattern.PatternLanguage.outside": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 19
+    },
+    "mathema_language.text.pattern.PatternLanguage.term": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.text.pattern.PatternLanguage.to_json": {
+      "implementation": 100,
+      "intent": 47,
+      "clarity": 4
+    },
+    "mathema_language.text.pattern.pattern_json": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 23
+    },
+    "mathema_language.text.pattern.text_pattern_language": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 17
+    },
+    "mathema_language.text.pattern._reads": {
+      "implementation": 100,
+      "intent": 95,
+      "clarity": 23
+    },
+    "mathema_language.text.pattern._term_reads": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 20
+    },
+    "mathema_language.text.pattern._canonical": {
+      "implementation": 100,
+      "intent": 94,
+      "clarity": 16
+    },
+    "mathema_language.text.pattern._near_language": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 16
+    },
+    "mathema_language.text.pattern.pattern_claim_text": {
+      "implementation": 100,
+      "intent": 84,
+      "clarity": 27
+    },
+    "mathema_language.text.pattern.pattern_examples": {
+      "implementation": 100,
+      "intent": 81,
+      "clarity": 3
+    },
+    "mathema_language.text.pattern.pattern_refusal": {
+      "implementation": 100,
+      "intent": 79,
+      "clarity": 17
+    },
+    "mathema_language.text.pattern._compiles": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 21
+    },
+    "mathema_language.text.pattern._mended": {
+      "implementation": 88,
+      "intent": 93,
+      "clarity": 21
+    },
+    "mathema_language.text.pattern.suggest_pattern": {
+      "implementation": 100,
+      "intent": 86,
+      "clarity": 10
     },
     "mathema_language.text.predicates._is_json": {
       "implementation": 100,
@@ -3055,6 +3600,301 @@
       "intent": 50,
       "clarity": 18
     },
+    "mathema_language.text.url_language.url_parts": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 11
+    },
+    "mathema_language.text.url_language._is_url": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 18
+    },
+    "mathema_language.text.url_language._generate_url": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 25
+    },
+    "mathema_language.text.url_language.UrlLanguage.term": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.text.url_language.UrlLanguage.to_json": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.text.url_language.UrlLanguage.outside": {
+      "implementation": 100,
+      "intent": 44,
+      "clarity": 19
+    },
+    "mathema_language.text.within.WithinLanguage.outside": {
+      "implementation": 75,
+      "intent": 44,
+      "clarity": 16
+    },
+    "mathema_language.text.within.WithinLanguage.term": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.text.within.WithinLanguage.to_json": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 7
+    },
+    "mathema_language.text.within._name": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 24
+    },
+    "mathema_language.text.within._build": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 28
+    },
+    "mathema_language.text.within._octet": {
+      "implementation": 100,
+      "intent": 72,
+      "clarity": 24
+    },
+    "mathema_language.text.within._ipv4_tail": {
+      "implementation": 100,
+      "intent": 69,
+      "clarity": 23
+    },
+    "mathema_language.text.within._ipv4_block": {
+      "implementation": 100,
+      "intent": 89,
+      "clarity": 16
+    },
+    "mathema_language.text.within._ipv6_block": {
+      "implementation": 100,
+      "intent": 86,
+      "clarity": 16
+    },
+    "mathema_language.text.within._blocks": {
+      "implementation": 93,
+      "intent": 74,
+      "clarity": 11
+    },
+    "mathema_language.text.within._ip_within": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 29
+    },
+    "mathema_language.text.within.ipv4_within": {
+      "implementation": 100,
+      "intent": 37,
+      "clarity": 2
+    },
+    "mathema_language.text.within._ipv6_spellings": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 21
+    },
+    "mathema_language.text.within.ipv6_within": {
+      "implementation": 100,
+      "intent": 32,
+      "clarity": 2
+    },
+    "mathema_language.text.within._weeks": {
+      "implementation": 100,
+      "intent": 69,
+      "clarity": 23
+    },
+    "mathema_language.text.within._leap": {
+      "implementation": 100,
+      "intent": 69,
+      "clarity": 20
+    },
+    "mathema_language.text.within._year_groups": {
+      "implementation": 100,
+      "intent": 90,
+      "clarity": 27
+    },
+    "mathema_language.text.within._calendar_year": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 18
+    },
+    "mathema_language.text.within._week_year": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 19
+    },
+    "mathema_language.text.within._date_forms": {
+      "implementation": 83,
+      "intent": 91,
+      "clarity": 4
+    },
+    "mathema_language.text.within._date_pattern": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 17
+    },
+    "mathema_language.text.within._date_spellings": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 17
+    },
+    "mathema_language.text.within._as_date": {
+      "implementation": 100,
+      "intent": 94,
+      "clarity": 13
+    },
+    "mathema_language.text.within._step": {
+      "implementation": 100,
+      "intent": 67,
+      "clarity": 27
+    },
+    "mathema_language.text.within.iso_date_within": {
+      "implementation": 100,
+      "intent": 64,
+      "clarity": 12
+    },
+    "mathema_language.text.within._instant": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 20
+    },
+    "mathema_language.text.within._at": {
+      "implementation": 100,
+      "intent": 69,
+      "clarity": 23
+    },
+    "mathema_language.text.within._as_datetime": {
+      "implementation": 93,
+      "intent": 91,
+      "clarity": 13
+    },
+    "mathema_language.text.within._day_of": {
+      "implementation": 100,
+      "intent": 67,
+      "clarity": 31
+    },
+    "mathema_language.text.within._datetime_bounds": {
+      "implementation": 100,
+      "intent": 79,
+      "clarity": 12
+    },
+    "mathema_language.text.within.iso_datetime_within": {
+      "implementation": 100,
+      "intent": 62,
+      "clarity": 9
+    },
+    "mathema_language.text.within._either_case": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 19
+    },
+    "mathema_language.text.within._UrlRegion.text": {
+      "implementation": 100,
+      "intent": 21,
+      "clarity": 4
+    },
+    "mathema_language.text.within._UrlRegion.pattern": {
+      "implementation": 100,
+      "intent": 46,
+      "clarity": 3
+    },
+    "mathema_language.text.within._UrlRegion.holds": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 16
+    },
+    "mathema_language.text.within._url_region": {
+      "implementation": 100,
+      "intent": 87,
+      "clarity": 5
+    },
+    "mathema_language.text.within.url_within": {
+      "implementation": 96,
+      "intent": 53,
+      "clarity": 9
+    },
+    "mathema_language.text.within._is_root": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 15
+    },
+    "mathema_language.text.within._is_block": {
+      "implementation": 100,
+      "intent": 65,
+      "clarity": 14
+    },
+    "mathema_language.text.within._parses": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 19
+    },
+    "mathema_language.text.within.within_claim_text": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 27
+    },
+    "mathema_language.text.within.within_examples": {
+      "implementation": 100,
+      "intent": 81,
+      "clarity": 3
+    },
+    "mathema_language.text.within.within_refusal": {
+      "implementation": 100,
+      "intent": 82,
+      "clarity": 14
+    },
+    "mathema_language.text.within._listed": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 20
+    },
+    "mathema_language.text.within.suggest_within": {
+      "implementation": 100,
+      "intent": 89,
+      "clarity": 13
+    },
+    "mathema_language.text.within.within_arguments": {
+      "implementation": 96,
+      "intent": 71,
+      "clarity": 12
+    },
+    "mathema_language.text.within._reads": {
+      "implementation": 100,
+      "intent": 95,
+      "clarity": 19
+    },
+    "mathema_language.text.within._escapes": {
+      "implementation": 100,
+      "intent": 88,
+      "clarity": 28
+    },
+    "mathema_language.text.within._matches": {
+      "implementation": 75,
+      "intent": 96,
+      "clarity": 20
+    },
+    "mathema_language.text.within._in_term": {
+      "implementation": 100,
+      "intent": 95,
+      "clarity": 17
+    },
+    "mathema_language.text.within._certain": {
+      "implementation": 100,
+      "intent": 95,
+      "clarity": 20
+    },
+    "mathema_language.text.within.within": {
+      "implementation": 100,
+      "intent": 66,
+      "clarity": 12
+    },
+    "mathema_language.text.within._certain_language": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 7
+    },
     "mathema_language.text.yaml_language.load": {
       "implementation": 100,
       "intent": 44,
@@ -3194,6 +4034,191 @@
       "implementation": 100,
       "intent": 52,
       "clarity": 16
+    },
+    "mathema_language.words._key": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 23
+    },
+    "mathema_language.words._split": {
+      "implementation": 90,
+      "intent": 93,
+      "clarity": 14
+    },
+    "mathema_language.words._string": {
+      "implementation": 83,
+      "intent": 93,
+      "clarity": 17
+    },
+    "mathema_language.words._quoted": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 21
+    },
+    "mathema_language.words._raw": {
+      "implementation": 100,
+      "intent": 84,
+      "clarity": 15
+    },
+    "mathema_language.words._version_pin": {
+      "implementation": 100,
+      "intent": 94,
+      "clarity": 12
+    },
+    "mathema_language.words._re_text": {
+      "implementation": 100,
+      "intent": 78,
+      "clarity": 20
+    },
+    "mathema_language.words._read_re": {
+      "implementation": 100,
+      "intent": 82,
+      "clarity": 14
+    },
+    "mathema_language.words._re_version": {
+      "implementation": 100,
+      "intent": 82,
+      "clarity": 14
+    },
+    "mathema_language.words._read_re_call": {
+      "implementation": 100,
+      "intent": 73,
+      "clarity": 6
+    },
+    "mathema_language.words._bindings": {
+      "implementation": 100,
+      "intent": 95,
+      "clarity": 10
+    },
+    "mathema_language.words._pattern_text": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 27
+    },
+    "mathema_language.words._read_pattern": {
+      "implementation": 100,
+      "intent": 87,
+      "clarity": 14
+    },
+    "mathema_language.words._pattern_call": {
+      "implementation": 100,
+      "intent": 89,
+      "clarity": 11
+    },
+    "mathema_language.words._canonical_pattern_argument": {
+      "implementation": 100,
+      "intent": 87,
+      "clarity": 8
+    },
+    "mathema_language.words._object": {
+      "implementation": 100,
+      "intent": 95,
+      "clarity": 17
+    },
+    "mathema_language.words._regex_of": {
+      "implementation": 86,
+      "intent": 87,
+      "clarity": 9
+    },
+    "mathema_language.words._star_set": {
+      "implementation": 67,
+      "intent": 93,
+      "clarity": 12
+    },
+    "mathema_language.words._cut_to": {
+      "implementation": 94,
+      "intent": 93,
+      "clarity": 11
+    },
+    "mathema_language.words._inter": {
+      "implementation": 100,
+      "intent": 74,
+      "clarity": 14
+    },
+    "mathema_language.words._narrowed": {
+      "implementation": 76,
+      "intent": 70,
+      "clarity": 15
+    },
+    "mathema_language.words._Narrowed.outside": {
+      "implementation": 100,
+      "intent": 50,
+      "clarity": 16
+    },
+    "mathema_language.words._root": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 18
+    },
+    "mathema_language.words._is_text": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 26
+    },
+    "mathema_language.words._regex_language_of": {
+      "implementation": 100,
+      "intent": 82,
+      "clarity": 15
+    },
+    "mathema_language.words._picture_language": {
+      "implementation": 100,
+      "intent": 82,
+      "clarity": 10
+    },
+    "mathema_language.words._text_pattern_of": {
+      "implementation": 100,
+      "intent": 86,
+      "clarity": 11
+    },
+    "mathema_language.words._said": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 30
+    },
+    "mathema_language.words._reads_call": {
+      "implementation": 95,
+      "intent": 73,
+      "clarity": 13
+    },
+    "mathema_language.words._regex_word": {
+      "implementation": 89,
+      "intent": 71,
+      "clarity": 8
+    },
+    "mathema_language.words._has_reads_call": {
+      "implementation": 100,
+      "intent": 91,
+      "clarity": 6
+    },
+    "mathema_language.words._strings": {
+      "implementation": 100,
+      "intent": 87,
+      "clarity": 22
+    },
+    "mathema_language.words._within_word": {
+      "implementation": 90,
+      "intent": 65,
+      "clarity": 3
+    },
+    "mathema_language.words._pattern_word": {
+      "implementation": 86,
+      "intent": 82,
+      "clarity": 1
+    },
+    "mathema_language.words._alphabet_of": {
+      "implementation": 91,
+      "intent": 94,
+      "clarity": 12
+    },
+    "mathema_language.words._build_alphabet": {
+      "implementation": 100,
+      "intent": 89,
+      "clarity": 12
+    },
+    "mathema_language.words._order_alphabet": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 15
     }
   },
   "capped": [
