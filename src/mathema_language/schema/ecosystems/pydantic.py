@@ -41,7 +41,19 @@ class PydanticEcosystem:
         return schema_of(obj)
 
     def build_row(self, schema: RowSchema, values: dict[str, Any]) -> Any:
-        return self.model.model_construct(**values)  # type: ignore[attr-defined]
+        """Intent:
+            An instance of the model holding `values`, built without validation; a key the
+            model does not declare is kept among its extra attributes whatever the model's
+            `extra` setting, so validation sees it as the caller handed it over.
+        """
+        declared = getattr(self.model, "model_fields", {})
+        row = self.model.model_construct(  # type: ignore[attr-defined]
+            **{k: v for k, v in values.items() if k in declared})
+        extra = {k: v for k, v in values.items() if k not in declared}
+        if extra:
+            object.__setattr__(row, "__pydantic_extra__",
+                               {**(getattr(row, "__pydantic_extra__", None) or {}), **extra})
+        return row
 
     def _values(self, row: Any) -> dict[str, Any] | None:
         """Intent:

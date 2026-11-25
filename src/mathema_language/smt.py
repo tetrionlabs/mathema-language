@@ -496,7 +496,9 @@ class MembershipEncoding:
             if path in own or len(path) > 1:
                 continue
             x = self.var(name)
-            if not mapping or schema.column_policy == "exact":
+            # an exact record refuses a key it does not declare; an open one admits it, as a
+            # mapping or, for a class, by leaving it out of the record it builds (`_admits`)
+            if schema.column_policy == "exact":
                 conds.append(V.is_absent(x))
         return z3.And(*conds) if conds else z3.BoolVal(True)
 
@@ -1413,6 +1415,13 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
             return _InclusionResult("unknown", f"not translated: {why}")
     enc = MembershipEncoding(z3)
     names = list(dict.fromkeys([*field_names(older), *field_names(newer)]))
+    # one top-level key neither side declares stands for every such key: an open record
+    # admits it and a closed one refuses it, which no declared field shows
+    # (only when `older` has an open shape and `newer` a closed one, the one case it decides)
+    if any(b.schema.column_policy != "exact" for b in _branches(older)) and \
+            any(b.schema.column_policy == "exact" for b in _branches(newer)):
+        other = next(f"other_{k}" for k in range(len(names) + 1) if f"other_{k}" not in names)
+        names.append(other)
     try:
         m_older = enc.language(older, names, "older")
         m_newer = enc.language(newer, names, "newer")
