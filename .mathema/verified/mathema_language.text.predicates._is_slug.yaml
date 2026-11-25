@@ -14,16 +14,15 @@ mathema_language.text.predicates._is_slug:
     pure: true
     claims_fingerprint: "98a362e970fa"
     pin: "none"
-    integrity: "v2:c158c15a63f8a486"
+    integrity: "v2:33e307a5c521d8ef"
   math: null
   claims:
     - name: "accepts_its_members"
       statement: "for s in L[slug], f(s) = True"
-      verdict: "proven"
-      note: "s in L[slug] (entry point mathema_language.text:SLUG)"
-      sketch: "smt: membership, s in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))], read from re.compile('[a-z0-9]+(?:-[a-z0-9]+)*').fullmatch: no text s in the domain makes f(s) a text outside that language; proven, assuming L[slug] == its stated definition (assumed), L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))] == its stated definition (assumed), _is_slug accepts a text exactly when it is in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))] (assumed)"
-      condition: "for s in L[slug]"
-      route: "derive"
+      verdict: "holds"
+      n: 160
+      note: "s in L[slug] (entry point mathema_language.text:SLUG); derive could not decide it (smt: membership, s in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]: z3 is not installed (the mathema[smt] extra)), so the probe decided it by running the code"
+      route: "probe"
       authored:
         surface: "claims-file"
         route: "best"
@@ -36,114 +35,21 @@ mathema_language.text.predicates._is_slug:
           explicit_type: true
       grammar: "mathema/language"
       meta:
-        mathema.derive_route: "smt"
-        mathema.smt:
-          path: "membership, validator"
-          statement: "s in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]"
-          call: "re.compile('[a-z0-9]+(?:-[a-z0-9]+)*').fullmatch"
-          definitions:
-            L[slug]: "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
-            "L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]": "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
-        mathema.assumptions:
-          standard:
-            z3:
-              statement: "z3 answers 'no string exists' only when none does"
-              version: "5.4.1"
-              status: "assumed"
-            canonical form:
-              statement: "the canonical form of a term holds the strings the term holds"
-              version: "regular_language 1"
-              status: "assumed"
-          definitions:
-            - language: "L[slug]"
-              statement: "L[slug] == its stated definition"
-              status: "assumed"
-              artefact:
-                seed: 1877124911
-                members drawn: 58
-                length bound: 6
-                atoms: 3
-                strings compared: 10789
-                strings skipped: 0
-                skipped: []
-              axiom:
-                statement: "L[slug] == its stated definition"
-                id: "ax-e6aa775b94972c08"
-              corroboration:
-                values drawn: 10789
-                values compared: 10789
-                values skipped: 0
-                disagreed: 0
-                seed: 1877124911
-                draws: 48
-                draws cap: 48
-                enumerated cap: 3000
-                near misses cap: 12
-                outcome: "none disagreed"
-            - language: "L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]"
-              statement: "L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))] == its stated definition"
-              status: "assumed"
-              artefact:
-                seed: 1187257460
-                members drawn: 59
-                length bound: 6
-                atoms: 3
-                strings compared: 10780
-                strings skipped: 0
-                skipped: []
-              axiom:
-                statement: "L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))] == its stated definition"
-                id: "ax-9fcf1d953d845527"
-              corroboration:
-                values drawn: 10780
-                values compared: 10780
-                values skipped: 0
-                disagreed: 0
-                seed: 1187257460
-                draws: 48
-                draws cap: 48
-                enumerated cap: 3000
-                near misses cap: 12
-                outcome: "none disagreed"
-            - language: "L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]"
-              statement: "_is_slug accepts a text exactly when it is in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]"
-              status: "assumed"
-              artefact:
-                seed: 1266659303
-                texts run: 455
-                texts skipped: 0
-                skipped: []
-              axiom:
-                statement: "_is_slug accepts a text exactly when it is in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]"
-                id: "ax-63f045869548d03a"
-              corroboration:
-                values drawn: 455
-                values compared: 455
-                values skipped: 0
-                disagreed: 0
-                seed: 1266659303
-                draws: 48
-                draws cap: 48
-                definition strings cap: 400
-                outcome: "none disagreed"
-          texts:
-            - language: "L[slug]"
-              statement: "L[slug] holds only texts"
-              status: "assumed"
-              artefact:
-                values run: 7
-              axiom:
-                statement: "L[slug] holds only texts"
-                id: "ax-8cc2b092b318a0e4"
-              corroboration:
-                values drawn: 7
-                values compared: 7
-                values skipped: 0
-                disagreed: 0
-                seed: null
-                draws: 0
-                outcome: "none disagreed"
-        mathema.float_companion: "none (every variable of the claim is a text, so there is no float arithmetic to run)"
+        mathema.sampling: "s~L[slug], seed=20260718, n=160"
+        mathema.confidence:
+          score: 9.3
+          stars: 4
+          max_stars: 5
+          n: 160
+          factors:
+            branches: 0
+            loops: 0
+            params: 0
+            wide_domain: 0
+            float_extremes: 0
+            language: 1
+        mathema.routes_attempted: "routes attempted, derive: undecided (smt: membership, s in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]: z3 is not installed (the mathema[smt] extra)); probe: holds"
+        mathema.derive_status: "undecided"
         mathema.language:
           s:
             - name: "slug"
@@ -216,10 +122,8 @@ mathema_language.text.predicates._is_slug:
         mathema.language_definitions:
           L[slug]: "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
           "L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]": "5babca7af0527a674d83e819b06afdedcba20e6431f5aad4343563d64a1fd40f"
-        mathema.language_memberships:
-          L[slug]: "cd:05535531719e"
-          "L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))]": "cd:58edff6a1ac9"
-        mathema.last_supported_commit: "4252a3bc14f794bb96025b5fe1626cb9f9ad191b"
+        mathema.last_supported_commit: "0efe919d2351598d7b9a0419597f25dbe2108ec7"
+        mathema.previous_verdict: "proven"
         mathema.transitions:
           - from: "holds"
             to: "proven"
@@ -228,6 +132,13 @@ mathema_language.text.predicates._is_slug:
             at: "2026-11-24"
             invalidated_by:
               - "claims"
+          - from: "proven"
+            to: "holds"
+            kind: "weakened"
+            cause: "this function changed"
+            at: "2026-11-25"
+            invalidated_by:
+              - "language-definition"
     - name: "defined_on_any_text"
       statement: "for s in L[unicode], is_language_defined(s)"
       verdict: "holds"
@@ -296,9 +207,9 @@ mathema_language.text.predicates._is_slug:
     - step: "intent"
       claim: "Whether `s` is lower-case words of letters and digits joined by single hyphens."
       basis: "documented; the author's stated purpose"
-    - step: "derivation"
+    - step: "evidence"
       claim: "for s in L[slug], f(s) = True"
-      basis: "smt: membership, s in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))], read from re.compile('[a-z0-9]+(?:-[a-z0-9]+)*').fullmatch: no text s in the domain makes f(s) a text outside that language; proven, assuming L[slug] == its stated definition (assumed), L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))] == its stated definition (assumed), _is_slug accepts a text exactly when it is in L[slug, matches (re(r\"[a-z0-9]+(?:-[a-z0-9]+)*\", python))] (assumed)"
+      basis: "probed, n=160"
     - step: "evidence"
       claim: "for s in L[unicode], is_language_defined(s)"
       basis: "probed, n=128"
@@ -311,8 +222,8 @@ mathema_language.text.predicates._is_slug:
   lineage:
     generated_by: "mathema 0.6.6.2"
     CDD_spec_version: "0.3.0"
-    date: "2026-11-24"
-    commit: "0efe919d2351598d7b9a0419597f25dbe2108ec7"
+    date: "2026-11-25"
+    commit: "bb6ae1b1d1e96286b3b292d8707aac5fcb2b18c4"
   meta:
     mathema.concept_sources:
       mechanism:
@@ -324,5 +235,6 @@ mathema_language.text.predicates._is_slug:
       sites: []
       writes: []
     mathema.premise_state: {}
-    mathema.invalidated_by: []
+    mathema.invalidated_by:
+      - "language-definition"
     mathema.intent_provenance: "declared"
