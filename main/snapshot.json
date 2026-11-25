@@ -1,5 +1,5 @@
 {
-  "implementation": 89,
+  "implementation": 90,
   "intent": 72,
   "clarity": 16,
   "overall": 30,
@@ -1387,11 +1387,11 @@
     },
     "mathema_language.schema.ecosystems.pydantic.PydanticEcosystem.build_row": {
       "implementation": 100,
-      "intent": 44,
-      "clarity": 36
+      "intent": 93,
+      "clarity": 26
     },
     "mathema_language.schema.ecosystems.pydantic.PydanticEcosystem._values": {
-      "implementation": 75,
+      "implementation": 88,
       "intent": 93,
       "clarity": 16
     },
@@ -2055,6 +2055,11 @@
       "intent": 32,
       "clarity": 5
     },
+    "mathema_language.smt._converting_model": {
+      "implementation": 89,
+      "intent": 84,
+      "clarity": 8
+    },
     "mathema_language.smt._branches": {
       "implementation": 100,
       "intent": 93,
@@ -2141,9 +2146,9 @@
       "clarity": 16
     },
     "mathema_language.smt._unread_pydantic": {
-      "implementation": 91,
+      "implementation": 92,
       "intent": 85,
-      "clarity": 16
+      "clarity": 15
     },
     "mathema_language.smt._nullable_pair": {
       "implementation": 0,
@@ -2151,9 +2156,9 @@
       "clarity": 17
     },
     "mathema_language.smt._unread_keywords": {
-      "implementation": 85,
+      "implementation": 88,
       "intent": 85,
-      "clarity": 14
+      "clarity": 15
     },
     "mathema_language.smt._value": {
       "implementation": 100,
@@ -2176,7 +2181,7 @@
       "clarity": 15
     },
     "mathema_language.smt._admits": {
-      "implementation": 90,
+      "implementation": 100,
       "intent": 85,
       "clarity": 18
     },
@@ -2186,9 +2191,9 @@
       "clarity": 10
     },
     "mathema_language.smt._schema_inclusion": {
-      "implementation": 96,
+      "implementation": 98,
       "intent": 64,
-      "clarity": 6
+      "clarity": 9
     },
     "mathema_language.smt._most_readable": {
       "implementation": 94,
