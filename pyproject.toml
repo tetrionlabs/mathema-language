@@ -31,7 +31,7 @@ classifiers = [
 # 0.6.1 is the first mathema with the language grammar and the
 # languages, families and sampling seams; the grammar surface moves on
 # minor releases, so the range stops before the next one
-dependencies = ["mathema>=0.6.6.1,<0.7"]
+dependencies = ["mathema>=0.6.6.2,<0.7"]
 
 [project.optional-dependencies]
 pydantic = ["pydantic>=2.0"]
@@ -40,7 +40,7 @@ sqlalchemy = ["sqlalchemy>=2.0"]
 django = ["django>=4.2"]
 yaml = ["ruamel.yaml>=0.18"]
 toml = ["tomli>=1.1; python_version < '3.11'"]
-smt = ["mathema[smt]>=0.6.6.1,<0.7"]
+smt = ["mathema[smt]>=0.6.6.2,<0.7"]
 all = ["mathema-language[pydantic,jsonschema,sqlalchemy,django,yaml,toml,smt]"]
 docs = [
     "django==6.1.1; python_version >= '3.12'",
@@ -89,6 +89,9 @@ astral = "mathema_language.text:ASTRAL"
 yaml = "mathema_language.text.yaml_language:YAML_TEXT"
 toml = "mathema_language.text.toml_language:TOML_TEXT"
 path = "mathema_language.text.path_language:PATH"
+# provisional names
+lower = "mathema_language.text.alphabets:LOWER"
+upper = "mathema_language.text.alphabets:UPPER"
 
 [project.entry-points."mathema.claim_families"]
 is_length_safe = "mathema_language.families:LENGTH_SAFE"
@@ -111,6 +114,14 @@ len = "mathema_language.refinements:length"
 depth = "mathema_language.refinements:depth"
 nodes = "mathema_language.refinements:nodes"
 width = "mathema_language.refinements:width"
+# the words below have provisional names
+matches = "mathema_language.words:MATCHES"
+contains = "mathema_language.words:CONTAINS"
+starts_with = "mathema_language.words:STARTS_WITH"
+ends_with = "mathema_language.words:ENDS_WITH"
+within = "mathema_language.words:WITHIN_WORD"
+pattern = "mathema_language.words:PATTERN_WORD"
+alphabet = "mathema_language.words:ALPHABET"
 
 [project.entry-points."mathema.lexicon"]
 language = "mathema_language.lexicon"
@@ -123,6 +134,10 @@ packages = ["src/mathema_language"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# heavy (:draft) marks the full-size seeded property runs: deselected here, run with
+# `MATHEMA_LANGUAGE_HEAVY=1 pytest -m heavy`
+markers = ["heavy: a full-size seeded property run; needs MATHEMA_LANGUAGE_HEAVY=1 (:draft)"]
+addopts = "-m 'not heavy'"
 
 [tool.coverage.run]
 # the low-overhead backend on Python 3.12 and later, so a proof traced

@@ -1,0 +1,369 @@
+{
+ "dialect": "python",
+ "versions": [
+  "3.10",
+  "3.11",
+  "3.12",
+  "3.13",
+  "3.14"
+ ],
+ "read_alike": [
+  "literal",
+  "any character",
+  "character set",
+  "alternation",
+  "group",
+  "greedy repeat",
+  "lazy repeat",
+  "start of line",
+  "end of line",
+  "start of text",
+  "end of text",
+  "word boundary",
+  "backreference",
+  "conditional",
+  "lookahead",
+  "lookbehind",
+  "inline flags at the start",
+  "scoped flags",
+  "ignore case",
+  "multi line",
+  "dot all",
+  "ascii only",
+  "verbose"
+ ],
+ "alike_digests": {
+  "literal": "dbf54450d08d2910",
+  "any character": "c8bd19c0d6bcafb3",
+  "character set": "f9282578944564be",
+  "alternation": "4dfb56bf4cacc371",
+  "group": "4991b22c80fdb5e7",
+  "greedy repeat": "d26b7e19ddaf268f",
+  "lazy repeat": "59d7edcbe740ed1b",
+  "start of line": "fd61b323285e3365",
+  "end of line": "660485a061f13293",
+  "start of text": "a30f54739170b419",
+  "end of text": "679bf7add2cc0cdb",
+  "word boundary": "39f2f573f09e41c5",
+  "backreference": "1fe33b1f5519a952",
+  "conditional": "6243030abc2d4abf",
+  "lookahead": "e5ae3829d5e55236",
+  "lookbehind": "9b41c2385a04e0e0",
+  "inline flags at the start": "037e583f492ecf85",
+  "scoped flags": "5638fdd206094591",
+  "ignore case": "387b62c0b8c92e61",
+  "multi line": "1ac596d1f63a9dde",
+  "dot all": "d8d84ca592aceb24",
+  "ascii only": "7e80a8018aa4a086",
+  "verbose": "97784e30550cb91b"
+ },
+ "rows": [
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "none",
+   "digest": "53974fa6c92f9a31"
+  },
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "24a4740767324ac3"
+  },
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "all",
+   "digest": "24a4740767324ac3"
+  },
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "all",
+   "digest": "24a4740767324ac3"
+  },
+  {
+   "construct": "possessive repeat",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "24a4740767324ac3"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "0a5736094c5d60a7"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "all",
+   "digest": "0a5736094c5d60a7"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "all",
+   "digest": "0a5736094c5d60a7"
+  },
+  {
+   "construct": "atomic group",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "0a5736094c5d60a7"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "end of text, written \\z",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "679bf7add2cc0cdb"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "all",
+   "digest": "cbdd4f5213bf7aab"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "cbdd4f5213bf7aab"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "all",
+   "digest": "cbdd4f5213bf7aab"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "all",
+   "digest": "cbdd4f5213bf7aab"
+  },
+  {
+   "construct": "not a word boundary",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "dc9e39f359caf9e3"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "all",
+   "digest": "ba8aeb7d05336f6d"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  },
+  {
+   "construct": "inline flags after the start",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "none",
+   "digest": "7865270070c88050"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "some",
+   "digest": "c86c7b7cc449ed32"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "some",
+   "digest": "c86c7b7cc449ed32"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "some",
+   "digest": "cb1869ebdc024cd1"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "all",
+   "digest": "252ac1306456115c"
+  },
+  {
+   "construct": "named character",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "all",
+   "digest": "252ac1306456115c"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "all",
+   "digest": "6243030abc2d4abf"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "6243030abc2d4abf"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "group reference by a non-ASCII digit",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "none",
+   "digest": "53d521229ecad355"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.10",
+   "reads": "all",
+   "digest": "1988bf87660f0339"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.11",
+   "reads": "all",
+   "digest": "1988bf87660f0339"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.12",
+   "reads": "none",
+   "digest": "1a980f0f1d00d4a2"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.13",
+   "reads": "none",
+   "digest": "1a980f0f1d00d4a2"
+  },
+  {
+   "construct": "group reference written loosely",
+   "dialect": "python",
+   "version": "3.14",
+   "reads": "none",
+   "digest": "1a980f0f1d00d4a2"
+  }
+ ],
+ "translated": {
+  "not a word boundary": "not_boundary_in_empty"
+ },
+ "flags": {
+  "python": {
+   "ignore case": [
+    "IGNORECASE",
+    "i"
+   ],
+   "multi line": [
+    "MULTILINE",
+    "m"
+   ],
+   "dot all": [
+    "DOTALL",
+    "s"
+   ],
+   "ascii only": [
+    "ASCII",
+    "a"
+   ],
+   "verbose": [
+    "VERBOSE",
+    "x"
+   ]
+  }
+ }
+}

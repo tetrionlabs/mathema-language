@@ -1,0 +1,27 @@
+name: heavy
+
+# The full-size seeded property runs (tests marked `heavy`): only by hand
+# or on a release tag, never on a push or a pull request.
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  heavy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    env:
+      MATHEMA_LANGUAGE_HEAVY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install "mathema>=0.6.6.1,<0.7"
+      - run: pip install --no-deps . && pip install pytest pytest-xdist annotated-types pydantic jsonschema sqlalchemy django ruamel.yaml pyyaml z3-solver
+      - run: pytest -q -n 2 -m heavy -s

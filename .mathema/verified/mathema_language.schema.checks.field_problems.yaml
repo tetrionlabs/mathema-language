@@ -12,9 +12,9 @@ mathema_language.schema.checks.field_problems:
     tier: 2
     source_available: true
     pure: true
-    claims_fingerprint: "8aaed477d126"
+    claims_fingerprint: "4ef2e8e094d4"
     pin: "none"
-    integrity: "v2:f849d08279c45504"
+    integrity: "v2:c3ce09d39fc84170"
   math: null
   claims:
     - name: "absent[definitions]"
@@ -58,8 +58,8 @@ mathema_language.schema.checks.field_problems:
     - name: "absent[field.default]"
       statement: "absent(f, field.default) drops"
       verdict: "holds"
-      n: 15
-      note: "observed: field.default may be None; f drops it (field.default = null (absent), [] out) on the 61 draws of accepts_the_simplest_member"
+      n: 25
+      note: "observed: field.default may be None; f drops it (field.default = null (absent), [] out) on the 69 draws of accepts_the_simplest_member"
       route: "probe:counterfactual"
       authored:
         surface: "suggested"
@@ -67,16 +67,16 @@ mathema_language.schema.checks.field_problems:
         mathema.policy:
           kind: "absent"
           parameter: "field.default"
-          evidence: "confirmed on the 61 draws of accepts_the_simplest_member"
+          evidence: "confirmed on the 69 draws of accepts_the_simplest_member"
           behaviour: "drops"
           source: "observed"
-          reason: "observed: field.default may be None; f drops it (field.default = null (absent), [] out) on the 61 draws of accepts_the_simplest_member"
+          reason: "observed: field.default may be None; f drops it (field.default = null (absent), [] out) on the 69 draws of accepts_the_simplest_member"
         mathema.surface: "mathema"
     - name: "accepts_the_simplest_member"
       statement: "assuming not_empty(field) == True, let simplest = mathema_language.schema.generate.simplest, let not_empty = mathema_language.schema.emptiness.not_empty, for field in L[mathema_language.schema.model.Field, depth <= 2], field_problems(simplest(field), field) = []"
       verdict: "holds"
-      n: 61
-      note: "field in L[mathema_language.schema.model.Field, depth <= 2] (adaptor dataclass); a Decimal operation rounded; the exact reading declined at 1 draw, first at field = Field(name='\\uf47d\\ue3cd𨑾\\U00105736홴譧峻ᅿ곝', type=NeutralType(base='decimal', bits=None, signed=False, precision=875, scale=729, unit=',Ð2ж·W,Ād', tz=None, levels=[0, True, 0], ordered=False, item=None, fields=None, key=None, value=None, ref='\\U0010c94f\\U001039d1孜\\U000f12a0ßéB', nullable_items=True), nullable=True, required=False, unique=True, constraints=Constraints(min=0, max=1.5, exclusive_min=0, exclusive_max=None, min_len=527034, max_len=None, regex=None, enum=[True, 1.5, 1.5, True], const=None, multiple_of=None), nan_allowed=True, default=None, metadata=[[], ['本\\ra_uv\\rý\\x00', '\\U000f8c1e\\U00108540\\U0010a21f⸜\\U000f980e󠇛'], ['Ek\\U000fef52\\U000e0047怟', '\\U000f2607猽\\U0010549dM2日e', '2zİ&𧟎󠆎脠', '\\x99)本s\\u202e²yw'], []]), so it is not counted; derive cannot read the function, which reads no field of field, so the claim is decided by running the code; at value = None f returned [], so it drops the absence; at field.default = null (absent) f returned [], so it drops the absence"
+      n: 69
+      note: "field in L[mathema_language.schema.model.Field, depth <= 2] (adaptor dataclass); derive cannot read the function, which reads no field of field, so the claim is decided by running the code; at value = None f returned [], so it drops the absence; at field.default = null (absent) f returned [], so it drops the absence"
       route: "probe"
       authored:
         surface: "claims-file"
@@ -95,12 +95,12 @@ mathema_language.schema.checks.field_problems:
           explicit_type: true
       grammar: "mathema/language"
       meta:
-        mathema.sampling: "value~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3]⊔far(≤1.79769e+308)[p=.1], field~L[mathema_language.schema.model.Field, depth <= 2], path~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3], definitions~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3]⊔far(≤1.79769e+308)[p=.1], shallow~U{False, True}, seed=20260718, n=61"
+        mathema.sampling: "value~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3]⊔far(≤1.79769e+308)[p=.1], field~L[mathema_language.schema.model.Field, depth <= 2], path~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3], definitions~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3]⊔far(≤1.79769e+308)[p=.1], shallow~U{False, True}, seed=20260718, n=69"
         mathema.confidence:
-          score: 7.4
+          score: 7.6
           stars: 3
           max_stars: 5
-          n: 61
+          n: 69
           factors:
             branches: 0
             loops: 0
@@ -292,6 +292,11 @@ mathema_language.schema.checks.field_problems:
                           - type: "string"
                           - type: "null"
                         default: null
+                      pattern:
+                        anyOf:
+                          - "{}"
+                          - type: "null"
+                        default: null
                       enum:
                         anyOf:
                           - type: "array"
@@ -310,7 +315,7 @@ mathema_language.schema.checks.field_problems:
                     required:
                       - "const"
                     additionalProperties: false
-                    default: "Constraints(min=None, max=None, exclusive_min=None, exclusive_max=None, min_len=None, max_len=None, regex=None, enum=None, const=NO_DEFAULT, multiple_of=None)"
+                    default: "Constraints(min=None, max=None, exclusive_min=None, exclusive_max=None, min_len=None, max_len=None, regex=None, pattern=None, enum=None, const=NO_DEFAULT, multiple_of=None)"
                   nan_allowed:
                     type: "boolean"
                     default: false
@@ -473,6 +478,11 @@ mathema_language.schema.checks.field_problems:
                       regex:
                         anyOf:
                           - type: "string"
+                          - type: "null"
+                        default: null
+                      pattern:
+                        anyOf:
+                          - "{}"
                           - type: "null"
                         default: null
                       enum:
@@ -652,6 +662,11 @@ mathema_language.schema.checks.field_problems:
                               - type: "string"
                               - type: "null"
                             default: null
+                          pattern:
+                            anyOf:
+                              - "{}"
+                              - type: "null"
+                            default: null
                           enum:
                             anyOf:
                               - type: "array"
@@ -670,7 +685,7 @@ mathema_language.schema.checks.field_problems:
                         required:
                           - "const"
                         additionalProperties: false
-                        default: "Constraints(min=None, max=None, exclusive_min=None, exclusive_max=None, min_len=None, max_len=None, regex=None, enum=None, const=NO_DEFAULT, multiple_of=None)"
+                        default: "Constraints(min=None, max=None, exclusive_min=None, exclusive_max=None, min_len=None, max_len=None, regex=None, pattern=None, enum=None, const=NO_DEFAULT, multiple_of=None)"
                       nan_allowed:
                         type: "boolean"
                         default: false
@@ -698,8 +713,8 @@ mathema_language.schema.checks.field_problems:
     - name: "checks_an_absent_value"
       statement: "absent(f, value) drops"
       verdict: "holds"
-      n: 62
-      note: "stated; confirmed on the 61 draws of accepts_the_simplest_member"
+      n: 69
+      note: "stated; confirmed on the 69 draws of accepts_the_simplest_member"
       route: "probe:counterfactual"
       authored:
         surface: "claims-file"
@@ -710,8 +725,8 @@ mathema_language.schema.checks.field_problems:
           parameter: "value"
           behaviour: "drops"
           source: "stated"
-          evidence: "confirmed on the 61 draws of accepts_the_simplest_member"
-          reason: "stated; confirmed on the 61 draws of accepts_the_simplest_member"
+          evidence: "confirmed on the 69 draws of accepts_the_simplest_member"
+          reason: "stated; confirmed on the 69 draws of accepts_the_simplest_member"
         mathema.surface: "declared"
     - name: "dependencies_current"
       verdict: "proven"
@@ -739,24 +754,24 @@ mathema_language.schema.checks.field_problems:
       basis: "documented; the author's stated purpose"
     - step: "evidence"
       claim: "assuming not_empty(field) == True, let simplest = mathema_language.schema.generate.simplest, let not_empty = mathema_language.schema.emptiness.not_empty, for field in L[mathema_language.schema.model.Field, depth <= 2], field_problems(simplest(field), field) = []"
-      basis: "probed, n=61"
+      basis: "probed, n=69"
     - step: "evidence"
       claim: "absent(f, value) drops"
-      basis: "probed, n=62"
+      basis: "probed, n=69"
     - step: "gap"
       claim: "absent(f, definitions)"
       basis: "f raised AttributeError at definitions = None and again with definitions present, on every draw of value, field, path and shallow tried, so the raise is not definitions's and nothing says what f does at definitions = None. bind value, field, path and shallow in a claim to values f runs on, so f can be read at definitions = None"
     - step: "evidence"
       claim: "absent(f, field.default) drops"
-      basis: "probed, n=15"
+      basis: "probed, n=25"
     - step: "derivation"
       claim: ""
       basis: "every function along the dependency chain matches its verified record; not checked, no record: mathema_language.schema.checks._columns_of, mathema_language.schema.checks._decimal_problems, mathema_language.schema.checks._is_int, mathema_language.schema.checks._read, mathema_language.schema.checks._record_class, mathema_language.schema.checks._scalar_problems, mathema_language.schema.checks.constraint_problems, mathema_language.schema.model._in_range (their changes are still caught through the chain this record stores)"
   lineage:
-    generated_by: "mathema 0.6.5"
+    generated_by: "mathema 0.6.6.2"
     CDD_spec_version: "0.3.0"
-    date: "2026-11-16"
-    commit: "4252a3bc14f794bb96025b5fe1626cb9f9ad191b"
+    date: "2026-11-24"
+    commit: "0efe919d2351598d7b9a0419597f25dbe2108ec7"
   dependencies:
     - name: "_Walker"
       kind: "class"
@@ -770,7 +785,7 @@ mathema_language.schema.checks.field_problems:
           form: "lib:mathema==0.6"
         - key: "lib:python"
           kind: "interpreter"
-          form: "lib:python==3.12"
+          form: "lib:python==3.13"
         - key: "mathema_language.schema.checks._columns_of"
           kind: "function"
           form: "py:72110ebf5b32"
@@ -791,10 +806,10 @@ mathema_language.schema.checks.field_problems:
           form: "py:4ebd7bda692f"
         - key: "mathema_language.schema.checks.constraint_problems"
           kind: "function"
-          form: "py:0fef5926431f"
+          form: "py:3aee97cb215c"
         - key: "mathema_language.schema.model.Constraints"
           kind: "class"
-          form: "py:8a27584e1700"
+          form: "py:56c21f89846d"
         - key: "mathema_language.schema.model.Field"
           kind: "class"
           form: "py:8f39a0cf886e"
@@ -807,7 +822,7 @@ mathema_language.schema.checks.field_problems:
         - key: "mathema_language.schema.model._in_range"
           kind: "function"
           form: "py:8a38d7b95f7c"
-      chain: "code:d97b673bf999|library:2ee362bcfa40|interpreter:287c26325cfc"
+      chain: "code:61248f3a2dce|library:2ee362bcfa40|interpreter:f6fcd9aedb77"
   meta:
     mathema.not_run:
       - check: "callable"
@@ -820,5 +835,5 @@ mathema_language.schema.checks.field_problems:
       writes: []
     mathema.premise_state: {}
     mathema.invalidated_by:
-      - "record-format"
+      - "claims"
     mathema.intent_provenance: "declared"

@@ -224,10 +224,16 @@ def _length_range(f: Field, default_hi: int = 12) -> tuple[int, int]:
 
 def _draw_string(rng: random.Random, f: Field) -> str:
     """Intent:
-        A string for the field: one matching its regex, found by rejection and empty when no try
-        succeeds, else text from the Unicode corpus cut or padded to a random length in range.
+        A string for the field: one its pattern writes directly, or one matching its regex,
+        found by rejection, each empty when no try succeeds, else text from the Unicode corpus cut or padded to a random length in range.
     """
     lo, hi = _length_range(f)
+    if f.constraints.pattern is not None:
+        for _ in range(_REJECTION_TRIES):
+            s = str(f.constraints.pattern.draw(rng))
+            if not field_problems(s, f):
+                return s
+        return ""
     if f.constraints.regex is not None:
         from ..text.regex import draw_matching
         for _ in range(_REJECTION_TRIES):

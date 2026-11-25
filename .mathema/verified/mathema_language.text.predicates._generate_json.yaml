@@ -12,9 +12,9 @@ mathema_language.text.predicates._generate_json:
     tier: 3
     source_available: true
     pure: false
-    claims_fingerprint: "f340751eefe6"
+    claims_fingerprint: "2a80bb284d5e"
     pin: "none"
-    integrity: "v2:6e281b71c87fd939"
+    integrity: "v2:cf5af6386d531543"
   math: null
   claims:
     - name: "dependencies_current"
@@ -43,10 +43,10 @@ mathema_language.text.predicates._generate_json:
       claim: "instantiates: iteration"
       basis: "deterministic concept tagging"
   lineage:
-    generated_by: "mathema 0.6.5"
+    generated_by: "mathema 0.6.6.2"
     CDD_spec_version: "0.3.0"
-    date: "2026-11-16"
-    commit: "4252a3bc14f794bb96025b5fe1626cb9f9ad191b"
+    date: "2026-11-24"
+    commit: "0efe919d2351598d7b9a0419597f25dbe2108ec7"
   meta:
     mathema.concept_sources:
       mechanism:
@@ -66,6 +66,5 @@ mathema_language.text.predicates._generate_json:
         - "advances its argument rng, a generator it does not own (rng.randint(0, 3))"
         - "advances its argument rng, a generator it does not own (rng.choice(['a', 'b', 'key', '']))"
     mathema.premise_state: {}
-    mathema.invalidated_by:
-      - "record-format"
+    mathema.invalidated_by: []
     mathema.intent_provenance: "declared"

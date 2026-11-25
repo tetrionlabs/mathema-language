@@ -12,9 +12,9 @@ mathema_language.text.predicates._generate_uuid:
     tier: 2
     source_available: true
     pure: true
-    claims_fingerprint: "f340751eefe6"
+    claims_fingerprint: "2a80bb284d5e"
     pin: "none"
-    integrity: "v2:ff9135cfad4fab2f"
+    integrity: "v2:f41cf1a47a25c4ef"
   math: null
   claims:
     - name: "dependencies_current"
@@ -36,20 +36,15 @@ mathema_language.text.predicates._generate_uuid:
       claim: ""
       basis: "no function dependencies, vacuously current"
   lineage:
-    generated_by: "mathema 0.6.5"
+    generated_by: "mathema 0.6.6.2"
     CDD_spec_version: "0.3.0"
-    date: "2026-11-16"
-    commit: "4252a3bc14f794bb96025b5fe1626cb9f9ad191b"
+    date: "2026-11-24"
+    commit: "0efe919d2351598d7b9a0419597f25dbe2108ec7"
   dependencies:
     - name: "uuid"
       kind: "module"
       key: "uuid"
   meta:
-    mathema.not_run:
-      - check: "callable"
-        statement: "f(rng) can be called"
-        reason: "f could not be called with a value mathema built from the signature (rng: random.Random): AttributeError: 'float' object has no attribute 'getrandbits'"
-        gap: "input-synthesis"
     mathema.effects:
       line: "advances its argument rng, a generator it does not own (rng.getrandbits(128))"
       sites:
@@ -57,6 +52,5 @@ mathema_language.text.predicates._generate_uuid:
       writes:
         - "advances its argument rng, a generator it does not own (rng.getrandbits(128))"
     mathema.premise_state: {}
-    mathema.invalidated_by:
-      - "record-format"
+    mathema.invalidated_by: []
     mathema.intent_provenance: "declared"

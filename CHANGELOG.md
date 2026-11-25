@@ -3,6 +3,25 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
+## Unreleased
+
+- Fixed: from 0.4.0, `mathema_language.text.pattern_language` with a
+  `version` other than the running Python, or with none (every
+  supported Python), read the pattern with the running interpreter's
+  `re`, so where versions differ in what a pattern accepts (`\N{...}`
+  names, loosely written conditional group references, and other
+  constructs in the delta table) the language for the pinned version
+  could be wrong and a claim over it reported proven. A pinned version
+  is now read as that version reads it, or refused.
+- Upgrade note: a path language confined to one root renders
+  `L[path, within ("/root")]`, the word followed by its arguments in
+  brackets, where it rendered `L[path, within "/root"]`. Text that was
+  stored or compared in the old spelling changes; the old spelling is
+  still read (`within_arguments` reads both to the same arguments).
+- `mathema_language.text.pattern_language` is now
+  `mathema_language.text.regex_language`. The old name still works in
+  0.4.x, with a `DeprecationWarning`, and goes in 0.5.0.
+
 ## 0.4.0
 
 For mathema 0.6.6.1 (`mathema>=0.6.6.1,<0.7`).

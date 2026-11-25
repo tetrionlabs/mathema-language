@@ -469,13 +469,108 @@ def _derivative(r: Expr, code: int) -> Expr:
 
 def holds(r: Expr, text: str) -> bool:
     """Intent:
-        Returns whether `text` is in the expression `r`.
+        Returns whether `text` is in the expression `r`. An expression with a repeat whose
+        derivatives can multiply (`_counted`) is read by position sets: whether reading `r`
+        from the start of `text` can end at its end, by the sets of positions each part can
+        end at from each position it can start at, a repeat read count by count until its
+        count is reached and no new position is found, so a nested count takes time in the
+        length of the text and the size of the expression, never in the number of ways to
+        divide the text. Any other expression is read by derivatives, one character at a
+        time.
     """
-    for c in text:
-        r = _derivative(r, ord(c))
-        if r == _EMPTY_RE:
-            return False
-    return _nullable(r)
+    if not _counted(r):
+        for c in text:
+            r = _derivative(r, ord(c))
+            if r == _EMPTY_RE:
+                return False
+        return _nullable(r)
+    codes = [ord(c) for c in text]
+    return len(codes) in _ends_from(r, 0, codes, {})
+
+
+#: the largest upper count a repeat may have and still be read by derivatives
+_COUNTED = 64
+
+
+def _counted(r: Expr, inside: bool = False) -> bool:
+    """Intent:
+        Returns whether `r` holds a repeat whose derivatives can multiply: one with an upper
+        count above `_COUNTED`, or one with an upper count inside another repeat. Every
+        other expression is read by derivatives, which take time in the length of the text
+        alone; these are read by position sets.
+    """
+    kind = r[0]
+    if kind == "loop":
+        if r[3] is not None and (r[3] > _COUNTED or inside):
+            return True
+        return _counted(r[1], True)
+    if kind in ("cat", "alt", "inter"):
+        return any(_counted(p, inside) for p in r[1:])
+    if kind == "not":
+        return _counted(r[1], inside)
+    return False
+
+
+def _ends_from(r: Expr, start: int, codes: list[int], memo: dict[tuple[int, int], frozenset[int]]
+               ) -> frozenset[int]:
+    """Intent:
+        Returns the positions of `codes` at which reading `r` from `start` can end.
+    """
+    key = (id(r), start)
+    found = memo.get(key)
+    if found is not None:
+        return found
+    kind = r[0]
+    out: frozenset[int]
+    if kind == "eps":
+        out = frozenset((start,))
+    elif kind == "empty":
+        out = frozenset()
+    elif kind == "chars":
+        out = frozenset((start + 1,)) if start < len(codes) and _cs_has(r[1], codes[start]) else frozenset()
+    elif kind == "cat":
+        now = frozenset((start,))
+        for part in r[1:]:
+            now = frozenset().union(*(_ends_from(part, p, codes, memo) for p in now))
+            if not now:
+                break
+        out = now
+    elif kind == "alt":
+        out = frozenset().union(*(_ends_from(p, start, codes, memo) for p in r[1:]))
+    elif kind == "inter":
+        out = _ends_from(r[1], start, codes, memo) & _ends_from(r[2], start, codes, memo)
+    elif kind == "not":
+        out = frozenset(range(start, len(codes) + 1)) - _ends_from(r[1], start, codes, memo)
+    else:
+        out = _repeat_ends(r[1], r[2], r[3], start, codes, memo)
+    memo[key] = out
+    return out
+
+
+def _repeat_ends(sub: Expr, lo: int, hi: int | None, start: int, codes: list[int],
+                 memo: dict[tuple[int, int], frozenset[int]]) -> frozenset[int]:
+    """Intent:
+        Returns the positions at which `lo` to `hi` readings of `sub` in a row can end, from
+        `start`: the positions after exactly k readings, for k counted up to `lo` (stopping
+        early once they stop changing, since every later count then gives the same), then
+        every position reached after more readings, up to `hi`, until no new one is found.
+    """
+    def step(at: frozenset[int]) -> frozenset[int]:
+        return frozenset().union(*(_ends_from(sub, p, codes, memo) for p in at))
+
+    exact, taken = frozenset((start,)), 0
+    while taken < lo and exact:
+        after = step(exact)
+        taken += 1
+        if after == exact:
+            taken = lo
+        exact = after
+    reached, frontier = set(exact), exact
+    while frontier and (hi is None or taken < hi):
+        frontier = step(frontier) - reached
+        reached |= frontier
+        taken += 1
+    return frozenset(reached)
 
 
 def member(doc: Node, text: str, bound: str = "language") -> bool:

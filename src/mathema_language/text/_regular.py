@@ -50,8 +50,11 @@ as the plain one, holds every member; `at_most` is the empty language.
 """
 from __future__ import annotations
 
+import functools
+import json
 import re
 import sys
+from pathlib import Path
 from typing import Any
 
 from ._algebra import (  # noqa: F401
@@ -827,6 +830,196 @@ class _Regex:
 DIALECTS = ("python",)
 
 
+@functools.cache
+def regex_deltas() -> dict[str, Any]:
+    """Intent:
+        Returns the regex delta table the package ships: for one dialect, the versions it
+        covers, the constructs every one of them reads alike, and a row for each version of a
+        construct some version reads differently, keyed by construct, dialect and version,
+        with whether that version reads it (`all`, `none`, `some`) and a digest of how. A
+        construct under `translated` is one the term's translation reads for each version on
+        its own, by the version table's engine reading named.
+    """
+    raw: dict[str, Any] = json.loads((Path(__file__).parent / "data" / "regex_deltas.json").read_text())
+    return raw
+
+
+#: the construct each parse operation is, by the operation's name
+_CONSTRUCTS = {
+    "LITERAL": "literal", "NOT_LITERAL": "literal", "ANY": "any character", "IN": "character set",
+    "RANGE": "character set", "NEGATE": "character set", "CATEGORY": "character set",
+    "BRANCH": "alternation", "SUBPATTERN": "group", "MAX_REPEAT": "greedy repeat",
+    "MIN_REPEAT": "lazy repeat", "POSSESSIVE_REPEAT": "possessive repeat",
+    "ATOMIC_GROUP": "atomic group", "GROUPREF": "backreference",
+    "GROUPREF_EXISTS": "conditional"}
+
+#: the construct each position assertion is, by its code's name
+_POSITIONS = {
+    "AT_BEGINNING": "start of line", "AT_BEGINNING_LINE": "start of line",
+    "AT_END": "end of line", "AT_END_LINE": "end of line",
+    "AT_BEGINNING_STRING": "start of text", "AT_END_STRING": "end of text",
+    "AT_BOUNDARY": "word boundary", "AT_NON_BOUNDARY": "not a word boundary"}
+
+#: the construct each flag is, as an argument or written inline
+_FLAG_CONSTRUCTS = {re.IGNORECASE: "ignore case", re.MULTILINE: "multi line",
+                    re.DOTALL: "dot all", re.ASCII: "ascii only", re.VERBOSE: "verbose"}
+_FLAG_LETTERS = {"i": re.IGNORECASE, "m": re.MULTILINE, "s": re.DOTALL, "a": re.ASCII,
+                 "x": re.VERBOSE}
+
+
+def _parsed_constructs(tree: Any) -> set[str]:
+    """Intent:
+        Returns the constructs a parsed pattern uses, nested ones included; an operation the
+        table does not name is returned as its own name.
+    """
+    out: set[str] = set()
+    stack: list[Any] = [tree]
+    while stack:
+        node = stack.pop()
+        items = list(node.data) if hasattr(node, "data") else list(node)
+        for item in items:
+            if not (isinstance(item, tuple) and len(item) == 2):
+                continue
+            op, arg = str(item[0]), item[1]
+            if op == "AT":
+                out.add(_POSITIONS.get(str(arg), str(arg)))
+            elif op in ("ASSERT", "ASSERT_NOT"):
+                out.add("lookahead" if arg[0] == 1 else "lookbehind")
+                stack.append(arg[1])
+            elif op == "SUBPATTERN":
+                out.add("group")
+                if arg[1] or arg[2]:
+                    out.add("scoped flags")
+                    out |= {name for flag, name in _FLAG_CONSTRUCTS.items() if (arg[1] | arg[2]) & flag}
+                stack.append(arg[-1])
+            else:
+                out.add(_CONSTRUCTS.get(op, op))
+                if op in ("IN", "BRANCH"):
+                    stack.append(arg if op == "IN" else [x for branch in arg[1] for x in branch])
+                elif op in ("MAX_REPEAT", "MIN_REPEAT", "POSSESSIVE_REPEAT"):
+                    stack.append(arg[2])
+                elif op == "ATOMIC_GROUP":
+                    stack.append(arg)
+                elif op == "GROUPREF_EXISTS":
+                    stack += [branch for branch in arg[1:] if branch is not None]
+    return out
+
+
+def _written_constructs(pattern: str) -> set[str]:
+    """Intent:
+        Returns the constructs a pattern's text shows that its parse does not: inline flag
+        groups at the start and after it, the end of text written `\\z`, a character written
+        by its name `\\N{...}`, and a conditional group referred to by a non-ASCII digit or by
+        a reference that is neither ASCII digits nor a name (`(?(+1)...)`, `(?( 1)...)`).
+    """
+    out: set[str] = set()
+    lead = re.match(r"(?:\(\?[aiLmsux]+\))+", pattern)
+    if lead is not None:
+        out.add("inline flags at the start")
+        for letter in re.sub(r"[(?)]", "", lead.group(0)):
+            if letter in _FLAG_LETTERS:
+                out.add(_FLAG_CONSTRUCTS[_FLAG_LETTERS[letter]])
+    at, inside = 0 if lead is None else lead.end(), False
+    while at < len(pattern):
+        ch = pattern[at]
+        if ch == "\\":
+            if not inside and pattern[at + 1:at + 2] == "z":
+                out.add("end of text, written \\z")
+            if pattern[at + 1:at + 3] == "N{":
+                out.add("named character")
+            at += 2
+            continue
+        if inside:
+            inside = ch != "]"
+        elif ch == "[":
+            inside = True
+            at += 1
+            if pattern[at:at + 1] == "^":
+                at += 1
+            if pattern[at:at + 1] == "]":
+                at += 1
+            continue
+        elif re.match(r"\(\?[aiLmsux]+\)", pattern[at:]):
+            out.add("inline flags after the start")
+        elif pattern.startswith("(?(", at):
+            reference = pattern[at + 3:pattern.find(")", at + 3)]
+            if any(c.isdigit() and not c.isascii() for c in reference):
+                out.add("group reference by a non-ASCII digit")
+            elif not (reference.isascii() and reference.isdigit()) and not reference.isidentifier():
+                out.add("group reference written loosely")
+        at += 1
+    return out
+
+
+def constructs(pattern: str, flags: int = 0) -> set[str]:
+    """Intent:
+        Returns the constructs a pattern uses under `flags`, by the regex delta table's names,
+        from this interpreter's parse of it and from its text.
+
+    Raises:
+        NotRegular: the pattern does not compile here.
+    """
+    import warnings
+    parser, _, _ = _sre()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            tree = parser.parse(pattern, flags)
+        except (re.error, RecursionError, OverflowError) as e:
+            raise NotRegular(f"the pattern {pattern!r} does not compile on this Python: {e}") from e
+    out = _parsed_constructs(tree) | _written_constructs(pattern)
+    return out | {name for flag, name in _FLAG_CONSTRUCTS.items() if flags & flag}
+
+
+def other_version_problem(pattern: str, flags: int, versions: list[str]) -> str | None:
+    """Intent:
+        Returns why a pattern parsed by this interpreter's `re` cannot be read for `versions`,
+        or None when it can: every one of them is this Python, or every construct the pattern
+        uses is shown by the regex delta table to read alike here and on each of them (listed
+        as read alike, or with rows of the same reading, or translated for each version on its
+        own). A construct the table does not name is not shown to read alike, so it is refused
+        for any other version, as is everything on an interpreter the table does not cover. A
+        character written by its name (`\\N{...}`) is refused for every version, this one
+        included: patch releases of one Python read different names.
+
+    Raises:
+        NotRegular: the pattern does not compile here.
+    """
+    used = constructs(pattern, flags)
+    if "named character" in used:
+        return (f"the pattern {pattern!r} writes a character by its name, which patch releases of "
+                f"one Python read differently, so it is read only by this interpreter's own re, "
+                f"never for a stated version or for every supported Python")
+    others = [v for v in versions if v != RUNNING]
+    if not others:
+        return None
+    table = regex_deltas()
+    if RUNNING not in table["versions"]:
+        return (f"the pattern {pattern!r} is read here by python {RUNNING}, which the regex delta "
+                f"table does not cover, so it cannot be read for python {', '.join(others)}")
+    rows = {(r["construct"], r["version"]): r for r in table["rows"] if r["dialect"] == "python"}
+    named = {r["construct"] for r in table["rows"]} | set(table["read_alike"])
+    for construct in sorted(used):
+        if construct not in named:
+            return (f"the pattern {pattern!r} uses {construct}, which the regex delta table "
+                    f"does not show read alike on python {', '.join(others)}")
+        if construct in table["read_alike"] or construct in table["translated"]:
+            continue
+        here = rows[(construct, RUNNING)]
+        for version in others:
+            there = rows.get((construct, version))
+            if there is None:
+                return (f"the pattern {pattern!r} uses {construct}, which the regex delta table "
+                        f"does not record for python {version}")
+            if there["reads"] == "none":
+                return (f"the pattern {pattern!r} uses {construct}, which python {version} does "
+                        f"not read; state a version that does, such as python {RUNNING}")
+            if there["digest"] != here["digest"]:
+                return (f"the pattern {pattern!r} uses {construct}, which python {version} reads "
+                        f"differently from python {RUNNING}; state python {RUNNING}")
+    return None
+
+
 def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str = "python",
          version: str | None = None) -> Node:
     """Intent:
@@ -843,11 +1036,14 @@ def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str 
         is refused here whatever version is asked for: a possessive repeat or an atomic group
         on Python 3.10, which reads neither. On a later interpreter the same pattern is
         refused for version 3.10, and without a version, since 3.10 is one of the Pythons the
-        term would have to hold on; with a version of 3.11 or later it is a bound.
+        term would have to hold on; with a version of 3.11 or later it is a bound. For any
+        version other than this one, a pattern is read only where `other_version_problem`
+        finds every construct read alike there: global flags after the start, which 3.10
+        reads with a warning and 3.11 refuses, are refused for every other version.
 
     Raises:
-        NotRegular: the pattern does not compile, is a bytes pattern, uses LOCALE, or, without
-            a version, uses a possessive repeat or atomic group, which some versions do not read.
+        NotRegular: the pattern does not compile, is a bytes pattern, uses LOCALE, or uses a
+            construct some of the versions it is about read differently or not at all.
         ValueError: `predicate` is not one of `PREDICATES`, `dialect` not one of `DIALECTS`, or
             `version` not a supported Python.
     """
@@ -862,6 +1058,13 @@ def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str 
     if key in _TERMS:
         import copy
         return copy.deepcopy(_TERMS[key])
+    text = pattern.pattern if isinstance(pattern, re.Pattern) else pattern
+    if isinstance(text, str):
+        problem = other_version_problem(
+            text, int(flags) | (int(pattern.flags) if isinstance(pattern, re.Pattern) else 0),
+            data["versions"] if version is None else [version])
+        if problem is not None:
+            raise NotRegular(problem)
     high = _Regex(pattern, int(flags), relax=True, version=version, reading="at_least")
     low = _Regex(pattern, int(flags), relax=True, version=version, reading="at_most")
     at_least = to_node(high.language(PREDICATES[predicate]))
@@ -890,6 +1093,32 @@ def term(pattern: Any, flags: Any = 0, predicate: str = "matches", dialect: str 
 
 
 _TERMS: dict[tuple[Any, int, str, Any], Node] = {}
+
+
+def under_predicate(doc: Node, predicate: str) -> Node:
+    """Intent:
+        Returns the term of the strings for which `predicate` holds of a term read in full
+        (`matches`): the term itself, with any text before it (`ends with`), after it
+        (`starts with`) or on both sides (`contains`), each bound alike.
+
+    Raises:
+        ValueError: `predicate` is not one of `PREDICATES`.
+    """
+    import copy
+    if predicate not in PREDICATES:
+        raise ValueError(f"a predicate is one of {sorted(PREDICATES)}, not {predicate!r}")
+    anything = _loop(_chars_re(_FULL), 0, None)
+    before = anything if predicate in ("contains", "ends with") else _EPS
+    after = anything if predicate in ("contains", "starts with") else _EPS
+    out = copy.deepcopy(doc)
+    for key in ("language", "at_least", "at_most"):
+        if key in out:
+            out[key] = to_node(_cat(before, from_node(out[key]), after))
+    if not out["exact"] and out["at_least"] == out["at_most"]:
+        out["exact"], out["language"] = True, out.pop("at_least")
+        del out["at_most"]
+    out.setdefault("source", {})["predicate"] = predicate
+    return out
 
 
 # -- membership by derivatives -------------------------------------------------
@@ -1030,12 +1259,46 @@ def every_string_over_class(name: str) -> Node:
 _METHODS = {"fullmatch": "matches", "search": "contains", "match": "starts with"}
 
 
+#: the characters drawn beside a match
+_BESIDE = "xyz XYZ019-_.é\n"
+
+
+def beside(rng: Any, predicate: str, text: str) -> str:
+    """Intent:
+        Returns `text` with text drawn beside it where the predicate allows it, half the time:
+        for `contains` before it, after it or both, so a match anchored at one end still gets
+        text on its open side; after it for `starts with`; before it for `ends with`; never for
+        `matches`. The text beside is up to four characters of a small pool.
+    """
+    if predicate == "matches" or rng.random() < 0.5:
+        return text
+
+    def some() -> str:
+        return "".join(rng.choice(_BESIDE) for _ in range(rng.randint(1, 4)))
+    sides = {"contains": rng.choice([(True, True), (True, False), (False, True)]),
+             "starts with": (False, True), "ends with": (True, False)}[predicate]
+    return (some() if sides[0] else "") + text + (some() if sides[1] else "")
+
+
 def pattern_language(source: Any, predicate: str | None = None, flags: int = 0,
+                     version: str | None = None) -> Any:
+    """Intent:
+        Returns `regex_language(source, predicate, flags, version)`, under the name 0.4.0
+        gave it, with a `DeprecationWarning` naming `regex_language`. The name goes in 0.5.0.
+    """
+    import warnings
+    warnings.warn("pattern_language is now regex_language; the old name goes in 0.5.0",
+                  DeprecationWarning, stacklevel=2)
+    return regex_language(source, predicate, flags, version)
+
+
+def regex_language(source: Any, predicate: str | None = None, flags: int = 0,
                      version: str | None = None) -> Any:
     """Intent:
         Returns the text language of the strings a predicate holds of a Python pattern:
         membership by `re` itself, the term as its stated `term`, draws from the
-        pattern's parse tree or, failing that, a shortest member of the term. `source` is a
+        pattern's parse tree, with text beside the match half the time where the predicate
+        allows it (`beside`), or, failing that, a shortest member of the term. `source` is a
         compiled pattern, a pattern's text (with `flags`), or a compiled pattern's bound
         method `fullmatch`, `search` or `match`, which names its own predicate; the predicate
         is `matches` when none is given or named. Without a `version` the language is about
@@ -1080,7 +1343,7 @@ def pattern_language(source: Any, predicate: str | None = None, flags: int = 0,
     def draw(rng: _random.Random) -> str:
         for _ in range(40):
             try:
-                text = _emit(rng, tree, {})
+                text = beside(rng, predicate, _emit(rng, tree, {}))
             except Unsupported:
                 break
             if accepts(text):

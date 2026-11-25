@@ -12,9 +12,9 @@ mathema_language.vocabulary.text.lower:
     tier: 2
     source_available: true
     pure: true
-    claims_fingerprint: "de5d621a1830"
+    claims_fingerprint: "1786ed11ea8c"
     pin: "none"
-    integrity: "v2:92b5ee77500903a5"
+    integrity: "v2:9821dada8f1c97e2"
   math: null
   claims:
     - name: "dependencies_current"
@@ -69,7 +69,27 @@ mathema_language.vocabulary.text.lower:
                 type: "string"
                 language: "unicode"
                 level: "alphabet"
+                term:
+                  kind: "regular_language"
+                  version: 1
+                  alphabet:
+                    - - 0
+                      - 1114111
+                  exact: true
+                  language:
+                    op: "repeat"
+                    arg:
+                      op: "chars"
+                      ranges:
+                        - - 0
+                          - 1114111
+                    min: 0
+                    max: null
+                  source:
+                    alphabet: "unicode"
         mathema.surface: "declared"
+        mathema.language_definitions:
+          L[unicode]: "58dbbd588979e551905e19b2b6530645792ca1bdd4c15c7e572630e90e4f2978"
   concepts: []
   references: {}
   reasoning:
@@ -83,10 +103,10 @@ mathema_language.vocabulary.text.lower:
       claim: ""
       basis: "no function dependencies, vacuously current"
   lineage:
-    generated_by: "mathema 0.6.5"
+    generated_by: "mathema 0.6.6.2"
     CDD_spec_version: "0.3.0"
-    date: "2026-11-16"
-    commit: "4252a3bc14f794bb96025b5fe1626cb9f9ad191b"
+    date: "2026-11-24"
+    commit: "0efe919d2351598d7b9a0419597f25dbe2108ec7"
   meta:
     mathema.effects:
       line: "no side effects"
@@ -94,5 +114,5 @@ mathema_language.vocabulary.text.lower:
       writes: []
     mathema.premise_state: {}
     mathema.invalidated_by:
-      - "record-format"
+      - "claims"
     mathema.intent_provenance: "declared"

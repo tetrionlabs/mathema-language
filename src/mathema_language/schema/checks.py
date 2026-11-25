@@ -334,6 +334,8 @@ def constraint_problems(value: Any, c: Constraints, path: str = "") -> list[Prob
             matched = False
         if not matched:
             out.append(Problem(path, f"matches {c.regex!r}", value))
+    if c.pattern is not None and isinstance(value, str) and not c.pattern.language().contains(value):
+        out.append(Problem(path, f"pattern ({c.pattern.arguments})", value))
     if c.enum is not None and value not in c.enum:
         out.append(Problem(path, f"one of {list(c.enum)}", value))
     if c.const is not NO_DEFAULT and value != c.const:
@@ -446,6 +448,9 @@ def json_schema(obj: NeutralType | Field | RowSchema) -> dict[str, Any]:
                            ("multipleOf", c.multiple_of), ("pattern", c.regex)):
             if value is not None:
                 out[key] = value
+        if c.pattern is not None:
+            from ..text.pattern import pattern_json
+            out.setdefault("x-mathema", {}).update(pattern=pattern_json(c.pattern), term=c.pattern.term())
         if c.min_len is not None:
             out["minLength" if obj.type.base in ("string", "binary") else "minItems"] = c.min_len
         if c.max_len is not None:

@@ -16,7 +16,9 @@ from mathema.conjecture import check_conjectures, claim  # noqa: E402
 
 DOC = pathlib.Path(__file__).resolve().parents[1] / "docs" / "catalogue.md"
 _BLOCK = re.compile(r"```python\n(.*?)```", re.S)
-_ROW = re.compile(r"^\| `([^`]+)` \| `(.+?)` \| (\w+) \|", re.M)
+_ROW = re.compile(r"^\| `([^`]+)` \| `(.+?)` \| (\w+(?: \(holds without the smt extra\))?) \|", re.M)
+#: a row printed "proven (holds without the smt extra)" is proven only with z3 installed
+_HAS_Z3 = importlib.util.find_spec("z3") is not None
 
 
 def _sections():
@@ -56,6 +58,8 @@ def test_every_catalogue_row_lands_on_its_printed_verdict(tmp_path, title, code,
                                                          fn_name, law, verdict):
     mod = _module(tmp_path, title, code)
     (p,) = check_conjectures(getattr(mod, fn_name), [claim(law, route="best")])
+    if verdict.endswith("(holds without the smt extra)"):
+        verdict = "proven" if _HAS_Z3 else "holds"
     assert p.verdict == verdict, (p.verdict, p.route, p.note, p.counterexample)
 
 
