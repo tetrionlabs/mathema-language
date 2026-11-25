@@ -3,8 +3,23 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
-## Unreleased
+## 0.4.1
 
+For mathema 0.6.6.2 (`mathema>=0.6.6.2,<0.7`), which reads a language's persisted `term`.
+
+- Fixed: an inclusion between two record languages was reported proven when the older one admits
+  a key the newer one does not declare and refuses. A JSON Schema object that allows other keys was
+  proven included in the same object with `additionalProperties: false`, and in a plain class or a
+  total `TypedDict` with the same fields; a pydantic model with `extra="ignore"` was proven included
+  in one with `extra="forbid"`. Each is now falsified with a record both sides' validation confirm
+  (`{"a": "x", "other_0": 0}`, for example). From 0.2.1.
+- Fixed: five record constructs the encoding does not read gave proven inclusions their validators
+  contradict; each now leaves the inclusion unknown, naming the construct: a nested pydantic model
+  with its own `extra` setting; `additionalProperties` holding a schema for the keys no property
+  names; a `required` key no property names; a pydantic model in its default lax mode, with a field
+  that is not text, compared with another library's schema (pydantic accepts `"1"` for an `int`);
+  and a pydantic field read by an alias. A pydantic model with `ConfigDict(strict=True)` is read as
+  before. From 0.2.1.
 - Fixed: from 0.4.0, `mathema_language.text.pattern_language` with a
   `version` other than the running Python, or with none (every
   supported Python), read the pattern with the running interpreter's
@@ -21,6 +36,23 @@ release onward.
 - `mathema_language.text.pattern_language` is now
   `mathema_language.text.regex_language`. The old name still works in
   0.4.x, with a `DeprecationWarning`, and goes in 0.5.0.
+- A pydantic record built to check membership keeps the keys its model does not declare, so a model
+  with `extra="forbid"` refuses them as its validator does.
+- When a library a language or adaptor reads with is not installed, the error names it and the extra
+  that installs it: `L[yaml] is read with ruamel.yaml, which is not installed; install
+  mathema-language[yaml]`. The same holds for `L[toml]` before Python 3.11 (tomli), an inclusion
+  (z3, the `smt` extra) and a JSON Schema (jsonschema). The error is a `MissingLibrary`, an
+  `ImportError`.
+- Text words for `L[...]`, registered with mathema's word registry: `matches (P)`, `contains (P)`,
+  `starts with (P)` (also `^=`) and `ends with (P)` (also `$=`), where `P` is a quoted text, a
+  `re(r"...", python[, flags])` call or a `pattern ("...")`; `pattern ("AA99[ ]9AA")`, a picture of
+  fixed-format text; `within (...)` over paths, IPv4 and IPv6 blocks, ISO dates and datetimes; and
+  the alphabet constructor `L[lower + digit + "_"]`, with the languages `L[lower]`, `L[upper]` and
+  the alphabet `hexdigit`. `re(...)` takes a version pin (`python 3.13`), read from the table of
+  where Python versions differ. The word `within` is draft and has no lexicon row yet.
+- Known issue: on macOS, the README claim over `L[json]` that a configuration normalises twice to
+  the same text can be reported holds where it is falsified, since the probe may not draw a document
+  nested past the recursion limit.
 
 ## 0.4.0
 
