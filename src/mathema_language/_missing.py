@@ -21,8 +21,8 @@ class MissingLibrary(ImportError):
 
     distribution = "mathema-language"
 
-    def __init__(self, subject: str, library: str, extra: str) -> None:
-        super().__init__(f"{subject} is read with {library}, which is not installed; "
+    def __init__(self, subject: str, library: str, extra: str, verb: str = "is read with") -> None:
+        super().__init__(f"{subject} {verb} {library}, which is not installed; "
                          f"install mathema-language[{extra}]")
         self.missing_library = library
         self.extra = extra

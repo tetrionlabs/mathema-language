@@ -40,7 +40,7 @@ else:
     try:
         import tomli as tomllib
     except ImportError as e:
-        raise MissingLibrary("L[toml] before Python 3.11", "tomli", "toml") from e
+        raise MissingLibrary("L[toml]", "tomli", "toml", verb="is read before Python 3.11 with") from e
 
 
 def load(text: str) -> dict[str, Any]:

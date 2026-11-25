@@ -130,7 +130,7 @@ def _z3() -> Any:
     try:
         import z3
     except ImportError as e:
-        raise MissingLibrary("schema inclusion", "z3", "smt") from e
+        raise MissingLibrary("an inclusion", "z3", "smt", verb="is decided with") from e
     return z3
 
 

@@ -52,7 +52,7 @@ def test_schema_inclusion_without_z3(monkeypatch):
     with pytest.raises(MissingLibrary) as raised:
         smt._z3()
     _assert_names(raised.value, "z3", "smt")
-    assert "schema inclusion" in str(raised.value)
+    assert "an inclusion is decided with z3" in str(raised.value)
 
 
 def test_a_json_schema_without_jsonschema(monkeypatch):
