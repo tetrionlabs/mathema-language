@@ -3,10 +3,10 @@
 """Record constructs the encoding does not read leave an inclusion unknown, with the construct
 named, never proven: each case states the record that the libraries' own validators separate."""
 
-import jsonschema
 import pytest
 
 pytest.importorskip("z3")
+jsonschema = pytest.importorskip("jsonschema")
 pydantic = pytest.importorskip("pydantic")
 
 from mathema_language.smt import _schema_inclusion  # noqa: E402

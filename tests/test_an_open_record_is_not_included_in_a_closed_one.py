@@ -3,10 +3,10 @@
 """An open record admits keys it does not declare, so a closed record that
 declares the same fields does not include it; the reverse inclusion holds."""
 
-import jsonschema
 import pytest
 
 pytest.importorskip("z3")
+jsonschema = pytest.importorskip("jsonschema")
 pydantic = pytest.importorskip("pydantic")
 
 from mathema_language.smt import _schema_inclusion  # noqa: E402

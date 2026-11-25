@@ -4,10 +4,10 @@
 over each construct is proven, and a false one is falsified with a record the libraries' own
 validators separate. Each is expected to fail until the construct is read."""
 
-import jsonschema
 import pytest
 
 pytest.importorskip("z3")
+jsonschema = pytest.importorskip("jsonschema")
 pydantic = pytest.importorskip("pydantic")
 
 from mathema_language.schema.adaptors import adapt_row  # noqa: E402
