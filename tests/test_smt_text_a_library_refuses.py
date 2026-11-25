@@ -103,7 +103,16 @@ def test_an_inclusion_into_a_model_with_a_str_setting_is_not_proven():
 
 
 @pytest.mark.parametrize("older, newer", [(Short, JSON_SHORT), (Short, Short), (JSON_TEXT, Bare),
-                                          (Bare, JSON_TEXT), (JSON_TEXT, Plain), (JSON_TEXT, Typed),
+                                          (Bare, JSON_TEXT),
                                           (Plain, JSON_TEXT), (Short, Bare), (Filled, JSON_FILLED)])
 def test_inclusions_that_hold_are_still_proven(older, newer):
     assert smt._schema_inclusion(older, newer).verdict == "proven"
+
+
+@pytest.mark.parametrize("newer", [Plain, Typed])
+def test_an_open_object_is_not_included_in_a_class_that_refuses_other_keys(newer):
+    result = smt._schema_inclusion(JSON_TEXT, newer)
+    assert result.verdict == "falsified", str(result)
+    assert smt._admits(adapt_row(JSON_TEXT), result.witness)
+    assert not smt._admits(adapt_row(newer), result.witness)
+    assert set(result.witness) - {"s"}, result.witness

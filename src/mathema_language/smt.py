@@ -498,7 +498,9 @@ class MembershipEncoding:
             if path in own or len(path) > 1:
                 continue
             x = self.var(name)
-            if not mapping or schema.column_policy == "exact":
+            # an exact record refuses a key it does not declare; an open one admits it, as a
+            # mapping or, for a class, by leaving it out of the record it builds (`_admits`)
+            if schema.column_policy == "exact":
                 conds.append(V.is_absent(x))
         return z3.And(*conds) if conds else z3.BoolVal(True)
 
@@ -826,6 +828,34 @@ def sre_maxrepeat() -> int:
         return int(_constants.MAXREPEAT)
     import sre_constants
     return int(sre_constants.MAXREPEAT)
+
+
+def _converting_model(language: Any) -> str | None:
+    """Intent:
+        Names a shape of `language` that is a pydantic model in lax mode with a field that is
+        not text, at any depth, or returns None: such a model admits input of other kinds (the
+        text "1" for an int) by converting it.
+    """
+    def converts(fields: Any) -> bool:
+        for f in fields or ():
+            t = f.type
+            if t.base == "struct":
+                if converts(t.fields):
+                    return True
+            elif t.base == "list":
+                if t.item is not None and (t.item.base != "string" or
+                                           converts(getattr(t.item, "fields", None))):
+                    return True
+            elif t.base != "string":
+                return True
+        return False
+    for b in _branches(language):
+        if b.ecosystem.name != "pydantic":
+            continue
+        config = getattr(b.ecosystem.model, "model_config", None) or {}
+        if not config.get("strict") and converts(b.schema.fields):
+            return str(b.name)
+    return None
 
 
 def _branches(language: Any) -> list[Any]:
@@ -1199,9 +1229,14 @@ def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) 
         decorators = getattr(model, "__pydantic_decorators__", None)
         if decorators is not None and (decorators.field_validators or decorators.model_validators):
             return f"a custom validator on {path}"
+    if path and (getattr(model, "model_config", None) or {}).get("extra") is not None:
+        return f"the extra setting of the model at {path}"
     fields = {f.name: f for f in getattr(schema, "fields", schema) or ()}
     for name, info in getattr(model, "model_fields", {}).items():
         at = f"{path}.{name}"
+        for alias in (getattr(info, "alias", None), getattr(info, "validation_alias", None)):
+            if alias is not None and alias != name:
+                return f"the alias {alias!r} of {at}, by which the model reads the field"
         for marker in getattr(info, "metadata", ()) or ():
             kind = type(marker).__name__
             if kind == "_PydanticGeneralMetadata":
@@ -1257,6 +1292,10 @@ def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
             out.add(key)
     if nested and "additionalProperties" in schema and schema["additionalProperties"] is not True:
         out.add("additionalProperties (on a nested object)")
+    elif isinstance(schema.get("additionalProperties"), dict) and schema["additionalProperties"]:
+        out.add("additionalProperties (a schema for the keys no property names)")
+    if set(schema.get("required") or ()) - set(schema.get("properties") or {}):
+        out.add("required (a key no property names)")
     for prop in (schema.get("properties") or {}).values():
         out |= _unread_keywords(prop, nested=True)
     return out
@@ -1413,8 +1452,20 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         why = untranslated(language)
         if why:
             return _InclusionResult("unknown", f"not translated: {why}")
+    converts = _converting_model(older)
+    if converts and any(b.ecosystem.name != "pydantic" for b in _branches(newer)):
+        return _InclusionResult("unknown", f"not translated: {converts} converts its input to its "
+                                "field types (pydantic's lax mode), which the encoding does not "
+                                "read against another library's validation")
     enc = MembershipEncoding(z3)
     names = list(dict.fromkeys([*field_names(older), *field_names(newer)]))
+    # one top-level key neither side declares stands for every such key: an open record
+    # admits it and a closed one refuses it, which no declared field shows
+    # (only when `older` has an open shape and `newer` a closed one, the one case it decides)
+    if any(b.schema.column_policy != "exact" for b in _branches(older)) and \
+            any(b.schema.column_policy == "exact" for b in _branches(newer)):
+        other = next(f"other_{k}" for k in range(len(names) + 1) if f"other_{k}" not in names)
+        names.append(other)
     try:
         m_older = enc.language(older, names, "older")
         m_newer = enc.language(newer, names, "newer")
