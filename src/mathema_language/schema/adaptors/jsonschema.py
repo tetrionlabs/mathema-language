@@ -13,6 +13,7 @@ import contextvars
 import importlib.util
 from typing import Any
 
+from ..._missing import MissingLibrary
 from ...adaptor_priority import DOCUMENT, priority
 from ..ecosystems.jsonschema import JsonSchemaEcosystem
 from ..languages import RowLanguage
@@ -162,8 +163,7 @@ def adapt(obj: Any) -> RowLanguage | None:
     if not _looks_like_row_schema(obj):
         return None
     if importlib.util.find_spec("jsonschema") is None:
-        raise ImportError("a JSON Schema is validated by the jsonschema package, which is not "
-                          "installed: pip install 'mathema-language[jsonschema]'")
+        raise MissingLibrary("L[a JSON Schema]", "jsonschema", "jsonschema")
     return RowLanguage(schema_of(obj), JsonSchemaEcosystem(obj))
 
 
