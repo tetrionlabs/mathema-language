@@ -10,8 +10,8 @@ import pytest
 pytest.importorskip("z3")
 pydantic = pytest.importorskip("pydantic")
 
-from mathema_language.smt import _admits, _schema_inclusion  # noqa: E402
 from mathema_language.schema.adaptors import adapt_row  # noqa: E402
+from mathema_language.smt import _admits, _schema_inclusion  # noqa: E402
 
 DUE = "declined in 0.4.1; the construct is read and this verdict restored by 2026-12-18"
 owed = pytest.mark.xfail(strict=True, reason=DUE)
