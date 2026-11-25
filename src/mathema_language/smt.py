@@ -854,7 +854,7 @@ def _converting_model(language: Any) -> str | None:
             continue
         config = getattr(b.ecosystem.model, "model_config", None) or {}
         if not config.get("strict") and converts(b.schema.fields):
-            return b.name
+            return str(b.name)
     return None
 
 

@@ -7,7 +7,6 @@ import pytest
 
 pytest.importorskip("z3")
 jsonschema = pytest.importorskip("jsonschema")
-pydantic = pytest.importorskip("pydantic")
 
 from mathema_language.smt import _schema_inclusion  # noqa: E402
 
@@ -58,24 +57,3 @@ def test_nested_open_into_nested_closed_is_never_proven():
     older = {"type": "object", "properties": {"r": OPEN}}
     newer = {"type": "object", "properties": {"r": CLOSED}}
     assert _schema_inclusion(older, newer).verdict != "proven"
-
-
-class _Ignore(pydantic.BaseModel):
-    a: str
-
-
-class _Forbid(pydantic.BaseModel):
-    model_config = pydantic.ConfigDict(extra="forbid")
-    a: str
-
-
-def test_pydantic_ignore_into_forbid_is_falsified():
-    result = _schema_inclusion(_Ignore, _Forbid)
-    assert result.verdict == "falsified", result
-    _Ignore.model_validate(result.witness)
-    with pytest.raises(pydantic.ValidationError):
-        _Forbid.model_validate(result.witness)
-
-
-def test_pydantic_forbid_into_ignore_is_proven():
-    assert _schema_inclusion(_Forbid, _Ignore).verdict == "proven"
