@@ -30,6 +30,7 @@ import sys
 from dataclasses import dataclass
 from typing import Any
 
+from .._missing import MissingLibrary
 from .._surface import HazardValue
 from ._kit import TextLanguage
 
@@ -39,8 +40,7 @@ else:
     try:
         import tomli as tomllib
     except ImportError as e:
-        raise ImportError("L[toml] reads TOML with tomli before Python 3.11, which is not "
-                          "installed: pip install 'mathema-language[toml]'") from e
+        raise MissingLibrary("L[toml] before Python 3.11", "tomli", "toml") from e
 
 
 def load(text: str) -> dict[str, Any]:

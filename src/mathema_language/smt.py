@@ -58,6 +58,7 @@ from fractions import Fraction
 from pathlib import PurePath
 from typing import Any
 
+from ._missing import MissingLibrary
 from .schema.model import NO_DEFAULT, Field, RowSchema
 from .text import _regular as _rx
 from .text._algebra import _MAX_CODE, _cs_has, _cs_inter, _cs_union, _re_sets
@@ -124,13 +125,12 @@ def _z3() -> Any:
         Returns the imported `z3` module.
 
     Raises:
-        ImportError: z3 is not installed (the optional `[smt]` extra).
+        MissingLibrary: z3 is not installed (the optional `[smt]` extra).
     """
     try:
         import z3
     except ImportError as e:
-        raise ImportError("schema inclusion is decided by z3, which is not installed: "
-                          "pip install 'mathema-language[smt]'") from e
+        raise MissingLibrary("schema inclusion", "z3", "smt") from e
     return z3
 
 

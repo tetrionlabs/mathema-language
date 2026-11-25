@@ -20,14 +20,14 @@ import string
 from dataclasses import dataclass
 from typing import Any
 
+from .._missing import MissingLibrary
 from .._surface import HazardValue
 from ._kit import TextLanguage
 
 try:
     from ruamel.yaml import YAML
 except ImportError as e:
-    raise ImportError("L[yaml] reads YAML with ruamel.yaml, which is not installed: "
-                      "pip install 'mathema-language[yaml]'") from e
+    raise MissingLibrary("L[yaml]", "ruamel.yaml", "yaml") from e
 
 _LOADER = YAML(typ="safe", pure=True)
 

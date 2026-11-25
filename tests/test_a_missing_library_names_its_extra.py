@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Tetrion Ltd
 """A language or adaptor that needs an optional library which is not installed
 raises MissingLibrary, naming the library and the extra to install."""
 import importlib
