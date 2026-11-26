@@ -235,7 +235,7 @@ def run_pairs(pairs=PAIRS, seed=SEED, probes=PROBES):
 
 def test_decimal_inclusion_verdicts_agree_with_pydantic():
     failures = []
-    for i, case, verdict, reason, witness, problems in run_pairs():
+    for i, case, verdict, _reason, _witness, problems in run_pairs():
         if problems:
             failures.append((i, case, verdict, problems[:2]))
     assert not failures, failures[:3]
