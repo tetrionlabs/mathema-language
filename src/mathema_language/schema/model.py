@@ -82,6 +82,7 @@ class NeutralType:
     value: NeutralType | None = None
     ref: str | None = None
     nullable_items: bool = False
+    item_constraints: Constraints | None = None
     construct: Callable[..., Any] | None = field(default=None, compare=False, repr=False)
 
     def __post_init__(self) -> None:

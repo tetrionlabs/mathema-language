@@ -59,7 +59,7 @@ from pathlib import PurePath
 from typing import Any
 
 from ._missing import MissingLibrary
-from .schema.model import NO_DEFAULT, Field, RowSchema
+from .schema.model import NO_DEFAULT, Constraints, Field, RowSchema
 from .text import _regular as _rx
 from .text._algebra import _MAX_CODE, _cs_has, _cs_inter, _cs_union, _re_sets
 from .text._regular import _Regex
@@ -393,7 +393,8 @@ class MembershipEncoding:
                 conds.append(n <= c.max_len)
             k = z3.Int(f"k_{len(self.extra)}_{_label((f.name,))}")
             self.extra.append(k)
-            item = Field("item", item_t, nullable=f.type.nullable_items)
+            item = Field("item", item_t, nullable=f.type.nullable_items,
+                         constraints=t.item_constraints or Constraints())
             conds.append(z3.ForAll([k], z3.Implies(z3.And(k >= 0, k < n),
                                                    self.member(item, items[k], side, False, self.I))))
         elif t.base == "categorical":
@@ -1477,6 +1478,9 @@ def _items_unread(schema: dict[str, Any]) -> set[str]:
     items = schema["items"]
     if not isinstance(items, dict):
         return {"items carrying a non-schema form"}
+    if items.get("type") == "string":
+        return {f"items carrying {k}" for k in
+                set(items) - {"type", "title", "description", "pattern", "minLength", "maxLength"}}
     if "type" not in items and "enum" in items:
         return {f"items carrying {k}" for k in set(items) - {"enum", "title", "description"}}
     extra = set(items) - {"type", "title", "description"}

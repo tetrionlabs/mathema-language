@@ -43,6 +43,8 @@ def _bounds(rng, kind):
         out[lo] = rng.choice([0, 1, 2])
     if rng.random() < 0.5:
         out[hi] = rng.choice([2, 3, 5])
+    if kind == "string" and rng.random() < 0.4:
+        out["pattern"] = rng.choice(_BOUND_VALUES["pattern"])
     return out
 
 
@@ -81,7 +83,7 @@ def js_prop(rng, depth=0):
 
 
 _BOUND_VALUES = {"minimum": [0, 1, 2], "maximum": [2, 3, 5], "minLength": [0, 1, 2],
-                 "maxLength": [2, 3, 5]}
+                 "maxLength": [2, 3, 5], "pattern": ["^a", "^ab", "^a+$", "b$", "^[ab]{1,2}$"]}
 
 
 def rebound(rng, node):
