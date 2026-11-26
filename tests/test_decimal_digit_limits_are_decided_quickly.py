@@ -37,7 +37,8 @@ def _verdict(result):
     ((6, 2), (8, 2), "proven"),
     ((8, 2), (6, 2), "falsified"),
     ((6, 2), (6, 2), "proven"),
-    ((6, 2), (6, 3), "proven"),
+    ((6, 2), (6, 3), "falsified"),
+    ((9, 2), (10, 3), "proven"),
     ((6, 3), (6, 2), "falsified"),
     ((6, 2), (5, 2), "falsified"),
 ])
