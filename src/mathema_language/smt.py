@@ -1181,7 +1181,7 @@ def _rust_reads_differently(pattern: str) -> str | None:
 #: by marker type; settings that only loosen or only tighten coercion are
 #: read as no constraint, which the encoding's sides already allow for
 _PYDANTIC_MARKERS = {"Gt", "Ge", "Lt", "Le", "MinLen", "MaxLen", "MultipleOf", "Strict"}
-_PYDANTIC_SETTINGS = {"pattern", "max_digits", "decimal_places", "strict"}
+_PYDANTIC_SETTINGS = {"pattern", "max_digits", "decimal_places"}
 
 
 def _pydantic_models(annotation: Any) -> list[Any]:
@@ -1207,6 +1207,56 @@ def _inner_fields(t: Any) -> Any:
         if inner is not None and getattr(inner, "fields", None):
             return inner.fields
     return ()
+
+
+_STRING_TRANSFORMS = ("strip_whitespace", "to_upper", "to_lower", "strict", "ascii_only")
+
+
+def _unread_marker(marker: Any, at: str, t: Any) -> str | None:
+    """Intent:
+        Names what a pydantic field marker carries that the neutral model does not, or returns
+        None when it is read: a bound or length marker, an `Interval`, the `StringConstraints`
+        that only bound or match, a pattern, a decimal digit limit with both limits given, and
+        `allow_inf_nan=False`. `t` is the neutral type of the field, or None.
+
+    Notes:
+        The same rule serves a marker in the field's own metadata and one inside an optional or
+        union arm. A field-level `strict` is named: strictness is not read per field.
+    """
+    if marker is None:
+        return None
+    kind = type(marker).__name__
+    if kind == "_PydanticGeneralMetadata":
+        given = {k for k, v in vars(marker).items() if v is not None}
+        if vars(marker).get("allow_inf_nan") is True:
+            return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
+                    "infinities")
+        odd = given - _PYDANTIC_SETTINGS - {"allow_inf_nan"}
+        if odd:
+            return f"the setting {sorted(odd)[0]!r} on {at}"
+        if given & {"max_digits", "decimal_places"}:
+            if t is None or t.precision is None or t.scale is None:
+                return f"decimal digits on {at} the neutral model does not carry"
+        return None
+    if kind == "AllowInfNan":
+        if getattr(marker, "allow_inf_nan", None) is not False:
+            return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
+                    "infinities")
+        return None
+    if kind == "Strict":
+        if getattr(marker, "strict", None) is not None:
+            return f"the setting 'strict' on {at}"
+        return None
+    if kind == "Interval":
+        return None
+    if kind == "StringConstraints":
+        for setting in _STRING_TRANSFORMS:
+            if getattr(marker, setting, None) is not None:
+                return f"the setting {setting!r} on {at}"
+        return None
+    if kind not in _PYDANTIC_MARKERS:
+        return f"the {kind} constraint on {at}"
+    return None
 
 
 def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) -> str | None:
@@ -1241,25 +1291,9 @@ def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) 
         markers = flatten_markers(tuple(getattr(info, "metadata", ()) or ())) \
             + annotation_markers(getattr(info, "annotation", None))
         for marker in markers:
-            kind = type(marker).__name__
-            if kind == "_PydanticGeneralMetadata":
-                given = {k for k, v in vars(marker).items() if v is not None}
-                if vars(marker).get("allow_inf_nan") is True:
-                    return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
-                            "infinities")
-                odd = given - _PYDANTIC_SETTINGS - {"allow_inf_nan"}
-                if odd:
-                    return f"the setting {sorted(odd)[0]!r} on {at}"
-                if given & {"max_digits", "decimal_places"}:
-                    t = fields[name].type if name in fields else None
-                    if t is None or t.precision is None or t.scale is None:
-                        return f"decimal digits on {at} the neutral model does not carry"
-            elif kind == "AllowInfNan":
-                if getattr(marker, "allow_inf_nan", None) is not False:
-                    return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
-                            "infinities")
-            elif kind not in _PYDANTIC_MARKERS:
-                return f"the {kind} constraint on {at}"
+            unread = _unread_marker(marker, at, fields[name].type if name in fields else None)
+            if unread:
+                return unread
         inner = _inner_fields(fields[name].type) if name in fields else ()
         for nested in _pydantic_models(getattr(info, "annotation", None)):
             unread = _unread_pydantic(nested, inner, at, seen)
@@ -1299,6 +1333,14 @@ def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
         out.add("additionalProperties (a schema for the keys no property names)")
     if set(schema.get("required") or ()) - set(schema.get("properties") or {}):
         out.add("required (a key no property names)")
+    for key in ("anyOf", "oneOf"):
+        for arm in schema.get(key) or ():
+            if isinstance(arm, dict) and arm.get("type") != "null":
+                out |= _unread_keywords(arm, nested=True)
+                if _nullable_pair(schema[key]):
+                    from .schema.adaptors.jsonschema import conflicting_keywords
+                    out |= {f"{k} (on both a property and its {key} arm)"
+                            for k in conflicting_keywords(schema, arm)}
     for prop in (schema.get("properties") or {}).values():
         out |= _unread_keywords(prop, nested=True)
     return out
