@@ -110,8 +110,15 @@ def _type_of(prop: dict[str, Any]) -> tuple[NeutralType, bool]:
 def _constraints(prop: dict[str, Any]) -> Constraints:
     """Intent:
         The neutral constraints one property spells: bounds, lengths or item counts, `pattern`,
-        `enum` alongside a `type`, `const` and `multipleOf`.
+        `enum` alongside a `type`, `const` and `multipleOf`; for an `anyOf` or `oneOf` of one
+        type and `null`, those of the one type.
     """
+    options = prop.get("anyOf") or prop.get("oneOf")
+    if isinstance(options, list) and "$ref" not in prop:
+        others = [o for o in options if isinstance(o, dict) and o.get("type") != "null"]
+        if len(others) == 1 and len(others) < len(options):
+            return _constraints({**{k: v for k, v in prop.items()
+                                    if k not in ("anyOf", "oneOf")}, **others[0]})
     return Constraints(min=prop.get("minimum"), max=prop.get("maximum"),
                        exclusive_min=prop.get("exclusiveMinimum"),
                        exclusive_max=prop.get("exclusiveMaximum"),

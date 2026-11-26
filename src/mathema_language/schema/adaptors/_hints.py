@@ -28,12 +28,42 @@ _MARKERS = (("gt", "exclusive_min"), ("ge", "min"), ("lt", "exclusive_max"),
             ("multiple_of", "multiple_of"), ("pattern", "regex"))
 
 
+def flatten_markers(markers: tuple[Any, ...]) -> tuple[Any, ...]:
+    """Intent:
+        The markers with every pydantic `FieldInfo` among them replaced by the markers it holds,
+        which is how `Annotated[int, Field(le=5)]` inside an optional or a union arm carries its
+        constraints.
+    """
+    out: list[Any] = []
+    for marker in markers:
+        held = getattr(marker, "metadata", None)
+        if isinstance(held, (list, tuple)) and hasattr(marker, "annotation"):
+            out.extend(flatten_markers(tuple(held)))
+        else:
+            out.append(marker)
+    return tuple(out)
+
+
+def annotation_markers(hint: Any) -> tuple[Any, ...]:
+    """Intent:
+        The `Annotated` markers a hint carries along the path `field_of` reads, through
+        `Annotated` and the arms of an optional or a union, flattened.
+    """
+    origin = typing.get_origin(hint)
+    if origin is typing.Annotated:
+        args = typing.get_args(hint)
+        return flatten_markers(tuple(args[1:])) + annotation_markers(args[0])
+    if origin in (typing.Union, types.UnionType):
+        return tuple(m for a in typing.get_args(hint) for m in annotation_markers(a))
+    return ()
+
+
 def constraints_of(markers: tuple[Any, ...]) -> Constraints:
     """The constraints the `Annotated` markers spell, read by
     attribute so `annotated_types`, pydantic's `Field` and any
     look-alike all work."""
     found: dict[str, Any] = {}
-    for marker in markers:
+    for marker in flatten_markers(markers):
         for attr, key in _MARKERS:
             value = getattr(marker, attr, None)
             if value is not None:
@@ -54,7 +84,7 @@ def _decimal_digits(t: NeutralType, markers: tuple[Any, ...]) -> NeutralType:
         One of the two alone has no neutral spelling and is left to the library's own validation.
     """
     digits = places = None
-    for marker in markers:
+    for marker in flatten_markers(markers):
         if getattr(marker, "max_digits", None) is not None:
             digits = marker.max_digits
         if getattr(marker, "decimal_places", None) is not None:

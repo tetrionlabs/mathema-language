@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
+# ruff: noqa: UP045, UP007, F401
 """A constraint inside the non-None arm of an optional field is read, not dropped.
 
 `Optional[Annotated[T, Field(...)]]` and `Annotated[T, Field(...)] | None` carry the

@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
+# ruff: noqa: UP045, UP007, F401
 """A constraint inside the non-None arm of an optional field is read for dataclasses,
 TypedDicts and JSON Schema `anyOf`, as for pydantic models; the widened direction stays proven.
 """
