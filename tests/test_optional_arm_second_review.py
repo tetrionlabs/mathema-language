@@ -12,7 +12,8 @@ pytest.importorskip("z3")
 pytest.importorskip("pydantic")
 pytest.importorskip("jsonschema")
 
-from pydantic import Field, create_model  # noqa: E402
+from annotated_types import Ge  # noqa: E402
+from pydantic import Field, ValidationError, create_model  # noqa: E402
 
 from mathema_language import smt  # noqa: E402
 
@@ -70,3 +71,30 @@ def test_allow_inf_nan_in_an_arm_is_named_as_on_a_plain_field():
     plain = create_model("P", f=(Annotated[float, Field(allow_inf_nan=True)], ...))
     assert smt._schema_inclusion(arm, arm).verdict == "unknown"
     assert smt._schema_inclusion(plain, plain).verdict == "unknown"
+
+
+def test_a_declined_shape_with_a_confirmed_witness_is_falsified():
+    older = _schema({"anyOf": [{"type": "integer"}, NULL]})
+    newer = _schema({"maximum": 3, "anyOf": [{"type": "integer", "maximum": 8}, NULL]})
+    result = smt._schema_inclusion(older, newer)
+    assert result.verdict == "falsified"
+    assert result.witness["f"] > 3
+
+
+def test_a_declined_shape_the_solver_finds_no_counterexample_for_stays_unknown():
+    older = _schema({"maximum": 3, "anyOf": [{"type": "integer", "maximum": 8}, NULL]})
+    newer = _schema({"anyOf": [{"type": "integer", "maximum": 8}, NULL]})
+    result = smt._schema_inclusion(older, newer)
+    assert result.verdict == "unknown"
+    assert "proof declined" in str(result)
+    assert "searched for a counterexample" in str(result)
+
+
+def test_a_pydantic_both_levels_decline_is_falsified_with_a_confirmed_witness():
+    older = create_model("A", x=(Annotated[Optional[Annotated[int, Ge(5)]], Field(ge=3)], ...))
+    newer = create_model("B", x=(Optional[Annotated[int, Ge(10)]], ...))
+    result = smt._schema_inclusion(older, newer)
+    assert result.verdict == "falsified"
+    older.model_validate(result.witness)
+    with pytest.raises(ValidationError):
+        newer.model_validate(result.witness)

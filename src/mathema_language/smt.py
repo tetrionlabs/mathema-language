@@ -1009,11 +1009,18 @@ def _one_digit_limit(fields: Any, prefix: str) -> str | None:
     return None
 
 
-def untranslated(language: Any) -> str | None:
-    """Why a language's records cannot be encoded, or None."""
+def untranslated(language: Any, shape: list[str] | None = None) -> str | None:
+    """Why a language's records cannot be encoded, or None.
+
+    Notes:
+        A shape the encoding reads roughly but not exactly (an optional union outside the one
+        form read, constraints at two levels of a pydantic field, a field-level `strict`) is a
+        reason for `shape` when a list is given, and the language is still encoded; with none
+        given it is returned as a reason like any other.
+    """
     if language is not None and getattr(language, "branches", None):
         for branch in language.branches:
-            why = untranslated(branch)
+            why = untranslated(branch, shape)
             if why:
                 return why
         return None
@@ -1032,7 +1039,7 @@ def untranslated(language: Any) -> str | None:
         decorators = getattr(ecosystem.model, "__pydantic_decorators__", None)
         if decorators is not None and (decorators.field_validators or decorators.model_validators):
             return f"{language.name}: a custom validator"
-        unread = _unread_pydantic(ecosystem.model, schema)
+        unread = _unread_pydantic(ecosystem.model, schema, shape=shape)
         if unread:
             return f"{language.name}: {unread}"
         python_engine = _reads_patterns_with_re(ecosystem.model)
@@ -1054,6 +1061,11 @@ def untranslated(language: Any) -> str | None:
         keywords = _unread_keywords(ecosystem.schema)
         if keywords:
             return f"{language.name}: the JSON Schema keyword {sorted(keywords)[0]!r}"
+        shapes = _shape_keywords(ecosystem.schema)
+        if shapes and shape is None:
+            return f"{language.name}: the JSON Schema keyword {sorted(shapes)[0]!r}"
+        if shapes and shape is not None:
+            shape.append(f"{language.name}: the JSON Schema keyword {sorted(shapes)[0]!r}")
     return None
 
 
@@ -1211,10 +1223,22 @@ def _inner_fields(t: Any) -> Any:
 
 _FIELD_STRICT = ("the setting 'strict' on {at}, which differs from the strictness of its model; "
                  "strictness is read for a whole model and not per field")
+def _shape(sink: list[str] | None, reason: str) -> str | None:
+    """Intent:
+        Records a shape decline in `sink` and returns None, or returns `reason` when there is
+        no sink.
+    """
+    if sink is None:
+        return reason
+    sink.append(reason)
+    return None
+
+
 _STRING_TRANSFORMS = ("strip_whitespace", "to_upper", "to_lower", "ascii_only")
 
 
-def _unread_marker(marker: Any, at: str, t: Any, model_strict: bool = False) -> str | None:
+def _unread_marker(marker: Any, at: str, t: Any, model_strict: bool = False,
+                   shape: list[str] | None = None) -> str | None:
     """Intent:
         Names what a pydantic field marker carries that the neutral model does not, or returns
         None when it is read: a bound or length marker, an `Interval`, the `StringConstraints`
@@ -1236,7 +1260,7 @@ def _unread_marker(marker: Any, at: str, t: Any, model_strict: bool = False) -> 
             return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
                     "infinities")
         if vars(marker).get("strict") is True and not model_strict:
-            return _FIELD_STRICT.format(at=at)
+            return _shape(shape, _FIELD_STRICT.format(at=at))
         odd = given - _PYDANTIC_SETTINGS - {"allow_inf_nan", "strict"}
         if odd:
             return f"the setting {sorted(odd)[0]!r} on {at}"
@@ -1251,13 +1275,13 @@ def _unread_marker(marker: Any, at: str, t: Any, model_strict: bool = False) -> 
         return None
     if kind == "Strict":
         if getattr(marker, "strict", None) is True and not model_strict:
-            return _FIELD_STRICT.format(at=at)
+            return _shape(shape, _FIELD_STRICT.format(at=at))
         return None
     if kind == "Interval":
         return None
     if kind == "StringConstraints":
         if getattr(marker, "strict", None) is True and not model_strict:
-            return _FIELD_STRICT.format(at=at)
+            return _shape(shape, _FIELD_STRICT.format(at=at))
         for setting in _STRING_TRANSFORMS:
             if getattr(marker, setting, None) is not None:
                 return f"the setting {setting!r} on {at}"
@@ -1267,7 +1291,8 @@ def _unread_marker(marker: Any, at: str, t: Any, model_strict: bool = False) -> 
     return None
 
 
-def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) -> str | None:
+def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None,
+                     shape: list[str] | None = None) -> str | None:
     """Intent:
         Names the first piece of a pydantic model's field metadata the neutral model does not
         carry, or a validator of the model's own, or returns None: the model's fields and those
@@ -1301,17 +1326,20 @@ def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) 
         arm = [m for m in annotation_markers(getattr(info, "annotation", None))
                if m is not None and type(m).__name__ != "NoneType"]
         if own and arm:
-            return (f"constraints on both {at} and inside its optional or union arm; "
+            both = (f"constraints on both {at} and inside its optional or union arm; "
                     "only one of the two levels is read")
+            if shape is None:
+                return both
+            shape.append(both)
         model_strict = (getattr(model, "model_config", None) or {}).get("strict") is True
         for marker in own + arm:
             unread = _unread_marker(marker, at, fields[name].type if name in fields else None,
-                                    model_strict)
+                                    model_strict, shape)
             if unread:
                 return unread
         inner = _inner_fields(fields[name].type) if name in fields else ()
         for nested in _pydantic_models(getattr(info, "annotation", None)):
-            unread = _unread_pydantic(nested, inner, at, seen)
+            unread = _unread_pydantic(nested, inner, at, seen, shape)
             if unread:
                 return unread
     return None
@@ -1402,8 +1430,6 @@ def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
         elif options is not None:
             arm = next(o for o in options if o != {"type": "null"})
             out |= _unread_keywords(arm, nested=True)
-    out |= _union_unread(schema)
-    out |= _length_unread(schema, arm)
     if nested and "additionalProperties" in schema and schema["additionalProperties"] is not True:
         out.add("additionalProperties (on a nested object)")
     elif isinstance(schema.get("additionalProperties"), dict) and schema["additionalProperties"]:
@@ -1412,6 +1438,27 @@ def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
         out.add("required (a key no property names)")
     for prop in (schema.get("properties") or {}).values():
         out |= _unread_keywords(prop, nested=True)
+    return out
+
+
+def _shape_keywords(schema: Any) -> set[str]:
+    """Intent:
+        Returns the shapes of a JSON Schema's properties, and of their arms, that the encoding
+        reads roughly and not exactly: a union outside the one form read, and string-length
+        and item-count keywords the type does not match.
+    """
+    out: set[str] = set()
+    if not isinstance(schema, dict):
+        return out
+    arm: dict[str, Any] | None = None
+    for key in ("anyOf", "oneOf"):
+        if _nullable_pair(schema.get(key)):
+            arm = next(o for o in schema[key] if o != {"type": "null"})
+            out |= _shape_keywords(arm)
+    out |= _union_unread(schema)
+    out |= _length_unread(schema, arm)
+    for prop in (schema.get("properties") or {}).values():
+        out |= _shape_keywords(prop)
     return out
 
 
@@ -1562,8 +1609,9 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     from .schema.adaptors import adapt_row
     older, newer = (x if hasattr(x, "ecosystem") or getattr(x, "branches", None) else adapt_row(x)
                     for x in (older, newer))
+    declined: list[str] = []
     for language in (older, newer):
-        why = untranslated(language)
+        why = untranslated(language, declined)
         if why:
             return _InclusionResult("unknown", f"not translated: {why}")
     converts = _converting_model(older)
@@ -1598,6 +1646,9 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         answer, kept = solver.check(), []
     if answer == z3.unknown:
         return _InclusionResult("unknown", f"z3 did not decide it ({solver.reason_unknown()})")
+    if answer == z3.unsat and declined:
+        return _InclusionResult("unknown", f"proof declined: {declined[0]}; searched for a "
+                                "counterexample and found none")
     if answer == z3.unsat:
         base = _a_member(older)
         tried, edge = _float_line(older, newer, base)

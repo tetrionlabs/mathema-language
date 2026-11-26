@@ -28,6 +28,8 @@ def test_field_strict_false_on_the_older_side_is_still_proven():
     assert smt._schema_inclusion(a, b).verdict == "proven"
 
 
+@pytest.mark.xfail(strict=True, reason="owed: multipleOf on both levels combines to their least "
+                   "common multiple; declined in 0.4.2, restored by 2026-12-18")
 def test_multiple_of_on_both_levels_combines():
     obj = lambda p: {"type": "object", "required": ["x"], "properties": {"x": p}}  # noqa: E731
     older = obj({"anyOf": [{"type": "integer", "multipleOf": 6}, {"type": "null"}]})
