@@ -139,6 +139,8 @@ class MembershipEncoding:
 
     def __init__(self, z3: Any) -> None:
         self.z3 = z3
+        # the finest scale any decimal field of the question has; see `_decimal_digits`
+        self.decimal_scale = 0
         # an item of a list holds the same scalars as a field, and a field
         # may also be absent or hold a list of items
         item = z3.Datatype("Item")
@@ -230,28 +232,25 @@ class MembershipEncoding:
             `-10**precision` and `10**precision`. An int always meets the scale, so its arm only
             bounds the digits, in integer arithmetic.
 
-            The two sides state the real arm differently. The newer side, which an inclusion
-            negates, states it as a function of `x` alone (the shifted value equals its own
-            floor), so negating it leaves the solver nothing to choose. The older side, which an
-            inclusion only asserts, builds `x` as a whole number `k` over `10**scale`; the two
-            admit the same reals, and the built form is the one z3 decides quickly.
+            Over one question, every decimal is read as a whole number `m` over `10**S`, `S` the
+            finest scale of any decimal in the question (`decimal_scale`). A real with at most
+            `scale` places is then an `m` divisible by `10**(S - scale)`, and it has at most
+            `precision` digits when `m` lies strictly between `-10**(precision + S - scale)` and
+            `10**(precision + S - scale)`. Every side states it the same way, so the solver only
+            compares divisibility and bounds on integers.
         """
         z3 = self.z3
         shift = 10 ** scale
         bound = 10 ** precision if precision is not None else None
         n = V.iv(x) * shift
         on_int = z3.And(n < bound, n > -bound) if bound is not None else z3.BoolVal(True)
-        if side == "older":
-            k = z3.Int(f"k_{len(self.extra)}_{_label(_parse(name))}")
-            self.extra.append(k)
-            on_real = [x == V.r(z3.ToReal(k) / shift)]
-            if bound is not None:
-                on_real += [k < bound, k > -bound]
-        else:
-            scaled = V.rv(x) * shift
-            on_real = [V.is_r(x), z3.ToReal(z3.ToInt(scaled)) == scaled]
-            if bound is not None:
-                on_real += [scaled < bound, scaled > -bound]
+        top = max(self.decimal_scale, scale)
+        scaled = V.rv(x) * 10 ** top
+        m = z3.ToInt(scaled)
+        on_real = [V.is_r(x), z3.ToReal(m) == scaled, m % 10 ** (top - scale) == 0]
+        if bound is not None:
+            limit = bound * 10 ** (top - scale)
+            on_real += [m < limit, m > -limit]
         return z3.Or(z3.And(V.is_i(x), on_int), z3.And(*on_real))
 
     def _bounds(self, f: Field, real: Any) -> list[Any]:
@@ -858,6 +857,29 @@ def _converting_model(language: Any) -> str | None:
     return None
 
 
+def _type_decimal_scale(t: Any, seen: set[int]) -> int:
+    """Intent:
+        Returns the finest scale of any decimal in type `t`, nested records, items and map
+        parts included, or 0.
+    """
+    if t is None or id(t) in seen:
+        return 0
+    seen.add(id(t))
+    here = t.scale if t.base == "decimal" and t.scale is not None else 0
+    parts = [t.item, t.key, t.value, *(f.type for f in t.fields or ())]
+    return max([here, *(_type_decimal_scale(u, seen) for u in parts)])
+
+
+def _decimal_scale(*languages: Any) -> int:
+    """Intent:
+        Returns the finest scale of any decimal field of the languages' shapes, or 0.
+    """
+    seen: set[int] = set()
+    return max([0, *(_type_decimal_scale(f.type, seen)
+                     for language in languages for b in _branches(language)
+                     for f in b.schema.fields)])
+
+
 def _branches(language: Any) -> list[Any]:
     """Intent:
         Returns the record languages a language is the union of: its shapes, or itself.
@@ -1461,6 +1483,7 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
                                 "field types (pydantic's lax mode), which the encoding does not "
                                 "read against another library's validation")
     enc = MembershipEncoding(z3)
+    enc.decimal_scale = _decimal_scale(older, newer)
     names = list(dict.fromkeys([*field_names(older), *field_names(newer)]))
     # one top-level key neither side declares stands for every such key: an open record
     # admits it and a closed one refuses it, which no declared field shows
