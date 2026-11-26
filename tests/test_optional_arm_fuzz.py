@@ -64,7 +64,7 @@ def pyd_annotation(form, kind, lo, hi, hi2):
     if form == "meta_only":
         return Annotated[Optional[T], Field(description="d", default=None, **kw)]
     if form == "atypes_mixed":
-        return Optional[Annotated[T, *_marks(kind, lo, None), Field(**_kw(kind, None, hi))]]
+        return Optional[Annotated[(T, *_marks(kind, lo, None), Field(**_kw(kind, None, hi)))]]
     if form == "constrained":
         if kind is int:
             return Optional[conint(**kw)]
@@ -84,7 +84,7 @@ PYD_FORMS = ["optional", "pipe", "outer", "nested", "nested_conflict", "plain", 
 
 
 class _Ann:
-    """`Annotated[T, *marks]`, or `T` alone when there are no marks."""
+    """`Annotated[(T, *marks)]`, or `T` alone when there are no marks."""
 
     def __getitem__(self, args):
         T, *marks = args
@@ -98,21 +98,21 @@ def dc_annotation(form, kind, lo, hi, hi2):
     T = kind
     ms = _marks(kind, lo, hi)
     if form == "optional":
-        return Optional[_ann[T, *ms]]
+        return Optional[_ann[(T, *ms)]]
     if form == "pipe":
-        return _ann[T, *ms] | None
+        return _ann[(T, *ms)] | None
     if form == "outer":
-        return _ann[Optional[T], *ms]
+        return _ann[(Optional[T], *ms)]
     if form == "nested":
-        return _ann[_ann[T, *_marks(kind, lo, None)], *_marks(kind, None, hi)]
+        return _ann[(_ann[(T, *_marks(kind, lo, None))], *_marks(kind, None, hi))]
     if form == "nested_conflict":
-        return _ann[_ann[T, *_marks(kind, None, hi2)], *_marks(kind, None, hi)]
+        return _ann[(_ann[(T, *_marks(kind, None, hi2))], *_marks(kind, None, hi))]
     if form == "plain":
-        return _ann[T, *ms]
+        return _ann[(T, *ms)]
     if form == "list_items":
-        return list[Optional[_ann[T, *ms]]]
+        return list[Optional[_ann[(T, *ms)]]]
     if form == "union2":
-        return Union[_ann[int, *_marks(int, lo, hi)], _ann[str, *_marks(str, None, hi2)]]
+        return Union[_ann[(int, *_marks(int, lo, hi))], _ann[(str, *_marks(str, None, hi2))]]
     raise ValueError(form)
 
 
@@ -123,8 +123,8 @@ def js_property(form, kind, lo, hi, hi2):
     t = "integer" if kind is int else "string"
     lo_k, hi_k = ("minimum", "maximum") if kind is int else ("minLength", "maxLength")
 
-    def bounds(l, h):
-        return {k: v for k, v in ((lo_k, l), (hi_k, h)) if v is not None}
+    def bounds(low, h):
+        return {k: v for k, v in ((lo_k, low), (hi_k, h)) if v is not None}
     base = {"type": t, **bounds(lo, hi)}
     null = {"type": "null"}
     if form == "plain":
@@ -156,7 +156,7 @@ JS_FORMS = ["plain", "anyof_arm", "oneof_arm", "outer_and_arm", "outer_only", "c
 def probes(spec_list):
     """Values near every bound of every spec, for int and str, plus None and a list shape."""
     ints, lens = {-1, 0, 1, 2, 4, 6, 9, 100}, {0, 1, 2, 4, 6, 10}
-    for (_, kind, lo, hi, hi2) in spec_list:
+    for (_, _kind, lo, hi, hi2) in spec_list:
         for b in (lo, hi, hi2):
             if b is not None:
                 (ints if True else lens).update({b - 1, b, b + 1})
@@ -232,7 +232,7 @@ FORMS = {"pydantic": PYD_FORMS, "dataclass": DC_FORMS, "typeddict": DC_FORMS, "j
 def run(eco, pairs, seed, dump=None):
     rng = random.Random(f"{seed}-{eco}")
     defects, counts = [], {"proven": 0, "falsified": 0, "unknown": 0, "probes": 0}
-    for n in range(pairs):
+    for _n in range(pairs):
         nf = 1
         old_s = [draw_spec(rng, FORMS[eco]) for _ in range(nf)]
         # newer shares each field's form and kind half the time, so narrowing is exercised
@@ -252,7 +252,7 @@ def run(eco, pairs, seed, dump=None):
         if res.verdict == "proven":
             vals = probes(old_s + new_s)
             for v in vals:
-                for ctx in ([v], ):
+                for _ctx in ([v], ):
                     d = {"f0": _wrap(old_s[0][0], v)}
                     for name in po:
                         counts["probes"] += 1

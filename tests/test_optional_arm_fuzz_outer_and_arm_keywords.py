@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
+# ruff: noqa: UP045, UP007
 """Seeded fuzz of keywords given on a property and on its one non-null `anyOf` or `oneOf` arm,
 against jsonschema's draft 2020-12 validator, and of pydantic markers given on a field and inside
 its optional arm, against `model_validate`.
@@ -134,9 +135,8 @@ def run_jsonschema(pairs, seed):
                 if a({"x": v}) and not b({"x": v}):
                     defects.append(("FALSE PROOF", old, new, v))
                     break
-        elif res.verdict == "falsified":
-            if not (a(res.witness) and not b(res.witness)):
-                defects.append(("UNCONFIRMED WITNESS", old, new, res.witness))
+        elif res.verdict == "falsified" and not (a(res.witness) and not b(res.witness)):
+            defects.append(("UNCONFIRMED WITNESS", old, new, res.witness))
     return defects, counts
 
 

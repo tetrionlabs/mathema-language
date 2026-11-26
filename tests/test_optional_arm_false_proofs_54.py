@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Tetrion Ltd
+# ruff: noqa: UP045, UP007
 """Inclusions the encoding proves that the library's own validation contradicts, each with the
 value the older side admits and the newer refuses."""
 from typing import Annotated, Optional
