@@ -58,8 +58,8 @@ mathema_language.schema.checks.field_problems:
     - name: "absent[field.default]"
       statement: "absent(f, field.default) drops"
       verdict: "holds"
-      n: 25
-      note: "observed: field.default may be None; f drops it (field.default = null (absent), [] out) on the 69 draws of accepts_the_simplest_member"
+      n: 16
+      note: "observed: field.default may be None; f drops it (field.default = null (absent), [] out) on the 61 draws of accepts_the_simplest_member"
       route: "probe:counterfactual"
       authored:
         surface: "suggested"
@@ -67,16 +67,16 @@ mathema_language.schema.checks.field_problems:
         mathema.policy:
           kind: "absent"
           parameter: "field.default"
-          evidence: "confirmed on the 69 draws of accepts_the_simplest_member"
+          evidence: "confirmed on the 61 draws of accepts_the_simplest_member"
           behaviour: "drops"
           source: "observed"
-          reason: "observed: field.default may be None; f drops it (field.default = null (absent), [] out) on the 69 draws of accepts_the_simplest_member"
+          reason: "observed: field.default may be None; f drops it (field.default = null (absent), [] out) on the 61 draws of accepts_the_simplest_member"
         mathema.surface: "mathema"
     - name: "accepts_the_simplest_member"
       statement: "assuming not_empty(field) == True, let simplest = mathema_language.schema.generate.simplest, let not_empty = mathema_language.schema.emptiness.not_empty, for field in L[mathema_language.schema.model.Field, depth <= 2], field_problems(simplest(field), field) = []"
       verdict: "holds"
-      n: 69
-      note: "field in L[mathema_language.schema.model.Field, depth <= 2] (adaptor dataclass); derive cannot read the function, which reads no field of field, so the claim is decided by running the code; at value = None f returned [], so it drops the absence; at field.default = null (absent) f returned [], so it drops the absence"
+      n: 61
+      note: "field in L[mathema_language.schema.model.Field, depth <= 2] (adaptor dataclass); a Decimal operation rounded; the exact reading declined at 4 draws, first at field = Field(name='yiAEl1-ýﬁĀC\\u200b', type=NeutralType(base='decimal', bits=326, signed=True, precision=547, scale=541, unit='Ω\\x8auLo£7ag', tz='', levels=[0, True, 'x', True], ordered=False, item=None, fields=None, key=None, value=None, ref=None, nullable_items=False, item_constraints=None), nullable=True, required=False, unique=False, constraints=Constraints(min=0, max=0, exclusive_min='x', exclusive_max=None, min_len=881273, max_len=844060, regex='\\x80*O\\x9eýjaL', pattern=None, enum=[True, True, 'x', 'x'], const=None, multiple_of='x'), nan_allowed=False, default=None, metadata=[['ΩF', '́5k\\x8aJf']]), so they are not counted; derive cannot read the function, which reads no field of field, so the claim is decided by running the code; at value = None f returned [], so it drops the absence; at field.default = null (absent) f returned [], so it drops the absence"
       route: "probe"
       authored:
         surface: "claims-file"
@@ -95,12 +95,12 @@ mathema_language.schema.checks.field_problems:
           explicit_type: true
       grammar: "mathema/language"
       meta:
-        mathema.sampling: "value~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3]⊔far(≤1.79769e+308)[p=.1], field~L[mathema_language.schema.model.Field, depth <= 2], path~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3], definitions~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3]⊔far(≤1.79769e+308)[p=.1], shallow~U{False, True}, seed=20260718, n=69"
+        mathema.sampling: "value~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3]⊔far(≤1.79769e+308)[p=.1], field~L[mathema_language.schema.model.Field, depth <= 2], path~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3], definitions~U(-10,10)⊔{0,±1,±.5,2,±1e-9,±1e6}[p=.3]⊔far(≤1.79769e+308)[p=.1], shallow~U{False, True}, seed=20260718, n=61"
         mathema.confidence:
-          score: 7.6
+          score: 7.4
           stars: 3
           max_stars: 5
-          n: 69
+          n: 61
           factors:
             branches: 0
             loops: 0
@@ -234,6 +234,73 @@ mathema_language.schema.checks.field_problems:
                       nullable_items:
                         type: "boolean"
                         default: false
+                      item_constraints:
+                        anyOf:
+                          - type: "object"
+                            title: "struct"
+                            properties:
+                              min:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              max:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              exclusive_min:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              exclusive_max:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              min_len:
+                                anyOf:
+                                  - type: "integer"
+                                  - type: "null"
+                                minimum: 0
+                                default: null
+                              max_len:
+                                anyOf:
+                                  - type: "integer"
+                                  - type: "null"
+                                minimum: 0
+                                default: null
+                              regex:
+                                anyOf:
+                                  - type: "string"
+                                  - type: "null"
+                                default: null
+                              pattern:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              enum:
+                                anyOf:
+                                  - type: "array"
+                                    items: {}
+                                  - type: "null"
+                                default: null
+                              const:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                              multiple_of:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                            required:
+                              - "const"
+                            additionalProperties: false
+                          - type: "null"
+                        default: null
                       construct:
                         anyOf:
                           - "{}"
@@ -336,6 +403,70 @@ mathema_language.schema.checks.field_problems:
                   - "default"
                 additionalProperties: false
                 $defs:
+                  Constraints:
+                    type: "object"
+                    title: "Constraints"
+                    properties:
+                      min:
+                        anyOf:
+                          - "{}"
+                          - type: "null"
+                        default: null
+                      max:
+                        anyOf:
+                          - "{}"
+                          - type: "null"
+                        default: null
+                      exclusive_min:
+                        anyOf:
+                          - "{}"
+                          - type: "null"
+                        default: null
+                      exclusive_max:
+                        anyOf:
+                          - "{}"
+                          - type: "null"
+                        default: null
+                      min_len:
+                        anyOf:
+                          - type: "integer"
+                          - type: "null"
+                        minimum: 0
+                        default: null
+                      max_len:
+                        anyOf:
+                          - type: "integer"
+                          - type: "null"
+                        minimum: 0
+                        default: null
+                      regex:
+                        anyOf:
+                          - type: "string"
+                          - type: "null"
+                        default: null
+                      pattern:
+                        anyOf:
+                          - "{}"
+                          - type: "null"
+                        default: null
+                      enum:
+                        anyOf:
+                          - type: "array"
+                            items: {}
+                          - type: "null"
+                        default: null
+                      const:
+                        anyOf:
+                          - "{}"
+                          - type: "null"
+                      multiple_of:
+                        anyOf:
+                          - "{}"
+                          - type: "null"
+                        default: null
+                    required:
+                      - "const"
+                    additionalProperties: false
                   NeutralType:
                     type: "object"
                     title: "NeutralType"
@@ -431,6 +562,73 @@ mathema_language.schema.checks.field_problems:
                       nullable_items:
                         type: "boolean"
                         default: false
+                      item_constraints:
+                        anyOf:
+                          - type: "object"
+                            title: "struct"
+                            properties:
+                              min:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              max:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              exclusive_min:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              exclusive_max:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              min_len:
+                                anyOf:
+                                  - type: "integer"
+                                  - type: "null"
+                                minimum: 0
+                                default: null
+                              max_len:
+                                anyOf:
+                                  - type: "integer"
+                                  - type: "null"
+                                minimum: 0
+                                default: null
+                              regex:
+                                anyOf:
+                                  - type: "string"
+                                  - type: "null"
+                                default: null
+                              pattern:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                              enum:
+                                anyOf:
+                                  - type: "array"
+                                    items: {}
+                                  - type: "null"
+                                default: null
+                              const:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                              multiple_of:
+                                anyOf:
+                                  - "{}"
+                                  - type: "null"
+                                default: null
+                            required:
+                              - "const"
+                            additionalProperties: false
+                          - type: "null"
+                        default: null
                       construct:
                         anyOf:
                           - "{}"
@@ -438,70 +636,6 @@ mathema_language.schema.checks.field_problems:
                         default: null
                     required:
                       - "base"
-                    additionalProperties: false
-                  Constraints:
-                    type: "object"
-                    title: "Constraints"
-                    properties:
-                      min:
-                        anyOf:
-                          - "{}"
-                          - type: "null"
-                        default: null
-                      max:
-                        anyOf:
-                          - "{}"
-                          - type: "null"
-                        default: null
-                      exclusive_min:
-                        anyOf:
-                          - "{}"
-                          - type: "null"
-                        default: null
-                      exclusive_max:
-                        anyOf:
-                          - "{}"
-                          - type: "null"
-                        default: null
-                      min_len:
-                        anyOf:
-                          - type: "integer"
-                          - type: "null"
-                        minimum: 0
-                        default: null
-                      max_len:
-                        anyOf:
-                          - type: "integer"
-                          - type: "null"
-                        minimum: 0
-                        default: null
-                      regex:
-                        anyOf:
-                          - type: "string"
-                          - type: "null"
-                        default: null
-                      pattern:
-                        anyOf:
-                          - "{}"
-                          - type: "null"
-                        default: null
-                      enum:
-                        anyOf:
-                          - type: "array"
-                            items: {}
-                          - type: "null"
-                        default: null
-                      const:
-                        anyOf:
-                          - "{}"
-                          - type: "null"
-                      multiple_of:
-                        anyOf:
-                          - "{}"
-                          - type: "null"
-                        default: null
-                    required:
-                      - "const"
                     additionalProperties: false
                   Field:
                     type: "object"
@@ -604,6 +738,73 @@ mathema_language.schema.checks.field_problems:
                           nullable_items:
                             type: "boolean"
                             default: false
+                          item_constraints:
+                            anyOf:
+                              - type: "object"
+                                title: "struct"
+                                properties:
+                                  min:
+                                    anyOf:
+                                      - "{}"
+                                      - type: "null"
+                                    default: null
+                                  max:
+                                    anyOf:
+                                      - "{}"
+                                      - type: "null"
+                                    default: null
+                                  exclusive_min:
+                                    anyOf:
+                                      - "{}"
+                                      - type: "null"
+                                    default: null
+                                  exclusive_max:
+                                    anyOf:
+                                      - "{}"
+                                      - type: "null"
+                                    default: null
+                                  min_len:
+                                    anyOf:
+                                      - type: "integer"
+                                      - type: "null"
+                                    minimum: 0
+                                    default: null
+                                  max_len:
+                                    anyOf:
+                                      - type: "integer"
+                                      - type: "null"
+                                    minimum: 0
+                                    default: null
+                                  regex:
+                                    anyOf:
+                                      - type: "string"
+                                      - type: "null"
+                                    default: null
+                                  pattern:
+                                    anyOf:
+                                      - "{}"
+                                      - type: "null"
+                                    default: null
+                                  enum:
+                                    anyOf:
+                                      - type: "array"
+                                        items: {}
+                                      - type: "null"
+                                    default: null
+                                  const:
+                                    anyOf:
+                                      - "{}"
+                                      - type: "null"
+                                  multiple_of:
+                                    anyOf:
+                                      - "{}"
+                                      - type: "null"
+                                    default: null
+                                required:
+                                  - "const"
+                                additionalProperties: false
+                              - type: "null"
+                            default: null
                           construct:
                             anyOf:
                               - "{}"
@@ -713,8 +914,8 @@ mathema_language.schema.checks.field_problems:
     - name: "checks_an_absent_value"
       statement: "absent(f, value) drops"
       verdict: "holds"
-      n: 69
-      note: "stated; confirmed on the 69 draws of accepts_the_simplest_member"
+      n: 65
+      note: "stated; confirmed on the 61 draws of accepts_the_simplest_member"
       route: "probe:counterfactual"
       authored:
         surface: "claims-file"
@@ -725,8 +926,8 @@ mathema_language.schema.checks.field_problems:
           parameter: "value"
           behaviour: "drops"
           source: "stated"
-          evidence: "confirmed on the 69 draws of accepts_the_simplest_member"
-          reason: "stated; confirmed on the 69 draws of accepts_the_simplest_member"
+          evidence: "confirmed on the 61 draws of accepts_the_simplest_member"
+          reason: "stated; confirmed on the 61 draws of accepts_the_simplest_member"
         mathema.surface: "declared"
     - name: "dependencies_current"
       verdict: "proven"
@@ -754,16 +955,16 @@ mathema_language.schema.checks.field_problems:
       basis: "documented; the author's stated purpose"
     - step: "evidence"
       claim: "assuming not_empty(field) == True, let simplest = mathema_language.schema.generate.simplest, let not_empty = mathema_language.schema.emptiness.not_empty, for field in L[mathema_language.schema.model.Field, depth <= 2], field_problems(simplest(field), field) = []"
-      basis: "probed, n=69"
+      basis: "probed, n=61"
     - step: "evidence"
       claim: "absent(f, value) drops"
-      basis: "probed, n=69"
+      basis: "probed, n=65"
     - step: "gap"
       claim: "absent(f, definitions)"
       basis: "f raised AttributeError at definitions = None and again with definitions present, on every draw of value, field, path and shallow tried, so the raise is not definitions's and nothing says what f does at definitions = None. bind value, field, path and shallow in a claim to values f runs on, so f can be read at definitions = None"
     - step: "evidence"
       claim: "absent(f, field.default) drops"
-      basis: "probed, n=25"
+      basis: "probed, n=16"
     - step: "derivation"
       claim: ""
       basis: "every function along the dependency chain matches its verified record; not checked, no record: mathema_language.schema.checks._columns_of, mathema_language.schema.checks._decimal_problems, mathema_language.schema.checks._is_int, mathema_language.schema.checks._read, mathema_language.schema.checks._record_class, mathema_language.schema.checks._scalar_problems, mathema_language.schema.checks.constraint_problems, mathema_language.schema.model._in_range (their changes are still caught through the chain this record stores)"
@@ -785,7 +986,7 @@ mathema_language.schema.checks.field_problems:
           form: "lib:mathema==0.6"
         - key: "lib:python"
           kind: "interpreter"
-          form: "lib:python==3.13"
+          form: "lib:python==3.12"
         - key: "mathema_language.schema.checks._columns_of"
           kind: "function"
           form: "py:72110ebf5b32"
@@ -815,14 +1016,14 @@ mathema_language.schema.checks.field_problems:
           form: "py:8f39a0cf886e"
         - key: "mathema_language.schema.model.NeutralType"
           kind: "class"
-          form: "py:397f52a9cd16"
+          form: "py:05ef31e902f4"
         - key: "mathema_language.schema.model.RowSchema"
           kind: "class"
           form: "py:c0b9603bacd2"
         - key: "mathema_language.schema.model._in_range"
           kind: "function"
           form: "py:8a38d7b95f7c"
-      chain: "code:61248f3a2dce|library:2ee362bcfa40|interpreter:f6fcd9aedb77"
+      chain: "code:0b6a1b646237|library:2ee362bcfa40|interpreter:287c26325cfc"
   meta:
     mathema.not_run:
       - check: "callable"
@@ -835,5 +1036,7 @@ mathema_language.schema.checks.field_problems:
       writes: []
     mathema.premise_state: {}
     mathema.invalidated_by:
-      - "claims"
+      - "dependency"
+    mathema.chain_moved:
+      - "mathema_language.schema.model.NeutralType"
     mathema.intent_provenance: "declared"
