@@ -63,7 +63,7 @@ mathema_language.schema.generate._draw_string:
       reaches:
         - key: "lib:python"
           kind: "interpreter"
-          form: "lib:python==3.13"
+          form: "lib:python==3.12"
         - key: "mathema_language.schema.model.Constraints"
           kind: "class"
           form: "py:56c21f89846d"
@@ -72,11 +72,11 @@ mathema_language.schema.generate._draw_string:
           form: "py:8f39a0cf886e"
         - key: "mathema_language.schema.model.NeutralType"
           kind: "class"
-          form: "py:397f52a9cd16"
+          form: "py:05ef31e902f4"
         - key: "mathema_language.schema.model._in_range"
           kind: "function"
           form: "py:8a38d7b95f7c"
-      chain: "code:3b3247ccd50e|library:e3b0c44298fc|interpreter:f6fcd9aedb77"
+      chain: "code:a70ffcaf1abe|library:e3b0c44298fc|interpreter:287c26325cfc"
       freshness: "current"
     - name: "field_problems"
       kind: "function"
@@ -90,7 +90,7 @@ mathema_language.schema.generate._draw_string:
           form: "lib:mathema==0.6"
         - key: "lib:python"
           kind: "interpreter"
-          form: "lib:python==3.13"
+          form: "lib:python==3.12"
         - key: "mathema_language.schema.checks._Walker"
           kind: "class"
           form: "py:790c63ba95af"
@@ -123,14 +123,14 @@ mathema_language.schema.generate._draw_string:
           form: "py:8f39a0cf886e"
         - key: "mathema_language.schema.model.NeutralType"
           kind: "class"
-          form: "py:397f52a9cd16"
+          form: "py:05ef31e902f4"
         - key: "mathema_language.schema.model.RowSchema"
           kind: "class"
           form: "py:c0b9603bacd2"
         - key: "mathema_language.schema.model._in_range"
           kind: "function"
           form: "py:8a38d7b95f7c"
-      chain: "code:ad870955aaee|library:2ee362bcfa40|interpreter:f6fcd9aedb77"
+      chain: "code:679923c46f46|library:2ee362bcfa40|interpreter:287c26325cfc"
       freshness: "current"
   meta:
     mathema.effects:
@@ -140,5 +140,8 @@ mathema_language.schema.generate._draw_string:
       writes:
         - "advances its argument rng, a generator it does not own (rng.randint(lo, hi))"
     mathema.premise_state: {}
-    mathema.invalidated_by: []
+    mathema.invalidated_by:
+      - "dependency"
+    mathema.chain_moved:
+      - "mathema_language.schema.model.NeutralType"
     mathema.intent_provenance: "declared"

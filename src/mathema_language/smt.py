@@ -59,7 +59,7 @@ from pathlib import PurePath
 from typing import Any
 
 from ._missing import MissingLibrary
-from .schema.model import NO_DEFAULT, Field, RowSchema
+from .schema.model import NO_DEFAULT, Constraints, Field, RowSchema
 from .text import _regular as _rx
 from .text._algebra import _MAX_CODE, _cs_has, _cs_inter, _cs_union, _re_sets
 from .text._regular import _Regex
@@ -393,7 +393,8 @@ class MembershipEncoding:
                 conds.append(n <= c.max_len)
             k = z3.Int(f"k_{len(self.extra)}_{_label((f.name,))}")
             self.extra.append(k)
-            item = Field("item", item_t, nullable=f.type.nullable_items)
+            item = Field("item", item_t, nullable=f.type.nullable_items,
+                         constraints=t.item_constraints or Constraints())
             conds.append(z3.ForAll([k], z3.Implies(z3.And(k >= 0, k < n),
                                                    self.member(item, items[k], side, False, self.I))))
         elif t.base == "categorical":
@@ -1031,11 +1032,18 @@ def _one_digit_limit(fields: Any, prefix: str) -> str | None:
     return None
 
 
-def untranslated(language: Any) -> str | None:
-    """Why a language's records cannot be encoded, or None."""
+def untranslated(language: Any, shape: list[str] | None = None) -> str | None:
+    """Why a language's records cannot be encoded, or None.
+
+    Notes:
+        A shape the encoding reads roughly but not exactly (an optional union outside the one
+        form read, constraints at two levels of a pydantic field, a field-level `strict`) is a
+        reason for `shape` when a list is given, and the language is still encoded; with none
+        given it is returned as a reason like any other.
+    """
     if language is not None and getattr(language, "branches", None):
         for branch in language.branches:
-            why = untranslated(branch)
+            why = untranslated(branch, shape)
             if why:
                 return why
         return None
@@ -1054,7 +1062,7 @@ def untranslated(language: Any) -> str | None:
         decorators = getattr(ecosystem.model, "__pydantic_decorators__", None)
         if decorators is not None and (decorators.field_validators or decorators.model_validators):
             return f"{language.name}: a custom validator"
-        unread = _unread_pydantic(ecosystem.model, schema)
+        unread = _unread_pydantic(ecosystem.model, schema, shape=shape)
         if unread:
             return f"{language.name}: {unread}"
         python_engine = _reads_patterns_with_re(ecosystem.model)
@@ -1076,6 +1084,11 @@ def untranslated(language: Any) -> str | None:
         keywords = _unread_keywords(ecosystem.schema)
         if keywords:
             return f"{language.name}: the JSON Schema keyword {sorted(keywords)[0]!r}"
+        shapes = _shape_keywords(ecosystem.schema)
+        if shapes and shape is None:
+            return f"{language.name}: the JSON Schema keyword {sorted(shapes)[0]!r}"
+        if shapes and shape is not None:
+            shape.append(f"{language.name}: the JSON Schema keyword {sorted(shapes)[0]!r}")
     return None
 
 
@@ -1203,7 +1216,7 @@ def _rust_reads_differently(pattern: str) -> str | None:
 #: by marker type; settings that only loosen or only tighten coercion are
 #: read as no constraint, which the encoding's sides already allow for
 _PYDANTIC_MARKERS = {"Gt", "Ge", "Lt", "Le", "MinLen", "MaxLen", "MultipleOf", "Strict"}
-_PYDANTIC_SETTINGS = {"pattern", "max_digits", "decimal_places", "strict"}
+_PYDANTIC_SETTINGS = {"pattern", "max_digits", "decimal_places"}
 
 
 def _pydantic_models(annotation: Any) -> list[Any]:
@@ -1231,7 +1244,78 @@ def _inner_fields(t: Any) -> Any:
     return ()
 
 
-def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) -> str | None:
+_FIELD_STRICT = ("the setting 'strict' on {at}, which differs from the strictness of its model; "
+                 "strictness is read for a whole model and not per field")
+def _shape(sink: list[str] | None, reason: str) -> str | None:
+    """Intent:
+        Records a shape decline in `sink` and returns None, or returns `reason` when there is
+        no sink.
+    """
+    if sink is None:
+        return reason
+    sink.append(reason)
+    return None
+
+
+_STRING_TRANSFORMS = ("strip_whitespace", "to_upper", "to_lower", "ascii_only")
+
+
+def _unread_marker(marker: Any, at: str, t: Any, model_strict: bool = False,
+                   shape: list[str] | None = None) -> str | None:
+    """Intent:
+        Names what a pydantic field marker carries that the neutral model does not, or returns
+        None when it is read: a bound or length marker, an `Interval`, the `StringConstraints`
+        that only bound or match, a pattern, a decimal digit limit with both limits given, and
+        `allow_inf_nan=False`. `t` is the neutral type of the field, or None.
+
+    Notes:
+        The same rule serves a marker in the field's own metadata and one inside an optional or
+        union arm. A field-level `strict=True` is named when the model is not strict, since
+        strictness is read for the model as a whole and not per field; `strict=False` and
+        `strict=True` in a strict model read as the model does.
+    """
+    if marker is None:
+        return None
+    kind = type(marker).__name__
+    if kind == "_PydanticGeneralMetadata":
+        given = {k for k, v in vars(marker).items() if v is not None}
+        if vars(marker).get("allow_inf_nan") is True:
+            return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
+                    "infinities")
+        if vars(marker).get("strict") is True and not model_strict:
+            return _shape(shape, _FIELD_STRICT.format(at=at))
+        odd = given - _PYDANTIC_SETTINGS - {"allow_inf_nan", "strict"}
+        if odd:
+            return f"the setting {sorted(odd)[0]!r} on {at}"
+        if given & {"max_digits", "decimal_places"} \
+                and (t is None or t.precision is None or t.scale is None):
+            return f"decimal digits on {at} the neutral model does not carry"
+        return None
+    if kind == "AllowInfNan":
+        if getattr(marker, "allow_inf_nan", None) is not False:
+            return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
+                    "infinities")
+        return None
+    if kind == "Strict":
+        if getattr(marker, "strict", None) is True and not model_strict:
+            return _shape(shape, _FIELD_STRICT.format(at=at))
+        return None
+    if kind == "Interval":
+        return None
+    if kind == "StringConstraints":
+        if getattr(marker, "strict", None) is True and not model_strict:
+            return _shape(shape, _FIELD_STRICT.format(at=at))
+        for setting in _STRING_TRANSFORMS:
+            if getattr(marker, setting, None) is not None:
+                return f"the setting {setting!r} on {at}"
+        return None
+    if kind not in _PYDANTIC_MARKERS:
+        return f"the {kind} constraint on {at}"
+    return None
+
+
+def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None,
+                     shape: list[str] | None = None) -> str | None:
     """Intent:
         Names the first piece of a pydantic model's field metadata the neutral model does not
         carry, or a validator of the model's own, or returns None: the model's fields and those
@@ -1260,31 +1344,25 @@ def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) 
             if alias is not None and alias != name:
                 return f"the alias {alias!r} of {at}, by which the model reads the field"
         from .schema.adaptors._hints import annotation_markers, flatten_markers
-        markers = flatten_markers(tuple(getattr(info, "metadata", ()) or ())) \
-            + annotation_markers(getattr(info, "annotation", None))
-        for marker in markers:
-            kind = type(marker).__name__
-            if kind == "_PydanticGeneralMetadata":
-                given = {k for k, v in vars(marker).items() if v is not None}
-                if vars(marker).get("allow_inf_nan") is True:
-                    return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
-                            "infinities")
-                odd = given - _PYDANTIC_SETTINGS - {"allow_inf_nan"}
-                if odd:
-                    return f"the setting {sorted(odd)[0]!r} on {at}"
-                if given & {"max_digits", "decimal_places"}:
-                    t = fields[name].type if name in fields else None
-                    if t is None or t.precision is None or t.scale is None:
-                        return f"decimal digits on {at} the neutral model does not carry"
-            elif kind == "AllowInfNan":
-                if getattr(marker, "allow_inf_nan", None) is not False:
-                    return (f"the setting 'allow_inf_nan' on {at}, which admits NaN and the "
-                            "infinities")
-            elif kind not in _PYDANTIC_MARKERS:
-                return f"the {kind} constraint on {at}"
+        own = [m for m in flatten_markers(tuple(getattr(info, "metadata", ()) or ()))
+               if m is not None]
+        arm = [m for m in annotation_markers(getattr(info, "annotation", None))
+               if m is not None and type(m).__name__ != "NoneType"]
+        if own and arm:
+            both = (f"constraints on both {at} and inside its optional or union arm; "
+                    "only one of the two levels is read")
+            if shape is None:
+                return both
+            shape.append(both)
+        model_strict = (getattr(model, "model_config", None) or {}).get("strict") is True
+        for marker in own + arm:
+            unread = _unread_marker(marker, at, fields[name].type if name in fields else None,
+                                    model_strict, shape)
+            if unread:
+                return unread
         inner = _inner_fields(fields[name].type) if name in fields else ()
         for nested in _pydantic_models(getattr(info, "annotation", None)):
-            unread = _unread_pydantic(nested, inner, at, seen)
+            unread = _unread_pydantic(nested, inner, at, seen, shape)
             if unread:
                 return unread
     return None
@@ -1292,11 +1370,65 @@ def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) 
 
 def _nullable_pair(options: Any) -> bool:
     """Intent:
-        Whether an `anyOf` or `oneOf` list is one type and `null`, the one shape of either the
-        adaptor reads (as a nullable field).
+        Whether an `anyOf` or `oneOf` list is exactly one schema and `{"type": "null"}`, the one
+        shape of either the adaptor reads (as a nullable field).
     """
     return isinstance(options, list) and len(options) == 2 \
-        and sum(1 for o in options if isinstance(o, dict) and o.get("type") == "null") == 1
+        and sum(1 for o in options if o == {"type": "null"}) == 1 \
+        and all(isinstance(o, dict) for o in options)
+
+
+_ANNOTATION_KEYWORDS = {"title", "description", "default", "examples", "$comment"}
+_LENGTH_KEYWORDS = {"minLength", "maxLength"}
+_ITEM_KEYWORDS = {"minItems", "maxItems"}
+
+
+def _union_unread(schema: dict[str, Any]) -> set[str]:
+    """Intent:
+        Names why a property's `anyOf` or `oneOf` is outside the one form read: one non-null
+        schema and `{"type": "null"}`, alone (not with the other of the two), with no `type` or
+        `const` beside it, no keyword given both on the property and in the arm, and an arm that
+        does not itself admit null under `oneOf`.
+    """
+    out: set[str] = set()
+    keys = [k for k in ("anyOf", "oneOf") if k in schema]
+    if not keys:
+        return out
+    if len(keys) == 2:
+        out.add("anyOf together with oneOf on one property")
+        return out
+    key = keys[0]
+    if not _nullable_pair(schema[key]):
+        return out
+    arm = next(o for o in schema[key] if o != {"type": "null"})
+    for beside in ("type", "const"):
+        if beside in schema:
+            out.add(f"{beside} beside a nullable {key}")
+    both = (set(schema) & set(arm)) - {key} - _ANNOTATION_KEYWORDS
+    out |= {f"{k} (on both a property and its {key} arm)" for k in both}
+    arm_type = arm.get("type")
+    if isinstance(arm_type, list) and "null" in arm_type:
+        out.add(f"an {key} arm that admits null")
+    if key == "oneOf" and not isinstance(arm_type, str):
+        out.add("a oneOf arm with no single type, which may admit null as the null arm does")
+    return out
+
+
+def _length_unread(prop: dict[str, Any], arm: dict[str, Any] | None) -> set[str]:
+    """Intent:
+        Names a string-length keyword on an array, an item-count keyword on a string, or both
+        families where the type does not say which applies.
+    """
+    view = {**prop, **(arm or {})}
+    kind = view.get("type")
+    lengths, items = set(view) & _LENGTH_KEYWORDS, set(view) & _ITEM_KEYWORDS
+    if lengths and items:
+        return {f"{sorted(lengths)[0]} with {sorted(items)[0]}, mixed"}
+    if lengths and kind == "array":
+        return {f"{sorted(lengths)[0]} on an array"}
+    if items and kind == "string":
+        return {f"{sorted(items)[0]} on a string"}
+    return set()
 
 
 def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
@@ -1306,15 +1438,21 @@ def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
 
     Notes:
         `additionalProperties` is carried at the top only, so `nested` marks a property's schema.
+        An `anyOf` or `oneOf` is read only as one schema and `{"type": "null"}`; the arm is
+        searched for unread keywords as a property is.
     """
     out: set[str] = set()
     if not isinstance(schema, dict):
         return out
     out |= set(schema) & _JSON_SCHEMA_ENFORCED_UNREAD
+    arm: dict[str, Any] | None = None
     for key in ("anyOf", "oneOf"):
         options = schema.get(key)
         if options is not None and not _nullable_pair(options):
             out.add(key)
+        elif options is not None:
+            arm = next(o for o in options if o != {"type": "null"})
+            out |= _unread_keywords(arm, nested=True)
     if nested and "additionalProperties" in schema and schema["additionalProperties"] is not True:
         out.add("additionalProperties (on a nested object)")
     elif isinstance(schema.get("additionalProperties"), dict) and schema["additionalProperties"]:
@@ -1323,6 +1461,54 @@ def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
         out.add("required (a key no property names)")
     for prop in (schema.get("properties") or {}).values():
         out |= _unread_keywords(prop, nested=True)
+    return out
+
+
+_ITEM_SCALARS = {"integer", "number", "string", "boolean"}
+
+
+def _items_unread(schema: dict[str, Any]) -> set[str]:
+    """Intent:
+        Names what the `items` of an array carries beyond `{"type": <scalar type>}` or
+        `{"enum": [...]}` (and a title or description): the neutral model keeps only the item type, so any other keyword, a
+        union, a reference, a nested container or a tuple form is named as `items carrying ...`.
+    """
+    if "items" not in schema:
+        return set()
+    items = schema["items"]
+    if not isinstance(items, dict):
+        return {"items carrying a non-schema form"}
+    if items.get("type") == "string":
+        return {f"items carrying {k}" for k in
+                set(items) - {"type", "title", "description", "pattern", "minLength", "maxLength"}}
+    if "type" not in items and "enum" in items:
+        return {f"items carrying {k}" for k in set(items) - {"enum", "title", "description"}}
+    extra = set(items) - {"type", "title", "description"}
+    out = {f"items carrying {k}" for k in extra}
+    if items.get("type") not in _ITEM_SCALARS:
+        out.add(f"items carrying type {items.get('type')!r}")
+    return out
+
+
+def _shape_keywords(schema: Any) -> set[str]:
+    """Intent:
+        Returns the shapes of a JSON Schema's properties, and of their arms, that the encoding
+        reads roughly and not exactly: a union outside the one form read, and string-length
+        and item-count keywords the type does not match.
+    """
+    out: set[str] = set()
+    if not isinstance(schema, dict):
+        return out
+    arm: dict[str, Any] | None = None
+    for key in ("anyOf", "oneOf"):
+        if _nullable_pair(schema.get(key)):
+            arm = next(o for o in schema[key] if o != {"type": "null"})
+            out |= _shape_keywords(arm)
+    out |= _union_unread(schema)
+    out |= _length_unread(schema, arm)
+    out |= _items_unread(schema)
+    for prop in (schema.get("properties") or {}).values():
+        out |= _shape_keywords(prop)
     return out
 
 
@@ -1473,8 +1659,9 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
     from .schema.adaptors import adapt_row
     older, newer = (x if hasattr(x, "ecosystem") or getattr(x, "branches", None) else adapt_row(x)
                     for x in (older, newer))
+    declined: list[str] = []
     for language in (older, newer):
-        why = untranslated(language)
+        why = untranslated(language, declined)
         if why:
             return _InclusionResult("unknown", f"not translated: {why}")
     converts = _converting_model(older)
@@ -1510,6 +1697,9 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         answer, kept = solver.check(), []
     if answer == z3.unknown:
         return _InclusionResult("unknown", f"z3 did not decide it ({solver.reason_unknown()})")
+    if answer == z3.unsat and declined:
+        return _InclusionResult("unknown", f"proof declined: {declined[0]}; searched for a "
+                                "counterexample and found none")
     if answer == z3.unsat:
         base = _a_member(older)
         tried, edge = _float_line(older, newer, base)
@@ -1543,6 +1733,9 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         shape = next((b for b in _branches(older) if _admits(b, values)), older)
         return _InclusionResult("falsified", f"{older.name} admits it and {newer.name} refuses it",
                                _nest(shape, values))
+    if declined:
+        return _InclusionResult("unknown", f"proof declined: {declined[0]}; the solver's candidate "
+                                f"{values!r} was not confirmed by the validations")
     return _InclusionResult("unknown", f"z3 offered {values!r}, which the validations do not "
                            f"confirm ({older.name} must admit it and {newer.name} refuse it); "
                            "this is a gap in the encoding")

@@ -60,7 +60,7 @@ mathema_language.schema.generate._decimal_range:
       reaches:
         - key: "lib:python"
           kind: "interpreter"
-          form: "lib:python==3.13"
+          form: "lib:python==3.12"
         - key: "mathema_language.schema.model.Constraints"
           kind: "class"
           form: "py:56c21f89846d"
@@ -69,11 +69,11 @@ mathema_language.schema.generate._decimal_range:
           form: "py:8f39a0cf886e"
         - key: "mathema_language.schema.model.NeutralType"
           kind: "class"
-          form: "py:397f52a9cd16"
+          form: "py:05ef31e902f4"
         - key: "mathema_language.schema.model._in_range"
           kind: "function"
           form: "py:8a38d7b95f7c"
-      chain: "code:4705ac3e6880|library:e3b0c44298fc|interpreter:f6fcd9aedb77"
+      chain: "code:f3e27e556bc9|library:e3b0c44298fc|interpreter:287c26325cfc"
       freshness: "current"
     - name: "decimal"
       kind: "module"
@@ -89,5 +89,8 @@ mathema_language.schema.generate._decimal_range:
       sites: []
       writes: []
     mathema.premise_state: {}
-    mathema.invalidated_by: []
+    mathema.invalidated_by:
+      - "dependency"
+    mathema.chain_moved:
+      - "mathema_language.schema.model.NeutralType"
     mathema.intent_provenance: "declared"

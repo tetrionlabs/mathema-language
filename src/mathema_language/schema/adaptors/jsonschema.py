@@ -97,7 +97,11 @@ def _type_of(prop: dict[str, Any]) -> tuple[NeutralType, bool]:
     if base == "list":
         items = prop.get("items")
         item = _type_of(items)[0] if isinstance(items, dict) else None
-        return NeutralType("list", item=item), nullable
+        item_constraints = _constraints(items) if isinstance(items, dict) \
+            and items.get("type") == "string" else None
+        if item_constraints == Constraints():
+            item_constraints = None
+        return NeutralType("list", item=item, item_constraints=item_constraints), nullable
     if base == "struct":
         if isinstance(prop.get("properties"), dict):
             return NeutralType("struct", fields=tuple(_fields(prop))), nullable
@@ -105,6 +109,14 @@ def _type_of(prop: dict[str, Any]) -> tuple[NeutralType, bool]:
                            value=_type_of(prop["additionalProperties"])[0]
                            if isinstance(prop.get("additionalProperties"), dict) else None), nullable
     return NeutralType(base), nullable
+
+
+def merge_arm(prop: dict[str, Any], arm: dict[str, Any]) -> dict[str, Any]:
+    """Intent:
+        The keywords a property and its one non-null `anyOf` or `oneOf` arm enforce together,
+        when no keyword is given by both (the encoding declines a property where one is).
+    """
+    return {**{k: v for k, v in prop.items() if k not in ("anyOf", "oneOf")}, **arm}
 
 
 def _constraints(prop: dict[str, Any]) -> Constraints:
@@ -117,8 +129,7 @@ def _constraints(prop: dict[str, Any]) -> Constraints:
     if isinstance(options, list) and "$ref" not in prop:
         others = [o for o in options if isinstance(o, dict) and o.get("type") != "null"]
         if len(others) == 1 and len(others) < len(options):
-            return _constraints({**{k: v for k, v in prop.items()
-                                    if k not in ("anyOf", "oneOf")}, **others[0]})
+            return _constraints(merge_arm(prop, others[0]))
     return Constraints(min=prop.get("minimum"), max=prop.get("maximum"),
                        exclusive_min=prop.get("exclusiveMinimum"),
                        exclusive_max=prop.get("exclusiveMaximum"),
