@@ -13,3 +13,4 @@ build/
 .coverage
 .coverage.*
 coverage.sources.json
+uv.lock

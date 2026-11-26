@@ -3,6 +3,21 @@
 Notable changes to mathema-language are recorded here from its first
 release onward.
 
+## 0.4.2
+
+For mathema 0.6.6.2 (`mathema>=0.6.6.2,<0.7`).
+
+- Decimals with digit limits (pydantic `max_digits` and `decimal_places`) are decided in well
+  under a second; some inclusions between them timed out and came back unknown.
+- Record inclusion reads a constraint written inside an optional field's type
+  (`Optional[Annotated[int, Field(le=5)]]`, `Annotated[...] | None`, a JSON Schema `anyOf` of one
+  type and `null`), and a string item's `pattern`, `minLength` and `maxLength` in an array.
+- Fixed: some record inclusions were reported proven where they do not hold: a constraint inside
+  an optional field's type, keywords inside an array's `items`, keywords on both a property and
+  its `anyOf`/`oneOf` arm, and a field-level `strict` setting. Shapes the encoding does not read
+  exactly are now reported unknown, naming the shape, and are still searched for a counterexample
+  that both sides' validation confirm.
+
 ## 0.4.1
 
 For mathema 0.6.6.2 (`mathema>=0.6.6.2,<0.7`), which reads a language's persisted `term`.
