@@ -1463,6 +1463,29 @@ def _unread_keywords(schema: Any, nested: bool = False) -> set[str]:
     return out
 
 
+_ITEM_SCALARS = {"integer", "number", "string", "boolean"}
+
+
+def _items_unread(schema: dict[str, Any]) -> set[str]:
+    """Intent:
+        Names what the `items` of an array carries beyond `{"type": <scalar type>}` or
+        `{"enum": [...]}` (and a title or description): the neutral model keeps only the item type, so any other keyword, a
+        union, a reference, a nested container or a tuple form is named as `items carrying ...`.
+    """
+    if "items" not in schema:
+        return set()
+    items = schema["items"]
+    if not isinstance(items, dict):
+        return {"items carrying a non-schema form"}
+    if "type" not in items and "enum" in items:
+        return {f"items carrying {k}" for k in set(items) - {"enum", "title", "description"}}
+    extra = set(items) - {"type", "title", "description"}
+    out = {f"items carrying {k}" for k in extra}
+    if items.get("type") not in _ITEM_SCALARS:
+        out.add(f"items carrying type {items.get('type')!r}")
+    return out
+
+
 def _shape_keywords(schema: Any) -> set[str]:
     """Intent:
         Returns the shapes of a JSON Schema's properties, and of their arms, that the encoding
@@ -1479,6 +1502,7 @@ def _shape_keywords(schema: Any) -> set[str]:
             out |= _shape_keywords(arm)
     out |= _union_unread(schema)
     out |= _length_unread(schema, arm)
+    out |= _items_unread(schema)
     for prop in (schema.get("properties") or {}).values():
         out |= _shape_keywords(prop)
     return out
@@ -1705,6 +1729,9 @@ def _schema_inclusion(older: Any, newer: Any, *, timeout_ms: int = 5000) -> _Inc
         shape = next((b for b in _branches(older) if _admits(b, values)), older)
         return _InclusionResult("falsified", f"{older.name} admits it and {newer.name} refuses it",
                                _nest(shape, values))
+    if declined:
+        return _InclusionResult("unknown", f"proof declined: {declined[0]}; the solver's candidate "
+                                f"{values!r} was not confirmed by the validations")
     return _InclusionResult("unknown", f"z3 offered {values!r}, which the validations do not "
                            f"confirm ({older.name} must admit it and {newer.name} refuse it); "
                            "this is a gap in the encoding")
