@@ -1,8 +1,8 @@
 {
   "implementation": 90,
-  "intent": 72,
+  "intent": 73,
   "clarity": 16,
-  "overall": 30,
+  "overall": 31,
   "clarity_algo": "entropy-dimensions@1.4",
   "per_function": {
     "mathema_language._lexicon_models.admin.build_parser": {
@@ -805,15 +805,25 @@
       "intent": 42,
       "clarity": 12
     },
+    "mathema_language.schema.adaptors._hints.flatten_markers": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 16
+    },
+    "mathema_language.schema.adaptors._hints.annotation_markers": {
+      "implementation": 100,
+      "intent": 85,
+      "clarity": 14
+    },
     "mathema_language.schema.adaptors._hints.constraints_of": {
       "implementation": 91,
-      "intent": 44,
-      "clarity": 11
+      "intent": 48,
+      "clarity": 9
     },
     "mathema_language.schema.adaptors._hints._decimal_digits": {
       "implementation": 100,
-      "intent": 92,
-      "clarity": 20
+      "intent": 84,
+      "clarity": 17
     },
     "mathema_language.schema.adaptors._hints.field_of": {
       "implementation": 96,
@@ -973,7 +983,7 @@
     "mathema_language.schema.adaptors.jsonschema._constraints": {
       "implementation": 100,
       "intent": 92,
-      "clarity": 13
+      "clarity": 9
     },
     "mathema_language.schema.adaptors.jsonschema._fields": {
       "implementation": 88,
@@ -2146,12 +2156,12 @@
       "clarity": 16
     },
     "mathema_language.smt._unread_pydantic": {
-      "implementation": 92,
+      "implementation": 93,
       "intent": 85,
-      "clarity": 15
+      "clarity": 14
     },
     "mathema_language.smt._nullable_pair": {
-      "implementation": 0,
+      "implementation": 100,
       "intent": 93,
       "clarity": 17
     },
