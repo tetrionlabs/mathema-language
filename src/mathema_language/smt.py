@@ -1237,7 +1237,10 @@ def _unread_pydantic(model: Any, schema: Any, path: str = "", seen: Any = None) 
         for alias in (getattr(info, "alias", None), getattr(info, "validation_alias", None)):
             if alias is not None and alias != name:
                 return f"the alias {alias!r} of {at}, by which the model reads the field"
-        for marker in getattr(info, "metadata", ()) or ():
+        from .schema.adaptors._hints import annotation_markers, flatten_markers
+        markers = flatten_markers(tuple(getattr(info, "metadata", ()) or ())) \
+            + annotation_markers(getattr(info, "annotation", None))
+        for marker in markers:
             kind = type(marker).__name__
             if kind == "_PydanticGeneralMetadata":
                 given = {k for k, v in vars(marker).items() if v is not None}
