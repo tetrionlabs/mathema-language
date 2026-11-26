@@ -48,3 +48,11 @@ def test_item_lengths_and_patterns_narrow_falsified_with_a_witness(older, newer)
     result = smt._schema_inclusion(_array(older), _array(newer))
     assert result.verdict == "falsified", str(result)
     assert _valid(_array(older), result.witness) and not _valid(_array(newer), result.witness)
+
+
+def test_string_items_without_keywords_read_as_the_plain_list_type():
+    from mathema_language.schema.adaptors.jsonschema import schema_of
+    from mathema_language.schema.model import NeutralType
+    schema = {"type": "object", "properties": {"f": {"type": "array", "items": {"type": "string"}}}}
+    (field,) = schema_of(schema).fields
+    assert field.type == NeutralType("list", item=NeutralType("string"))

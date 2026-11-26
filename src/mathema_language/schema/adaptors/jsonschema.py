@@ -99,6 +99,8 @@ def _type_of(prop: dict[str, Any]) -> tuple[NeutralType, bool]:
         item = _type_of(items)[0] if isinstance(items, dict) else None
         item_constraints = _constraints(items) if isinstance(items, dict) \
             and items.get("type") == "string" else None
+        if item_constraints == Constraints():
+            item_constraints = None
         return NeutralType("list", item=item, item_constraints=item_constraints), nullable
     if base == "struct":
         if isinstance(prop.get("properties"), dict):
