@@ -107,36 +107,12 @@ def _type_of(prop: dict[str, Any]) -> tuple[NeutralType, bool]:
     return NeutralType(base), nullable
 
 
-TIGHTEN_UP = ("minimum", "exclusiveMinimum", "minLength", "minItems")
-TIGHTEN_DOWN = ("maximum", "exclusiveMaximum", "maxLength", "maxItems")
-
-
 def merge_arm(prop: dict[str, Any], arm: dict[str, Any]) -> dict[str, Any]:
     """Intent:
-        The keywords a property and its one non-null `anyOf` or `oneOf` arm enforce together:
-        where both give a bound, the tighter one (the larger minimum, the smaller maximum); any
-        other keyword given by both keeps the arm's value, and `conflicting_keywords` names it.
+        The keywords a property and its one non-null `anyOf` or `oneOf` arm enforce together,
+        when no keyword is given by both (the encoding declines a property where one is).
     """
-    merged = {k: v for k, v in prop.items() if k not in ("anyOf", "oneOf")}
-    for key, value in arm.items():
-        if key in merged and key in TIGHTEN_UP and not isinstance(value, bool):
-            merged[key] = max(merged[key], value)
-        elif key in merged and key in TIGHTEN_DOWN and not isinstance(value, bool):
-            merged[key] = min(merged[key], value)
-        else:
-            merged[key] = value
-    return merged
-
-
-def conflicting_keywords(prop: dict[str, Any], arm: dict[str, Any]) -> list[str]:
-    """Intent:
-        The keywords, other than the bounds that combine, a property and its `anyOf` or `oneOf`
-        arm both give with different values.
-    """
-    return sorted(k for k in set(prop) & set(arm)
-                  if k not in ("anyOf", "oneOf") and k not in TIGHTEN_UP + TIGHTEN_DOWN
-                  and k not in ("title", "description", "default", "examples", "$comment")
-                  and prop[k] != arm[k])
+    return {**{k: v for k, v in prop.items() if k not in ("anyOf", "oneOf")}, **arm}
 
 
 def _constraints(prop: dict[str, Any]) -> Constraints:

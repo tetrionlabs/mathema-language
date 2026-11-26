@@ -23,16 +23,19 @@ def _schema(prop):
     return {"type": "object", "required": ["f"], "properties": {"f": prop}}
 
 
-def test_outer_bound_wider_than_arm_is_the_arm_bound_and_stays_proven():
+def test_a_bound_on_both_the_property_and_the_arm_is_declined_by_name():
     older = _schema({"maximum": 9, "anyOf": [{"type": "integer", "maximum": 3}, NULL]})
     newer = _schema({"anyOf": [{"type": "integer", "maximum": 5}, NULL]})
-    assert smt._schema_inclusion(older, newer).verdict == "proven"
+    result = smt._schema_inclusion(older, newer)
+    assert result.verdict == "unknown"
+    assert "maximum" in str(result)
 
 
-def test_outer_bound_narrowing_is_widened_back_and_stays_proven():
-    older = _schema({"maximum": 3, "anyOf": [{"type": "integer", "maximum": 8}, NULL]})
-    newer = _schema({"maximum": 5, "anyOf": [{"type": "integer", "maximum": 8}, NULL]})
+def test_a_bound_on_the_property_beside_an_arm_without_it_stays_read():
+    older = _schema({"maximum": 3, "anyOf": [{"type": "integer", "minimum": 0}, NULL]})
+    newer = _schema({"maximum": 5, "anyOf": [{"type": "integer", "minimum": 0}, NULL]})
     assert smt._schema_inclusion(older, newer).verdict == "proven"
+    assert smt._schema_inclusion(newer, older).verdict == "falsified"
 
 
 def test_a_keyword_on_both_with_different_values_is_declined_by_name():
