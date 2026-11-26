@@ -826,7 +826,7 @@
       "clarity": 17
     },
     "mathema_language.schema.adaptors._hints.field_of": {
-      "implementation": 96,
+      "implementation": 100,
       "intent": 53,
       "clarity": 19
     },
@@ -976,14 +976,19 @@
       "clarity": 7
     },
     "mathema_language.schema.adaptors.jsonschema._type_of": {
-      "implementation": 93,
-      "intent": 89,
-      "clarity": 5
+      "implementation": 97,
+      "intent": 91,
+      "clarity": 4
+    },
+    "mathema_language.schema.adaptors.jsonschema.merge_arm": {
+      "implementation": 100,
+      "intent": 92,
+      "clarity": 27
     },
     "mathema_language.schema.adaptors.jsonschema._constraints": {
       "implementation": 100,
-      "intent": 92,
-      "clarity": 9
+      "intent": 93,
+      "clarity": 8
     },
     "mathema_language.schema.adaptors.jsonschema._fields": {
       "implementation": 88,
@@ -1931,9 +1936,9 @@
       "clarity": 20
     },
     "mathema_language.smt.MembershipEncoding.member": {
-      "implementation": 91,
+      "implementation": 93,
       "intent": 44,
-      "clarity": 10
+      "clarity": 9
     },
     "mathema_language.smt.MembershipEncoding.present": {
       "implementation": 100,
@@ -2136,9 +2141,9 @@
       "clarity": 19
     },
     "mathema_language.smt.untranslated": {
-      "implementation": 95,
-      "intent": 49,
-      "clarity": 4
+      "implementation": 93,
+      "intent": 48,
+      "clarity": 6
     },
     "mathema_language.smt._reads_patterns_with_re": {
       "implementation": 88,
@@ -2165,20 +2170,50 @@
       "intent": 92,
       "clarity": 16
     },
+    "mathema_language.smt._shape": {
+      "implementation": 75,
+      "intent": 93,
+      "clarity": 21
+    },
+    "mathema_language.smt._unread_marker": {
+      "implementation": 83,
+      "intent": 80,
+      "clarity": 20
+    },
     "mathema_language.smt._unread_pydantic": {
-      "implementation": 93,
-      "intent": 85,
-      "clarity": 14
+      "implementation": 94,
+      "intent": 87,
+      "clarity": 15
     },
     "mathema_language.smt._nullable_pair": {
       "implementation": 100,
       "intent": 93,
       "clarity": 17
     },
+    "mathema_language.smt._union_unread": {
+      "implementation": 95,
+      "intent": 81,
+      "clarity": 13
+    },
+    "mathema_language.smt._length_unread": {
+      "implementation": 100,
+      "intent": 93,
+      "clarity": 18
+    },
     "mathema_language.smt._unread_keywords": {
-      "implementation": 88,
+      "implementation": 95,
       "intent": 85,
       "clarity": 15
+    },
+    "mathema_language.smt._items_unread": {
+      "implementation": 93,
+      "intent": 90,
+      "clarity": 17
+    },
+    "mathema_language.smt._shape_keywords": {
+      "implementation": 93,
+      "intent": 84,
+      "clarity": 6
     },
     "mathema_language.smt._value": {
       "implementation": 100,
@@ -2213,7 +2248,7 @@
     "mathema_language.smt._schema_inclusion": {
       "implementation": 98,
       "intent": 64,
-      "clarity": 9
+      "clarity": 8
     },
     "mathema_language.smt._most_readable": {
       "implementation": 94,
